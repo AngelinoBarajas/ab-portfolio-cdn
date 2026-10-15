@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-knowledge v0.33.84 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-knowledge v0.33.85 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abKnowledgeInit) return;
@@ -722,9 +722,33 @@ window.Webflow.push(function(){
   })();
 
   /* ===== knowledge/50-rows.js ===== */
-  /* ---------- rows on existing templates: Mission (observations from this mission), Service (further reading) ---------- */
+  /* ---------- rows on existing templates: Mission (observations from this mission), Service (further reading) ----------
+     v0.33.85: native first (Topicweave rule: every related link is a real href in the HTML). When the template carries the
+     native lists ([data-ks-nchips] chips, [data-ks-card] cards, [data-ks-nmore] remaining notes) this only polishes them:
+     category keys, the "Filed under" label, reveals, hiding empty parts. Without them it falls back to building the row. */
   if (ROW === 'mission' || ROW === 'service') (function(){
     var sec = $('[data-ks-row]'), filed = $('[data-ks-filed]'), mount = $('[data-ks-rownotes]');
+    var nChips = $('[data-ks-nchips]', sec), nCards = mount ? $$('[data-ks-card]', mount) : [], nMore = mount ? $('[data-ks-nmore]', mount) : null;
+    if (nChips || nCards.length || nMore){
+      var chips = nChips ? $$('a.ab_ks-chip', nChips) : [];
+      chips.forEach(function(a){
+        a.setAttribute('data-cat', catKey(a.getAttribute('data-cat')));
+        a.removeAttribute('aria-current'); a.classList.remove('w--current');
+      });
+      if (filed){
+        if (!chips.length) filed.style.display = 'none';
+        else if (!$('.ab_ks-filed_l', filed)){
+          var l = document.createElement('span'); l.className = 'ab_ks-filed_l'; l.textContent = ROW === 'mission' ? 'Filed under' : 'Topics';
+          filed.insertBefore(l, filed.firstChild);
+        }
+      }
+      var more = nMore ? $$('.w-dyn-item', nMore).length : 0;
+      if (nMore && !more) nMore.style.display = 'none';
+      if (mount && !nCards.length && !more){ var hh = $('.ab_sec-h', sec); if (hh) hh.style.display = 'none'; mount.style.display = 'none'; }
+      if (!chips.length && !nCards.length && !more){ sec.style.display = 'none'; return; }
+      if (nCards.length) reveal(mount);
+      return;
+    }
     var topics = ROW === 'mission'
       ? $$('[data-ks-src="cur-topics"] [data-ks-t]').map(function(n){ return n.getAttribute('data-slug'); })
       : TOPICS.filter(function(t){ return t.services.indexOf(CUR_SLUG) > -1; }).map(function(t){ return t.slug; });

@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-knowledge.css v0.33.84 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-knowledge.css v0.33.85 · github.com/AngelinoBarajas/ab-portfolio */
 /* =========================================================
    KNOWLEDGE SYSTEM · the Observatory (/observatory, /observatory/*, /topics, /topics/*) + rows on Mission,
    Service and Home. Webflow gives each ab_ks-* class a stub rule; the look lives here (approved prototype:
@@ -428,3 +428,14 @@ a.ab_ks-tstat:hover b{color:var(--_color---brand--signal)}
 
 /* phones: the drones still fly and beam, but the RX readout would sit over the title; drop it */
 @media (max-width:767px){.ab_ks-drone_l{display:none}}
+/* v0.33.85 native rows (mission/service templates): chips from a Collection List sit in the Filed under bar like the old
+   script chips; the remaining notes (after the 3 cards) are a plain list of real links, code first */
+[data-ks-nchips],[data-ks-nchips] .w-dyn-items,[data-ks-nchips] .w-dyn-item{display:contents}
+.ab_ks-notelist{margin-top:clamp(22px,2.6vw,34px)}
+.ab_ks-notelist[data-label]::before{content:attr(data-label);display:block;margin-bottom:10px;font-family:var(--_typography---font--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--_color---text--tertiary)}
+.ab_ks-notelist .w-dyn-items{border-top:1px solid var(--_color---neutral--hair)}
+.ab_ks-notelink{display:flex;align-items:baseline;gap:14px;padding:13px 0;border-bottom:1px solid var(--_color---neutral--hair);color:var(--_color---text--secondary);text-decoration:none;font-size:15px;line-height:1.4;transition:color .2s}
+.ab_ks-notelink[data-code]::before{content:attr(data-code);flex:none;min-width:44px;font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.06em;color:var(--_color---text--tertiary)}
+.ab_ks-notelink::after{content:"\2192";margin-left:auto;color:var(--_color---text--tertiary);transition:transform .2s,color .2s}
+.ab_ks-notelink:hover,.ab_ks-notelink:focus-visible{color:var(--_color---text--primary)}
+.ab_ks-notelink:hover::after,.ab_ks-notelink:focus-visible::after{color:var(--_color---text--primary);transform:translateX(3px)}
