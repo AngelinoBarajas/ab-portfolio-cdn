@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.82 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -511,6 +511,10 @@ window.Webflow.push(function(){
     /* ---------- desktop / tablet: pan, zoom, drag frames, layers, minimap, a second cursor ---------- */
     var viewport = $('#viewport'), zPct = $('#zPct'), coords = $('#boardCoords'), layers = $('#layers'), mm = $('#minimap'), mv = $('#mv');
     var S = 1, lastFrameDrag = 0, lastInteract = 0;
+    // the canvas is its own clipped layer: Draggable lifts a pressed frame to z-index 1000+, which used to paint it over the
+    // top bar + Layers panel. The two cursors move up to the board, above the frames and the zoom bar (they were z 7, under it)
+    viewport.style.overflow = 'hidden'; viewport.style.zIndex = '1'; board.style.overflow = 'visible';
+    $$('.ab_board_cursor', viewport).forEach(function(c){ c.style.zIndex = '9'; board.appendChild(c); });
     var bb = frames.reduce(function(a, f){ var p = f.__pos; return { l: Math.min(a.l, p.x), t: Math.min(a.t, p.y), r: Math.max(a.r, p.x + p.w), b: Math.max(a.b, p.y + p.h) }; }, { l: 1e9, t: 1e9, r: -1e9, b: -1e9 });
     var WW = bb.r + 120, WH = bb.b + 120; world.style.width = WW + 'px'; world.style.height = WH + 'px';
     var MMS = Math.min(150 / WW, 90 / WH);
@@ -540,12 +544,12 @@ window.Webflow.push(function(){
       S = ns; zPct.textContent = Math.round(S * 100) + '%';
       gsap.to(world, { scale: S, x: nx, y: ny, duration: animate ? .8 : 0, ease: 'power3.inOut', onUpdate: updateMM, onComplete: updateMM });
     }
-    function zoomTo(ns){
+    function zoomTo(ns, px, py){ // px/py: the viewport point that stays put (default: the middle)
       ns = Math.max(.3, Math.min(1.6, ns));
-      var vw = viewport.offsetWidth / 2, vh = viewport.offsetHeight / 2, x = gsap.getProperty(world, 'x'), y = gsap.getProperty(world, 'y');
-      var nx = vw - (vw - x) * (ns / S), ny = vh - (vh - y) * (ns / S);
+      var vw = px == null ? viewport.offsetWidth / 2 : px, vh = py == null ? viewport.offsetHeight / 2 : py, x = gsap.getProperty(world, 'x'), y = gsap.getProperty(world, 'y');
+      var cs = gsap.getProperty(world, 'scaleX'), nx = vw - (vw - x) * (ns / cs), ny = vh - (vh - y) * (ns / cs); // cs: the live scale mid-tween, matching x/y
       S = ns; zPct.textContent = Math.round(S * 100) + '%';
-      gsap.to(world, { scale: S, x: nx, y: ny, duration: .45, ease: 'power3.out', onUpdate: updateMM });
+      gsap.to(world, { scale: S, x: nx, y: ny, duration: .45, ease: 'power3.out', overwrite: true, onUpdate: updateMM });
     }
     gsap.set(world, { transformOrigin: '0 0' }); fit(false);
     addEventListener('resize', function(){ fit(false); });
@@ -553,19 +557,37 @@ window.Webflow.push(function(){
     $('#zOut').addEventListener('click', function(){ zoomTo(S - .15); });
     var focused = null; // the layer the board is zoomed in on
     $('#zFit').addEventListener('click', function(){ focused = null; fit(true); });
-    viewport.addEventListener('wheel', function(e){ if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); e.stopPropagation(); zoomTo(S * (e.deltaY > 0 ? .92 : 1.08)); }, { passive: false });
+    // the wheel zooms toward the pointer once the board has been clicked (until the pointer leaves it), so scrolling the
+    // page past the board never gets caught; Ctrl/⌘ + wheel and trackpad pinch zoom any time
+    var engaged = false;
+    board.addEventListener('pointerdown', function(){ engaged = true; });
+    board.addEventListener('pointerleave', function(){ engaged = false; });
+    viewport.addEventListener('wheel', function(e){
+      if (!engaged && !e.ctrlKey && !e.metaKey) return;
+      e.preventDefault(); e.stopPropagation();
+      var r = viewport.getBoundingClientRect();
+      zoomTo(S * (e.deltaY > 0 ? .92 : 1.08), e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    var helpLine = $('.ab_board_help > div'); if (helpLine) helpLine.textContent = 'Click the board, then scroll to zoom · Layers panel jumps to a frame';
 
     Draggable.create(world, { type: coarse ? 'x' : 'x,y', trigger: viewport, inertia: true, dragClickables: false, allowNativeTouchScrolling: true,
       clickableTest: function(el){ return !!(el.closest && el.closest('.ab_board_frame')); },
       onPress: function(){ lastInteract = Date.now(); }, onDrag: updateMM, onThrowUpdate: updateMM });
 
+    // a frame can't be dragged out of the canvas: each press allows only the room the visible canvas has around it
+    // (a frame already half off-screen after a pan can still come back in, never go further out)
+    function keepIn(d, f){
+      var vr = viewport.getBoundingClientRect(), r = f.getBoundingClientRect(), x = d.x, y = d.y;
+      d.applyBounds({ minX: x + Math.min(0, vr.left - r.left) / S, maxX: x + Math.max(0, vr.right - r.right) / S,
+        minY: y + Math.min(0, vr.top - r.top) / S, maxY: y + Math.max(0, vr.bottom - r.bottom) / S });
+    }
     function select(f){
       frames.forEach(function(o){ o.classList.toggle('is-selected', o === f); });
       if (layers) $$('button', layers).forEach(function(b){ b.classList.toggle('is-on', b.getAttribute('data-target') === f.getAttribute('data-slug')); });
     }
     frames.forEach(function(f){
       Draggable.create(f, { type: 'x,y', inertia: true, allowNativeTouchScrolling: coarse,
-        onPress: function(){ lastInteract = Date.now(); select(f); },
+        onPress: function(){ lastInteract = Date.now(); select(f); keepIn(this, f); },
         onDragStart: function(){ gsap.to(f, { rotation: gsap.utils.random(-2, 2), duration: .3 }); },
         onDrag: updateMM, onThrowUpdate: updateMM,
         onDragEnd: function(){ lastFrameDrag = Date.now(); gsap.to(f, { rotation: 0, duration: .5 }); } });
@@ -589,23 +611,35 @@ window.Webflow.push(function(){
       });
     });
 
+    // the You arrow IS the pointer on the board (mouse only, checked per event: (hover: none) can be true with a mouse on
+    // Windows): the system cursor + glove hand are hidden there and the arrow's tip sits on the hotspot. The board doesn't
+    // clip (the viewport clips the frames), so near an edge the label simply hangs outside it
     var you = $('#youTag');
-    if (you && !coarse){
-      viewport.addEventListener('pointermove', function(e){ var r = viewport.getBoundingClientRect(); gsap.set(you, { x: e.clientX - r.left + 14, y: e.clientY - r.top + 10 }); you.style.opacity = 1; lastInteract = Date.now(); });
-      viewport.addEventListener('pointerleave', function(){ you.style.opacity = 0; });
+    if (you){
+      var css = document.createElement('style');
+      css.textContent = '.ab_board_component.is-own-cursor,.ab_board_component.is-own-cursor *{cursor:none!important}';
+      document.head.appendChild(css);
+      you.style.transition = 'none';
+      board.addEventListener('pointermove', function(e){
+        if (e.pointerType !== 'mouse'){ board.classList.remove('is-own-cursor'); you.style.opacity = 0; return; }
+        var r = board.getBoundingClientRect(), x = e.clientX - r.left - board.clientLeft, y = e.clientY - r.top - board.clientTop;
+        gsap.set(you, { x: x - 1, y: y - 1 }); // the arrow's tip is 1px into its svg
+        board.classList.add('is-own-cursor'); you.style.opacity = 1; lastInteract = Date.now();
+      });
+      board.addEventListener('pointerleave', function(){ board.classList.remove('is-own-cursor'); you.style.opacity = 0; });
     }
 
     // "Angelino" cursor visits frames in CMS order
     var fake = $('#fakeCursor'), oi = 0, boardVisible = false;
     if (fake){
-      gsap.set(fake, { x: 60, y: 60 });
+      gsap.set(fake, { x: viewport.offsetLeft + 60, y: viewport.offsetTop + 60 });
       onView(board, function(x){ boardVisible = x; });
       var wander = function(){
         if (reduce){ gsap.set(fake, { opacity: 0 }); return; }
         if (!boardVisible || focused || Date.now() - lastInteract < 5000){ gsap.to(fake, { opacity: .25, duration: .3 }); gsap.delayedCall(1.5, wander); return; }
         gsap.to(fake, { opacity: 1, duration: .3 });
         var f = frames[oi++ % frames.length], vr = viewport.getBoundingClientRect(), r = f.getBoundingClientRect();
-        var tx = gsap.utils.clamp(10, vr.width - 110, r.left - vr.left + r.width * gsap.utils.random(.35, .7)), ty = gsap.utils.clamp(10, vr.height - 40, r.top - vr.top + r.height * gsap.utils.random(.3, .7));
+        var tx = viewport.offsetLeft + gsap.utils.clamp(10, vr.width - 110, r.left - vr.left + r.width * gsap.utils.random(.35, .7)), ty = viewport.offsetTop + gsap.utils.clamp(10, vr.height - 40, r.top - vr.top + r.height * gsap.utils.random(.3, .7));
         gsap.to(fake, { x: tx, y: ty, duration: gsap.utils.random(1.2, 1.9), ease: 'power2.inOut', onComplete: function(){
           if (Date.now() - lastInteract < 5000){ gsap.delayedCall(1.5, wander); return; }
           select(f);
@@ -1530,6 +1564,12 @@ window.Webflow.push(function(){
       typesRow.parentNode.insertBefore(ad, typesRow.nextSibling);
     }
     if (!$('#plAddonsField', form) && typesRow){ var hf = document.createElement('input'); hf.type = 'hidden'; hf.name = 'Add-ons'; hf.id = 'plAddonsField'; hf.value = ''; typesRow.parentNode.appendChild(hf); }
+    // Custom dashboards (9th service, 2026-10-11): a mission-type chip cloned from the Designer's last one, until a
+    // native "Dashboard" chip exists
+    if (typesRow && !$$('.ab_planner_chip', typesRow).some(function(c){ return /dashboard/i.test(c.textContent); })){
+      var last = $$('.ab_planner_chip', typesRow).pop();
+      if (last){ var dc = last.cloneNode(false); dc.textContent = 'Dashboard'; dc.setAttribute('data-c', '#5BD0FF'); dc.setAttribute('aria-pressed', 'false'); dc.removeAttribute('id'); last.parentNode.insertBefore(dc, last.nextSibling); }
+    }
     var chips = $$('.ab_planner_chip:not([data-addon]):not(.is-unsure)', form), addons = $$('.ab_planner_chip[data-addon]', form);
     // add-ons wear the Knowledge-system satellite icon (the same one as the /process form)
     addons.forEach(function(c){ c.setAttribute('data-addon', 'KNS · Knowledge system'); if (!$('svg', c)) c.textContent = 'KNS · Knowledge system'; if (!$('svg', c)) c.insertAdjacentHTML('afterbegin', '<svg class="sat-ico ab-ks-ico" viewBox="0 0 24 12" aria-hidden="true"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg>'); });
@@ -1554,7 +1594,7 @@ window.Webflow.push(function(){
     function fillHidden(){ var st = state(); if (fType) fType.value = st.types.join(', '); if (fBud) fBud.value = st.bl; if (fAdd) fAdd.value = st.add.join(', '); if (fBrief) fBrief.value = brief(); }
     // pricing estimate under the mission types (core/46-pricing.js): chip label → Services slug; it also moves the
     // budget slider to the matching band until the visitor sets the budget themselves
-    var SLUGS = { 'Website': 'webflow-development', 'Branding + logo': 'branding', 'Motion + interaction': 'motion', 'WebGL + 3D': 'webgl-data', 'CMS + integrations': 'cms-integrations', 'Web app': 'custom-deploys' };
+    var SLUGS = { 'Website': 'webflow-development', 'Branding + logo': 'branding', 'Motion + interaction': 'motion', 'WebGL + 3D': 'webgl-data', 'CMS + integrations': 'cms-integrations', 'Web app': 'custom-deploys', 'Dashboard': 'dashboards' };
     var estBox = null, budPicked = false;
     if (AB.estimate && typesRow){ estBox = document.createElement('div'); estBox.setAttribute('data-est', ''); var after = $('.ab_planner_addons', form) || typesRow; after.parentNode.insertBefore(estBox, after.nextSibling); }
     function syncEst(){
