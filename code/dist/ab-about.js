@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-about v0.33.85 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-about v0.33.86 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abAboutInit) return;
@@ -325,7 +325,7 @@ window.Webflow.push(function(){
       { n: 'AB Identity', s: 'Shipped', k: 'shipped', shape: 'mark', x: 60, y: 116, w: 86, h: 58, r: -7 }
     ];
     // this bundle's own tag on jsDelivr → code/vendor/ (kip's patch image ships in the repo)
-    var VEND = (function(){ var sc = document.querySelector('script[src*="/code/dist/ab-about"]'); return sc ? sc.src.replace(/code\/dist\/[^\/]*$/, 'code/vendor/') : 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio@main/code/vendor/'; })();
+    var VEND = (function(){ var sc = document.querySelector('script[src*="/code/dist/ab-about"]'); return sc ? sc.src.replace(/code\/dist\/[^\/]*$/, 'code/vendor/') : 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio-cdn@main/code/vendor/'; })();
     function patches(){
       if (!back) return;
       var box = document.createElement('div'); box.className = 'ab_badge_stk';

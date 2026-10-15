@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-mission v0.33.85 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-mission v0.33.86 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abMissionInit) return;
@@ -16,7 +16,7 @@ window.Webflow.push(function(){
   // vendor scripts (510 globe, Aguirre case map) ship from this repo at the same tag as this bundle: derive the base from our own <script src>
   var VENDOR = (function(){
     var s = $('script[src*="/code/dist/ab-mission"]');
-    return s ? s.src.replace(/code\/dist\/[^\/]*$/, 'code/vendor/') : 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio@main/code/vendor/';
+    return s ? s.src.replace(/code\/dist\/[^\/]*$/, 'code/vendor/') : 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio-cdn@main/code/vendor/';
   })();
   function txt(sel, root){ var n = $(sel, root); return n ? n.textContent.trim() : ''; }
   function loadScript(src){ return new Promise(function(res, rej){ var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.body.appendChild(s); }); }
@@ -24,7 +24,7 @@ window.Webflow.push(function(){
   /* ===== mission/10-mocks.js ===== */
   /* ---------- mockup specs per mission (monitor scenes: figma / phone / flow / exploded / cms), keyed by mission slug ---------- */
   // Images come from the repo's prototype folder on jsDelivr, pinned to a tag (immutable).
-  var IMG = 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio@v0.3.2/prototypes/img/';
+  var IMG = 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio-cdn@v0.3.2/prototypes/img/';
   /* =========================================================
      CMS STAND-IN · Mockup spec per mission (Missions → "Monitor mockup" code field)
      els: layers of the Figma frame, in a 1000 × 625 frame (1440 × 900 at 1×).

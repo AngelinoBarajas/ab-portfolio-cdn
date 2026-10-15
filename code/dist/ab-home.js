@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.85 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.86 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -349,7 +349,7 @@ window.Webflow.push(function(){
           inner.style.setProperty('--fbg', '#2a3a6a'); inner.style.setProperty('--ffg', '#FFFFFF'); f.__bg = '#2a3a6a';
           var ar = document.createElement('div'); ar.className = 'ab_board_kip'; ar.setAttribute('aria-hidden', 'true');
           ar.style.cssText = 'position:absolute;right:24px;top:26px;display:flex;gap:10px;align-items:flex-end;z-index:0';
-          var KV = (function(){ var s = document.querySelector('script[src*="/code/dist/ab-home"]'); return s ? s.src.replace(/code\/dist\/[^\/]*$/, 'code/vendor/') : 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio@main/code/vendor/'; })();
+          var KV = (function(){ var s = document.querySelector('script[src*="/code/dist/ab-home"]'); return s ? s.src.replace(/code\/dist\/[^\/]*$/, 'code/vendor/') : 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio-cdn@main/code/vendor/'; })();
           var hb = document.createElement('div'); hb.className = 'ab_board_kip-bg'; hb.setAttribute('aria-hidden', 'true');
           hb.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(to top,rgba(18,16,38,.9) 0%,rgba(18,16,38,.55) 30%,rgba(18,16,38,0) 58%),url("' + KV + 'kip/hero-house.webp") center 30%/cover no-repeat';
           inner.insertBefore(hb, inner.firstChild); var HBI = hb.style.backgroundImage;
