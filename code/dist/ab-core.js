@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.33.36 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.44 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -23,6 +23,45 @@ window.Webflow.push(function(){
   // computed "rgb(r, g, b)" → "#rrggbb" (CMS Color fields reach the page as inline styles on hidden nodes)
   function rgbToHex(s){ var m = String(s || '').match(/\d+(\.\d+)?/g); if (!m || m.length < 3 || (m.length > 3 && +m[3] === 0)) return ''; return '#' + m.slice(0, 3).map(function(v){ var h = (+v | 0).toString(16); return h.length < 2 ? '0' + h : h; }).join(''); }
   function onView(el, fn, opts){ var io = new IntersectionObserver(function(es){ fn(es[0].isIntersecting); }, opts); io.observe(el); return io; }
+  // mobile perf pass (2026-10-04): a piece below the fold is built only when it comes within `ahead` screens of the
+  // viewport (from above, below or the side), so the load is not spent on things nobody sees yet. It must not change its own size
+  // when it builds (CSS holds the box), or content would move.
+  function near(el, fn, ahead){
+    if (!el) return;
+    if (!window.IntersectionObserver){ fn(); return; }
+    var m = Math.round((ahead == null ? 1 : ahead) * 100) + '%';
+    var io = new IntersectionObserver(function(es){ if (!es[0].isIntersecting) return; io.disconnect(); fn(); }, { rootMargin: m } /* every side: some pieces start off the side and move in (a moon on its orbit) */);
+    io.observe(el);
+  }
+  // run fn in its own task as soon as the current one ends (a MessageChannel message: not throttled like timers in a
+  // background tab). Splits load work that must still happen at load into short tasks instead of one long one.
+  var soonQ = [], soonCh = window.MessageChannel ? new MessageChannel() : null;
+  if (soonCh) soonCh.port1.onmessage = function(){ var f = soonQ.shift(); if (f) f(); };
+  function soon(fn){ if (soonCh){ soonQ.push(fn); soonCh.port2.postMessage(0); } else setTimeout(fn, 0); }
+  // ambient motion (loops that run on their own, not the entrance) starts once the page is interactive: after the load
+  // event plus a short settle, or at the first input, whichever comes first. Until then the pieces sit at their first frame.
+  var ambQ = [], ambOn = false, ambDone = false, AMB_EV = ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'];
+  function ambRun(f){ try { f(); } catch (e){ if (window.console) console.error(e); } }
+  function ambient(fn){ if (ambDone) ambRun(fn); else ambQ.push(fn); }
+  function ambDetach(){ ambDone = true; AMB_EV.forEach(function(t){ removeEventListener(t, ambStart, true); }); }
+  function ambStart(e){
+    // an input starts everything at once, in its capture phase: a press must already reach a hero toy's new Draggable
+    if (e && e.type){ ambOn = true; ambQ.splice(0).forEach(ambRun); ambDetach(); return; }
+    if (ambOn) return; ambOn = true;
+    // the settle timer starts one piece per task, so the start isn't one long task (an input meanwhile flushes the rest)
+    (function step(){ var f = ambQ.shift(); if (!f){ ambDetach(); return; } ambRun(f); soon(step); })();
+  }
+  AMB_EV.forEach(function(t){ addEventListener(t, ambStart, { capture: true, passive: true }); });
+  function ambSettle(){ setTimeout(ambStart, 1200); }
+  if (document.readyState === 'complete') ambSettle(); else addEventListener('load', ambSettle);
+  // hero toys: Draggable.create measures its element, which on load cost a forced layout per toy. The toy gets the styles
+  // Draggable would give it now (so a first touch never scrolls the page instead) and its Draggable when the page is
+  // interactive. A press before then starts it in the capture phase, so that same press already reaches the new Draggable.
+  function lazyDrag(el, vars, then){
+    if (!el || !window.Draggable) return;
+    el.style.touchAction = 'none'; el.style.cursor = 'grab'; el.style.userSelect = 'none'; el.style.webkitUserSelect = 'none';
+    ambient(function(){ var d = Draggable.create(el, vars)[0]; if (then) then(d); });
+  }
   // big display titles: if the widest line/word can't fit the box (long words on a phone), shrink the font until it does (never under min)
   function fitWide(el, min){
     if (!el || el.__fit) return; el.__fit = true;
@@ -100,7 +139,7 @@ window.Webflow.push(function(){
     })['catch'](function(){});
   }
 
-  Object.assign(AB, { hasGsap: hasGsap, reduce: reduce, sysReduce: sysReduce, calm: calm, coarse: coarse, $: $, $$: $$, num: num, esc: esc, pad2: pad2, hex: hex, rgbToHex: rgbToHex, onView: onView, settings: S0, quotes: QUOTES, gloss: GLOSS });
+  Object.assign(AB, { hasGsap: hasGsap, reduce: reduce, sysReduce: sysReduce, calm: calm, coarse: coarse, $: $, $$: $$, num: num, esc: esc, pad2: pad2, hex: hex, rgbToHex: rgbToHex, onView: onView, near: near, soon: soon, ambient: ambient, lazyDrag: lazyDrag, settings: S0, quotes: QUOTES, gloss: GLOSS });
 
   /* ===== core/10-space.js ===== */
 
@@ -164,8 +203,9 @@ window.Webflow.push(function(){
     gas: '#2b1d4f,#5a3f8e,#c68fbf,#3a2f6b,#f0b48a', rocky: '#6b6258,#9a8c7a,#433c35', ice: '#e3f2ff,#9cc3ee,#5a7fb8',
     lava: '#140807,#3a1510,#ff6a3d,#ffd27a', terra: '#0e3a5c,#1e6e8c,#3f8f4a,#a88b5c,#f2f0ea'
   };
-  function makeTexture(type, cols, seed, W){
-    var H = W / 2, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  // drawTexture paints into any canvas, so the same code runs in the texture worker (OffscreenCanvas) or here
+  function drawTexture(cv, type, cols, seed, W){
+    var H = W / 2; cv.width = W; cv.height = H;
     var ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), d = img.data, P = 8;
     for (var y = 0; y < H; y++){
       var v = y / H, lat = Math.abs(v - .5) * 2;
@@ -275,7 +315,29 @@ window.Webflow.push(function(){
         });
       }
     }
-    return cv.toDataURL('image/jpeg', .9);
+    return cv;
+  }
+  function makeTexture(type, cols, seed, W){ return drawTexture(document.createElement('canvas'), type, cols, seed, W).toDataURL('image/jpeg', .9); }
+  // textures are made in a Web Worker where the browser has OffscreenCanvas (perf pass 2026-10-04): the per-pixel noise of
+  // one hero planet was a 150–250 ms main-thread task even on a fast laptop. Same functions, same JPEG encoder; the
+  // functions travel by their own (minified) names. No worker, or it fails: made here, as before.
+  var texW = null, texCb = {}, texId = 0;
+  (function(){
+    try {
+      if (!window.Worker || !window.OffscreenCanvas || !window.Blob || !window.URL || !URL.createObjectURL) return;
+      var fns = [mix, ramp, hash, vnoise, fbm, drawTexture];
+      if (fns.some(function(f){ return !f.name; })) return;
+      var src = fns.map(function(f){ return 'var ' + f.name + '=' + String(f) + ';'; }).join('\n') +
+        '\nonmessage=function(e){var d=e.data;try{' + drawTexture.name + '(new OffscreenCanvas(1,1),d.t,d.c,d.s,d.w).convertToBlob({type:"image/jpeg",quality:.9}).then(function(b){postMessage({id:d.id,b:b});},function(){postMessage({id:d.id});});}catch(x){postMessage({id:d.id});}};';
+      texW = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      texW.onmessage = function(e){ var cb = texCb[e.data.id]; delete texCb[e.data.id]; if (cb) cb(e.data.b ? URL.createObjectURL(e.data.b) : ''); };
+      texW.onerror = function(){ texW = null; var p = texCb; texCb = {}; Object.keys(p).forEach(function(k){ p[k](''); }); };
+    } catch (e){ texW = null; }
+  })();
+  function textureURL(type, cols, seed, W, done){
+    if (!texW){ done(makeTexture(type, cols, seed, W)); return; }
+    var id = ++texId; texCb[id] = function(u){ done(u || makeTexture(type, cols, seed, W)); };
+    texW.postMessage({ id: id, t: type, c: cols, s: seed, w: W });
   }
   /* ---------- random planets: a type + a color harmony (analogous / complementary / triad) per call ----------
      AB.planetLook(rnd?) -> { type, colors, ring, tilt, open, glow, seed }; AB.applyPlanetLook(el, look) writes the data
@@ -351,6 +413,10 @@ window.Webflow.push(function(){
     });
     return out.length ? out : ['/', '/work', '/services', '/process', '/about', '/observatory', '/contact'].filter(function(x){ return x !== here; });
   }
+  // a planet's texture paints at the next idle moment (200 ms at most) once the planet is within a screen of the viewport (perf pass
+  // 2026-10-04: off-screen planets painted theirs during the load); the texture is a background, so nothing moves
+  // (watched by its section: a planet hanging off the side of a page that clips sideways overflow never counts as near itself)
+  function paintNear(el, paint){ AB.near(el.closest('section, [class^="section_"], [class*=" section_"], footer') || el, function(){ if ('requestIdleCallback' in window) requestIdleCallback(paint, { timeout: 200 }); else setTimeout(paint, 30); }); }
   function buildWormhole(el){
     el.classList.add('is-wormhole');
     var sz = el.getBoundingClientRect().width || 200, armed = 0;
@@ -364,7 +430,7 @@ window.Webflow.push(function(){
     el.removeAttribute('aria-hidden'); el.setAttribute('role', 'link'); el.tabIndex = 0; el.setAttribute('aria-label', 'Wormhole: fall through to a random page of this site');
     var farTx = '';
     var paint = function(){ farTx = farSide(sz > 240 ? 512 : 320); $$('.wh-far i', body).forEach(function(i){ i.style.backgroundImage = 'url(' + farTx + ')'; }); body.classList.add('on'); };
-    if ('requestIdleCallback' in window) requestIdleCallback(paint, { timeout: 800 }); else setTimeout(paint, 30);
+    paintNear(el, paint);
     var lens = { el: $('.wh-ball', body), b: 0, to: 0 }; LENSES.push(lens);
     // probes: now and then one drifts past, gets caught, spirals in (faster, stretching) and is gone: "signal lost".
     // Only while the wormhole is on screen, never under reduced motion or during the fall.
@@ -501,8 +567,8 @@ window.Webflow.push(function(){
       if (ds.label && el.hasAttribute('data-drag')){ el.setAttribute('role', 'img'); el.setAttribute('aria-label', 'Draggable planet: ' + ds.label); el.tabIndex = 0; }
       else el.setAttribute('aria-hidden', 'true');
     }
-    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; if (type === 'crystal' || type === 'lava') W = sz > 110 ? 1024 : sz > 50 ? 512 : 256; /* sharp edges need ~2 texels per screen pixel */ tex.style.setProperty('--tex', 'url(' + makeTexture(type, cols, seed, W) + ')'); requestAnimationFrame(function(){ tex.classList.add('on'); }); };
-    if ('requestIdleCallback' in window) requestIdleCallback(paint, { timeout: 800 }); else setTimeout(paint, 30);
+    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; if (type === 'crystal' || type === 'lava') W = sz > 110 ? 1024 : sz > 50 ? 512 : 256; /* sharp edges need ~2 texels per screen pixel */ textureURL(type, cols, seed, W, function(u){ tex.style.setProperty('--tex', 'url(' + u + ')'); requestAnimationFrame(function(){ tex.classList.add('on'); }); }); };
+    paintNear(el, paint);
   }
   var planets = $$('.ab_planet[data-planet]');
   var pio = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting){ buildPlanet(e.target); pio.unobserve(e.target); } }); }, { rootMargin: '1400px' });
@@ -1102,28 +1168,30 @@ window.Webflow.push(function(){
       return { content: content, nav: nav };
     }
     function blocked(){ return document.hidden || tipCur || document.documentElement.classList.contains('menu-open'); }
-    function one(x, y, size, delay){
-      var s = document.createElement('span'); s.className = 'ab-twinkle'; s.setAttribute('aria-hidden', 'true'); s.textContent = '✦';
-      s.style.left = Math.round(Math.max(10, Math.min(innerWidth - 24, x))) + 'px'; s.style.top = Math.round(Math.max(10, Math.min(innerHeight - 24, y))) + 'px';
+    // page-anchored (absolute, page coords) so a sparkle scrolls with the thing it points at; nav ones stay fixed like the nav
+    function one(x, y, size, delay, fixed){
+      var s = document.createElement('span'); s.className = 'ab-twinkle' + (fixed ? ' is-fixed' : ''); s.setAttribute('aria-hidden', 'true'); s.textContent = '✦';
+      x = Math.max(10, Math.min(innerWidth - 24, x)); if (fixed) y = Math.max(10, Math.min(innerHeight - 24, y));
+      s.style.left = Math.round(x + (fixed ? 0 : scrollX)) + 'px'; s.style.top = Math.round(y + (fixed ? 0 : scrollY)) + 'px';
       s.style.fontSize = size + 'px'; s.style.animationDelay = delay + 's';
       document.body.appendChild(s); setTimeout(function(){ s.remove(); }, 1900 + delay * 1000);
     }
-    function burst(r){
+    function burst(r, fixed){
       var cx = Math.random() < .5 ? r.left : r.right, cy = Math.random() < .5 ? r.top : r.bottom;
       // corner of a tall/wide thing: pull it a little inside so it reads as belonging to it
       cx += (cx === r.left ? 1 : -1) * Math.min(14, r.width * .2); cy += (cy === r.top ? 1 : -1) * Math.min(12, r.height * .2);
-      one(cx, cy, 22, 0);
-      one(cx + (Math.random() < .5 ? -1 : 1) * (14 + Math.random() * 10), cy + (Math.random() < .5 ? -1 : 1) * (10 + Math.random() * 8), 11, .18);
-      one(cx + (Math.random() < .5 ? -1 : 1) * (8 + Math.random() * 14), cy + (Math.random() < .5 ? -1 : 1) * (14 + Math.random() * 8), 9, .34);
+      // subtle: one small star and a single tiny companion
+      one(cx, cy, 14, 0, fixed);
+      one(cx + (Math.random() < .5 ? -1 : 1) * (10 + Math.random() * 8), cy + (Math.random() < .5 ? -1 : 1) * (8 + Math.random() * 6), 8, .2, fixed);
     }
     function tick(){
       var t = targets(), pick = null;
       if (!blocked()){
         if (t.content.length) pick = t.content[Math.floor(Math.random() * t.content.length)];
         else if (t.nav.length && Math.random() < .3) pick = t.nav[Math.floor(Math.random() * t.nav.length)];
-        if (pick) burst(pick.r);
+        if (pick) burst(pick.r, inNav(pick.el));
       }
-      setTimeout(tick, (t.content.length ? 3000 : 6000) + Math.random() * 3000);
+      setTimeout(tick, (t.content.length ? 6000 : 9000) + Math.random() * 4000);
     }
     setTimeout(tick, 2500);
     // an aside in the page twinkles right away the first time it scrolls into view
@@ -1353,10 +1421,17 @@ window.Webflow.push(function(){
     /* ---------- reveals ([data-split] headings, .t-signal scramble) ---------- */
     if (!reduce){
       (document.fonts ? document.fonts.ready : Promise.resolve()).then(function(){
-        $$('[data-split]').forEach(function(el){
-          var split = SplitText.create(el, { type: 'lines', mask: 'lines' });
-          gsap.from(split.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, scrollTrigger: { trigger: el, start: 'top 88%', once: true },
-            onComplete: function(){ split.revert(); decorate(el); } });
+        // each heading is split when it comes within a screen of the viewport, not all at load (perf pass 2026-10-04);
+        // a split doesn't change the heading's size, and one created past its start still plays its entrance
+        // (the ones already in range split right away, in this task, as before: measured first, then split)
+        var vh = innerHeight, sp = $$('[data-split]'), inRange = sp.map(function(el){ var r = el.getBoundingClientRect(); return r.bottom > -vh && r.top < vh * 2; });
+        sp.forEach(function(el, i){
+          function go(){
+            var split = SplitText.create(el, { type: 'lines', mask: 'lines' });
+            gsap.from(split.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+              onComplete: function(){ split.revert(); decorate(el); } });
+          }
+          if (inRange[i]) go(); else AB.near(el, go);
         });
         ScrollTrigger.refresh();
       });
@@ -1574,7 +1649,10 @@ window.Webflow.push(function(){
     var inner = chips.filter(function(c){ return c.__ring === 'inner'; }), outer = chips.filter(function(c){ return c.__ring === 'outer'; });
     var bodies = [];
     [inner, outer].forEach(function(set, ri){ set.forEach(function(c, i){ bodies.push({ el: c, ring: ri, a: (i / set.length) * Math.PI * 2 + ri * .4, sp: ri ? -0.00012 : 0.0002, mode: 'orbit' }); }); });
-    function orbitPos(b){ var s = orbit.offsetWidth, rx = b.ring ? s * .46 : s * .30, ry = b.ring ? s * .415 : s * .27; return { x: Math.cos(b.a) * rx, y: Math.sin(b.a) * ry }; }
+    // the orbit's width, cached (perf pass 2026-10-04): read per chip per frame, it forced a style recalc for every chip
+    var ow = 0;
+    if (window.ResizeObserver) new ResizeObserver(function(){ ow = orbit.offsetWidth; }).observe(orbit);
+    function orbitPos(b){ var s = ow || orbit.offsetWidth, rx = b.ring ? s * .46 : s * .30, ry = b.ring ? s * .415 : s * .27; return { x: Math.cos(b.a) * rx, y: Math.sin(b.a) * ry }; }
     bodies.forEach(function(b){
       gsap.set(b.el, { xPercent: -50, yPercent: -50 });
       var p = orbitPos(b); gsap.set(b.el, { x: p.x, y: p.y });
@@ -1798,7 +1876,7 @@ window.Webflow.push(function(){
       items.forEach(function(el){
         var back;
         function schedule(){ if (back) back.kill(); back = gsap.delayedCall(6, function(){ gsap.to(el, { x: 0, y: 0, rotation: 0, duration: 1.4, ease: 'elastic.out(1,.55)' }); }); }
-        Draggable.create(el, { type: 'x,y', bounds: hero, inertia: !!window.InertiaPlugin, edgeResistance: .7, zIndexBoost: false,
+        AB.lazyDrag(el, { type: 'x,y', bounds: hero, inertia: !!window.InertiaPlugin, edgeResistance: .7, zIndexBoost: false,
           onPress: function(){ if (back) back.kill(); gsap.to(el, { scale: 1.04, duration: .2 }); },
           onRelease: function(){ gsap.to(el, { scale: 1, duration: .3 }); },
           onDragEnd: function(){ schedule(); if (AB.quest) AB.quest('toys'); }, onThrowComplete: schedule });
@@ -1987,11 +2065,15 @@ window.Webflow.push(function(){
           rotation: aa * 180 / Math.PI + 180 - t * 40, scaleX: 1 + t * t * 7, scaleY: Math.max(.04, 1 - t * .96), opacity: t > .78 ? Math.max(0, (1 - t) / .22) : 1 });
       }, onComplete: done });
     }
+    // each planet becomes draggable when the footer comes within a screen of the viewport (perf pass 2026-10-04)
     feedPlanets.forEach(function(p){
-      var drag = Draggable.create(p, { type: 'x,y', zIndexBoost: true,
-        onDrag: function(){ tidal(p); },
-        onRelease: function(){ var t = tidal(p); if (t.d < t.b.w * 1.3) consume(p, this); else home(p, this); } })[0];
-      p.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); if (drag.enabled()) consume(p, drag); } });
+      var drag = null;
+      AB.near(p, function(){
+        drag = Draggable.create(p, { type: 'x,y', zIndexBoost: true,
+          onDrag: function(){ tidal(p); },
+          onRelease: function(){ var t = tidal(p); if (t.d < t.b.w * 1.3) consume(p, this); else home(p, this); } })[0];
+      });
+      p.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); if (drag && drag.enabled()) consume(p, drag); } });
     });
   })();
 
@@ -2061,6 +2143,10 @@ window.Webflow.push(function(){
       var form = $('form', w), done = $('.w-form-done', w), fail = $('.w-form-fail', w);
       if (!form || !done) return;
       var h = 0;
+      // Webflow shows the block with done.focus() and no preventScroll: the browser jumped ~840px to it behind Lenis's back
+      // and Lenis then "corrected" to the wrong place. Its focus never scrolls; reveal() glides there instead.
+      done.focus = function(){ HTMLElement.prototype.focus.call(done, { preventScroll: true }); };
+      if (fail) fail.focus = function(){ HTMLElement.prototype.focus.call(fail, { preventScroll: true }); };
       // capture phase: runs before any page handler, and again on a script's requestSubmit() second pass
       form.addEventListener('submit', function(){ if (form.offsetHeight) h = form.offsetHeight; }, true);
 
@@ -2078,20 +2164,39 @@ window.Webflow.push(function(){
         done.style.display = 'flex';
         done.classList.add('abx-sent');
         requestAnimationFrame(function(){ done.classList.add('is-in'); });
+        // "while you wait": three places to go next (not the page you're on), so the message isn't a dead end
+        if (!done.__next){
+          done.__next = true;
+          var here = location.pathname.replace(/\/$/, '') || '/';
+          var NEXT = [['/work', 'See the missions'], ['/observatory', 'Read the field notes'], ['/process', 'How a mission flies'], ['/about', 'Meet the pilot']]
+            .filter(function(n){ return n[0] !== here; }).slice(0, 3);
+          var nx = document.createElement('nav'); nx.className = 'abx-next'; nx.setAttribute('aria-label', 'While you wait');
+          nx.innerHTML = '<span class="abx-next_l">While you wait</span><div class="abx-next_row">' +
+            NEXT.map(function(n){ return '<a href="' + n[0] + '">' + n[1] + ' <span aria-hidden="true">→</span></a>'; }).join('') + '</div>';
+          box.appendChild(nx);
+        }
         var items = $$(':scope > *', box).filter(function(n){ return n !== sig && n !== scan; });
         if (hasGsap && !reduce && items.length) gsap.fromTo(items, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .6, delay: .15, stagger: .08, ease: 'power3.out', clearProps: 'transform,opacity' });
         try { done.focus({ preventScroll: true }); } catch (e){}
-        // same height, so nothing moved; only bring the message into view if the visitor had scrolled past it
-        var r = box.getBoundingClientRect();
-        if (r.bottom < 80 || r.top > window.innerHeight - 80){
-          if (AB.lenis && AB.lenis.scrollTo) AB.lenis.scrollTo(done, { offset: -120 });
-          else done.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        // a tall form (Home planner 1084px) left a huge, mostly empty message box, and bringing its centered copy into view
+        // scrolled the page a long way. Now: copy at the top, glide up to it, then shrink the box to its own height.
+        var keep = done.style.minHeight; done.style.minHeight = '0px'; var nh = done.offsetHeight; done.style.minHeight = keep;
+        var shrink = h && h - nh > 40;
+        if (shrink) done.style.justifyContent = 'flex-start';
+        var top = done.getBoundingClientRect().top, far = top < 60 || top > innerHeight * .45;
+        if (far){
+          if (AB.lenis && AB.lenis.scrollTo) AB.lenis.scrollTo(done, { offset: -120, duration: reduce ? 0 : 1, immediate: reduce });
+          else done.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
         }
+        if (!shrink) return;
+        function settle(){ done.style.minHeight = ''; if (window.ScrollTrigger) ScrollTrigger.refresh(); }
+        if (hasGsap && !reduce) gsap.fromTo(done, { minHeight: h }, { minHeight: nh, duration: .7, ease: 'power3.inOut', delay: far ? .9 : .25, onComplete: settle });
+        else settle();
       }
       new MutationObserver(function(){
         var on = shown(done);
         if (on && !done.__abx){ done.__abx = true; reveal(); }
-        else if (!on && done.__abx){ done.__abx = false; done.classList.remove('abx-sent', 'is-in'); done.style.minHeight = ''; }
+        else if (!on && done.__abx){ done.__abx = false; done.classList.remove('abx-sent', 'is-in'); done.style.minHeight = ''; done.style.justifyContent = ''; if (hasGsap) gsap.killTweensOf(done); }
       }).observe(done, { attributes: true, attributeFilter: ['style'] });
 
       // failure: the form stays, the message slides in under it (only what's below moves, and only a line)
@@ -2323,7 +2428,9 @@ window.Webflow.push(function(){
       });
     }
     function go(){ scatter(); others(); }
-    if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 }); else setTimeout(go, 1200);
+    // never in the hero, so they wait until the page is interactive (perf pass 2026-10-04; was an idle callback, which the
+    // site's 2 s idle deadline pulled into the load)
+    AB.ambient(function(){ if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 }); else setTimeout(go, 200); });
   })();
 
 });
