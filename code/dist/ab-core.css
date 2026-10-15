@@ -1,4 +1,12 @@
-/*! AB Portfolio · ab-core.css v0.33.19 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core.css v0.33.36 · github.com/AngelinoBarajas/ab-portfolio */
+/* body font fallback sized to Geist (Arial measured against it: 102.47% wide), so text keeps its line breaks when Geist
+   swaps in and the heroes don't jump (About CLS 0.24 on desktop). Re-declares the Webflow variable: if the body font is
+   changed in the Designer, change it here too. Android (no Arial) falls through to plain sans-serif. */
+@font-face{font-family:"Geist Fallback";src:local("Arial"),local("ArialMT");size-adjust:102.47%;ascent-override:98.57%;descent-override:29.28%;line-gap-override:0%}
+/* mono: the Designer stack falls back to sans-serif, far narrower than JetBrains Mono, so the Services hub diagnostics
+   chips re-wrapped to a third row on swap (CLS 0.12). Courier New has the same 0.6em advance: only the vertical metrics move. */
+@font-face{font-family:"JetBrains Mono Fallback";src:local("Courier New"),local("CourierNewPSMT");ascent-override:102%;descent-override:30%;line-gap-override:0%}
+:root{--_typography---font--body:Geist,"Geist Fallback",sans-serif;--_typography---font--mono:"JetBrains Mono","JetBrains Mono Fallback",monospace;--mono:"JetBrains Mono","JetBrains Mono Fallback",monospace}
 /* click cursor: a spacesuit glove (hotspot on the fingertip); every clickable uses var(--hand) */
 :root{--hand:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 viewBox=%220 0 32 32%22%3E%3Cg stroke=%22%230B0C14%22 stroke-width=%221.3%22 stroke-linejoin=%22round%22%3E%3Crect x=%222.6%22 y=%2213.6%22 width=%225.8%22 height=%2210.5%22 rx=%222.9%22 transform=%22rotate%28-42 5.5 18.8%29%22 fill=%22%23E4E1D8%22/%3E%3Crect x=%229.5%22 y=%221.2%22 width=%226.4%22 height=%2217%22 rx=%223.2%22 fill=%22%23F7F5EF%22/%3E%3Crect x=%2215.6%22 y=%2210.2%22 width=%225.4%22 height=%229.5%22 rx=%222.7%22 fill=%22%23F7F5EF%22/%3E%3Crect x=%2220.6%22 y=%2211.4%22 width=%225.2%22 height=%228.8%22 rx=%222.6%22 fill=%22%23F7F5EF%22/%3E%3Crect x=%2225.2%22 y=%2213%22 width=%224.6%22 height=%227.8%22 rx=%222.3%22 fill=%22%23F7F5EF%22/%3E%3Cpath d=%22M8.4 16.5H29.6V21.5C29.6 25 27.2 27 24 27H14C10.6 27 8.4 24.6 8.4 21.5Z%22 fill=%22%23F7F5EF%22/%3E%3Crect x=%229.2%22 y=%2225.4%22 width=%2220.6%22 height=%225.6%22 rx=%221.4%22 fill=%22%23FF6A3D%22/%3E%3C/g%3E%3Cg stroke=%22%238A8FA3%22 stroke-width=%22.8%22 fill=%22none%22 stroke-linecap=%22round%22%3E%3Cpath d=%22M10.6 7.2H14.8M10.6 11.8H14.8M12 21.2H26%22/%3E%3C/g%3E%3Cpath d=%22M9.2 28.2H29.8%22 stroke=%22%230B0C14%22 stroke-width=%22.8%22/%3E%3C/svg%3E") 12 1,pointer}
 a[href],button:not(:disabled),[role="button"],summary,label[for],select,input[type="submit"],input[type="checkbox"],input[type="radio"]{cursor:var(--hand)}
@@ -45,6 +53,8 @@ html.ab-warp-in body::after{content:"";position:fixed;inset:0;z-index:70;pointer
 .ab_planet .tex{position:absolute;inset:0;border-radius:50%;overflow:hidden;opacity:0;transition:opacity .7s ease}
 .ab_planet .tex::before{content:"";position:absolute;top:0;left:0;width:400%;height:100%;background-image:var(--tex);background-size:50% 100%;background-repeat:repeat-x;will-change:transform;animation:ab-pspin var(--spin,40s) linear infinite;animation-direction:var(--dir,normal)}
 .ab_planet .tex.on{opacity:1}
+/* crystal: a glassy, sharper highlight and a cool rim on top of the shared shading */
+.ab_planet[data-planet="crystal"] .sphere::before{content:"";position:absolute;inset:0;border-radius:50%;z-index:1;pointer-events:none;background:radial-gradient(circle at 33% 27%,rgba(255,255,255,.55),rgba(255,255,255,.12) 7%,transparent 16%),radial-gradient(circle at 50% 50%,transparent 70%,rgba(190,220,255,.22) 93%,transparent 100%);mix-blend-mode:screen}
 .ab_planet .sphere::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.16),transparent 42%),radial-gradient(circle at 50% 50%,transparent 58%,rgba(0,0,0,.4) 100%);box-shadow:inset calc(var(--sz) * -.16) calc(var(--sz) * -.1) calc(var(--sz) * .26) rgba(0,0,0,.9),inset calc(var(--sz) * .05) calc(var(--sz) * .04) calc(var(--sz) * .12) rgba(255,240,225,.16)}
 @keyframes ab-pspin{from{transform:translate3d(-50%,0,0)}to{transform:translate3d(0,0,0)}}
 .ab_planet .pring{position:absolute;left:50%;top:50%;width:calc(var(--rs,2.3) * 100%);aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--tilt,-14deg));pointer-events:none}
@@ -80,9 +90,11 @@ html.ab-warp-in body::after{content:"";position:fixed;inset:0;z-index:70;pointer
 }
 .is-wormhole .pbody{overflow:visible}
 .wh-halo{position:absolute;inset:-22%;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(150,200,255,.2),rgba(150,200,255,.07) 58%,transparent 74%);transition:transform .8s cubic-bezier(.2,.9,.2,1),opacity .8s}
-.wh-ball{position:absolute;inset:0;border-radius:50%;overflow:hidden;isolation:isolate;animation:wh-drop 9s ease-in-out infinite;
+/* iOS Safari: a spinning layer inside a rounded overflow:hidden box escapes the clip (the far side showed as a square);
+   an opaque mask makes WebKit clip the composited children to the (animated) border-radius */
+.wh-ball{position:absolute;inset:0;border-radius:50%;overflow:hidden;isolation:isolate;animation:wh-drop 9s ease-in-out infinite;-webkit-mask-image:-webkit-radial-gradient(#fff,#000);-webkit-transform:translateZ(0);
   box-shadow:0 0 calc(var(--sz,200px) * .22) rgba(140,190,255,.22),0 0 calc(var(--sz,200px) * .05) rgba(220,240,255,.3)}
-.wh-far{position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity 1s ease}
+.wh-far{position:absolute;inset:0;border-radius:inherit;overflow:hidden;opacity:0;transition:opacity 1s ease}
 .pbody.on .wh-far{opacity:1}
 .wh-far i{position:absolute;inset:-6%;border-radius:0;background-position:center;background-size:cover}
 .wh-far .is-a{animation:wh-turn 110s linear infinite}
@@ -307,10 +319,12 @@ input.button.is-primary:hover{background-color:var(--_color---text--primary)}
   .ab_board_component.is-deck{height:auto;overflow:visible;background:none;border:0}
   .is-deck .ab_board_top,.is-deck .ab_board_layers,.is-deck .ab_board_ui,.is-deck .ab_board_cursor{display:none}
   .is-deck .ab_board_viewport{position:static;cursor:auto;touch-action:auto}
-  .is-deck .ab_board_world{position:relative!important;transform:none!important;width:auto!important;height:auto!important;display:flex;gap:14px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding:34px var(--_spacing---layout--gutter) 30px;margin-inline:calc(var(--_spacing---layout--gutter) * -1);scrollbar-width:none;perspective:900px}
+  .is-deck .ab_board_world{position:relative!important;transform:none!important;width:auto!important;height:auto!important;display:flex;gap:14px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:34px var(--_spacing---layout--gutter) 30px;margin-inline:calc(var(--_spacing---layout--gutter) * -1);scrollbar-width:none}
   .is-deck .ab_board_world::-webkit-scrollbar{display:none}
   .is-deck .ab_board_world .w-dyn-list,.is-deck .ab_board_world .w-dyn-items,.is-deck .ab_board_world .w-dyn-item{display:contents}
-  .is-deck .ab_board_frame{touch-action:pan-x pan-y;position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;flex:0 0 84%;aspect-ratio:4/5;scroll-snap-align:center;transform-origin:center;will-change:transform}
+  .is-deck .ab_board_frame{touch-action:auto;position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;flex:0 0 84%;aspect-ratio:4/5;scroll-snap-align:center}
+  /* iOS Safari: restyling a snap target mid-swipe re-snaps it (the deck jumped back), so the tilt is on .ab_board_frame-inner (home/10-work.js) */
+  .is-deck .ab_board_frame-inner{transform-origin:center;will-change:transform}
   .is-deck .ab_board_fname{display:none}
   .is-deck .ab_board_frame canvas.pv{left:50%;right:auto;top:18%;transform:translateX(-50%)}
   .is-deck .ab_board_fopen{opacity:.85}
@@ -394,6 +408,52 @@ input.button.is-primary:hover{background-color:var(--_color---text--primary)}
 .v-term .ln{white-space:nowrap;overflow:hidden;text-overflow:clip}
 .v-term .k{color:#8fb1ff}.v-term .a{color:#c4b5ff}.v-term .s{color:#FFD166}.v-term .c{color:var(--_color---text--tertiary)}
 .v-term .cur{display:inline-block;width:8px;height:14px;background:var(--_color---brand--signal);vertical-align:-2px;animation:ab-blink 1s steps(1) infinite}
+/* side quest #20 (home/20-services.js › terminal): the white rabbit in the deploy card + the Matrix overlay */
+.v-term{position:relative}
+.v-term .ln.is-mx{color:#00FF41;text-shadow:0 0 8px rgba(0,255,65,.55)}
+.v-term .is-mx .v-mx{cursor:var(--hand,pointer)}
+.v-term .is-mx .cur{background:#00FF41;margin-left:2px}
+.v-bun{position:absolute;left:0;bottom:12px;z-index:2;width:48px;height:32px;padding:0;margin:0;border:0;background:none;cursor:var(--hand,pointer);filter:drop-shadow(0 0 6px rgba(242,240,234,.35))}
+.v-bun::before{content:'';position:absolute;inset:-12px -8px}.v-bun.is-sat{left:auto;right:16px}
+.v-bun svg{display:block;width:100%;height:100%;overflow:visible}
+.v-bun .f2,.v-bun.is-air .f1{display:none}.v-bun.is-air .f2{display:block}
+.v-bun:hover .f1,.v-bun:focus-visible .f1{animation:v-bun-sniff .5s steps(2) infinite}
+.v-bun:focus-visible{outline:1px dashed #00FF41;outline-offset:3px}
+@keyframes v-bun-sniff{50%{transform:translateY(-1px)}}
+@media (max-width:767px){.v-bun{bottom:10px;width:36px;height:24px}}
+.ab_mx{position:fixed;inset:0;z-index:9000;background:#000;opacity:0;color:#00FF41;font-family:var(--_typography---font--mono);display:grid;place-items:center;overflow:hidden;outline:0}
+.ab-mx-on .ab_toast{z-index:9001}
+.ab_mx_rain{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
+.ab_mx_lids{position:absolute;inset:0;pointer-events:none;display:none}
+.ab_mx.is-wake{background:transparent}.ab_mx.is-wake .ab_mx_lids{display:block}
+.ab_mx_lids i,.ab_mx_lids b{position:absolute;inset:0}
+.ab_mx_lids i{--eh:0.01%;background:#000;-webkit-mask-image:radial-gradient(92% var(--eh) at 50% 50%,transparent 74%,#000 100%);mask-image:radial-gradient(92% var(--eh) at 50% 50%,transparent 74%,#000 100%)}
+.ab_mx_lids .is-b1{-webkit-backdrop-filter:blur(18px) brightness(.85);backdrop-filter:blur(18px) brightness(.85)}
+.ab_mx_lids .is-b2{-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);opacity:0}
+.ab_mx_stage{position:relative;width:min(100% - 32px,720px);text-align:center}
+.ab_mx_stage[hidden],.ab_mx_deep[hidden]{display:none}
+.ab_mx_say p{margin:0 0 1.2em;min-height:3.2em;font-size:clamp(14px,1.5vw,18px);line-height:1.65;text-shadow:0 0 10px rgba(0,255,65,.5);transition:opacity .3s}
+.ab_mx_say p.is-dim{opacity:.3}
+.ab_mx_pills{display:flex;justify-content:center;gap:clamp(40px,10vw,120px);margin-top:28px}
+.ab_mx_pill{display:flex;flex-direction:column;align-items:center;gap:16px;padding:12px;margin:0;border:0;background:none;color:#00FF41;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:var(--hand,pointer)}
+.ab_mx_pill svg{width:96px;height:42px;transform:rotate(-24deg);transition:transform .3s steps(3)}
+.ab_mx_pill:hover svg,.ab_mx_pill:focus-visible svg{transform:rotate(-24deg) scale(1.18)}
+.ab_mx_pill.is-blue svg{filter:drop-shadow(0 0 14px rgba(60,120,255,.65))}
+.ab_mx_pill.is-red svg{filter:drop-shadow(0 0 14px rgba(255,40,60,.65))}
+.ab_mx_pill:focus-visible{outline:1px dashed #00FF41;outline-offset:4px}
+.ab_mx:not(.is-choose) .ab_mx_pills{visibility:hidden}
+.ab_mx_deep{position:relative;width:min(100% - 32px,680px);max-height:calc(100% - 96px);overflow:auto;padding:28px 32px;background:rgba(0,0,0,.84);box-shadow:0 0 0 1px rgba(0,255,65,.18),0 0 60px 30px rgba(0,0,0,.8);text-shadow:0 0 8px rgba(0,255,65,.45);font-size:13px;line-height:1.55}
+.ab_mx_deep_h{margin:0 0 .3em;font-size:clamp(18px,2.4vw,26px);letter-spacing:.02em;color:#D8FFE0}
+.ab_mx_deep_n{margin:0 0 1.4em;opacity:.7}
+.ab_mx_deep ol{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.ab_mx_deep li{display:flex;gap:10px;opacity:.55}.ab_mx_deep li.is-got{opacity:1}
+.ab_mx_deep li i{font-style:normal;flex:none}
+.ab_mx_out,.ab_mx_x{margin:0;border:1px solid rgba(0,255,65,.5);background:#000;color:#00FF41;font:inherit;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:9px 14px;cursor:var(--hand,pointer)}
+.ab_mx_out{margin-top:24px}
+.ab_mx_x{position:absolute;top:16px;right:16px;border-color:rgba(0,255,65,.25);opacity:.75}
+.ab_mx_out:hover,.ab_mx_x:hover,.ab_mx_out:focus-visible,.ab_mx_x:focus-visible{background:#00FF41;color:#000;outline:0}
+.ab_mx.is-wake .ab_mx_x{display:none}
+@media (max-width:479px){.ab_mx_pill svg{width:76px;height:33px}.ab_mx_deep{font-size:12px;padding:20px 16px}}
 .v-pipe{position:relative;height:100%;min-height:140px;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
 .v-pipe .node{position:relative;z-index:2;font-family:var(--_typography---font--mono);font-size:11px;padding:7px 9px;border:1px solid var(--_color---neutral--hair-strong);background:var(--_color---neutral--deep);white-space:nowrap}
 .v-pipe .node.src{display:flex;flex-direction:column;gap:6px;border:0;background:none;padding:0}
@@ -662,6 +722,9 @@ input.button.is-primary:hover{background-color:var(--_color---text--primary)}
 .ab_eng-ico{width:10px;height:10px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
 .ab_nav_eng-sep{opacity:.6}
 @media (pointer:coarse){.ab_footer_grid-toggle.is-calm{display:inline}}
+@media (pointer:coarse),(max-width:991px){#gridToggle.ab_footer_grid-toggle{display:inline}}
+.ab_menu_grid{margin-top:-6px}.ab_menu_grid.is-on{border-color:var(--_color---brand--signal)}.ab_menu_grid.is-on b,.ab_menu_grid.is-on span{color:var(--_color---brand--signal)}
+.ab_menu_grid .ab_eng-ico{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
 .ab_menu_engines{cursor:var(--hand,pointer);background:none;margin:18px 0 16px;font:inherit;font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
 .ab_menu_engines .ab_eng-ico{width:14px;height:14px}
 /* "Engines on" stays quiet (the orange belongs to Book a call), but its power icon is lit so it reads as a control;

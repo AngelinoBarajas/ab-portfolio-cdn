@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.33.20 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.36 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -186,10 +186,24 @@ window.Webflow.push(function(){
           c = ramp(cols.slice(0, 3), .15 + n2 * .55 + (v - .5) * .25);
           c = mix(c, cols[0], .18 * Math.sin(v * Math.PI * 5 + sw * 2) + .18);
           if (lat > .7) c = mix(c, [255, 255, 255], Math.min(.55, (lat - .7) * 1.8));
-        } else if (type === 'lava'){
-          var r = 1 - Math.abs(fbm(u * 1.5, v * 2.8, 12, seed, 5) * 2 - 1);
-          c = ramp(cols.slice(0, 2), fbm(u, v * 2, P, seed + 5, 3));
-          if (r > .86){ var g = Math.min(1, (r - .86) * 8); c = mix(c, ramp(cols.slice(2), g), g); }
+        } else if (type === 'lava'){ // cooled crust plates (domain-warped Voronoi, 10 x 5) split by molten cracks: a hot core
+          // fading to orange, heat bleeding onto the rock beside it, and a few plates still fully molten
+          var LX = 9, LY = 4.5, wq0 = fbm(u * .9, v * 2, P, seed + 13, 4) - .5, wq1 = fbm(u * .9 + 4.1, v * 2, P, seed + 14, 4) - .5;
+          var lgx = x / W * LX + wq0 * 1.5, lgy = v * LY + wq1 * 1.5, lix = Math.floor(lgx), liy = Math.floor(lgy), e1 = 9, e2 = 9, t1x = 0, t1y = 0, t2x = 0, t2y = 0, lw1 = 0, ly1 = 0, la, lb;
+          for (la = -1; la <= 1; la++) for (lb = -1; lb <= 1; lb++){
+            var lcx = lix + la, lcy = liy + lb, lwx = ((lcx % LX) + LX) % LX, qx = lcx + hash(lwx, lcy, seed), qy = lcy + hash(lwx, lcy, seed + 3);
+            var fx = lgx - qx, fy = lgy - qy, fq = fx * fx + fy * fy;
+            if (fq < e1){ e2 = e1; t2x = t1x; t2y = t1y; e1 = fq; t1x = qx; t1y = qy; lw1 = lwx; ly1 = lcy; } else if (fq < e2){ e2 = fq; t2x = qx; t2y = qy; }
+          }
+          var lsep = Math.sqrt((t2x - t1x) * (t2x - t1x) + (t2y - t1y) * (t2y - t1y)) || 1, lpx = LX / W;
+          var jag = fbm(u * 6, v * 12, P * 6, seed + 17, 3), le = (e2 - e1) / (2 * lsep) + (jag - .5) * .05;
+          var rough = fbm(u * 3, v * 6, P * 3, seed, 5), molten = hash(lw1, ly1, seed + 5) < .07;
+          c = ramp(cols.slice(0, 2), Math.min(1, Math.max(0, rough * 1.4 - .15 + (hash(lw1, ly1, seed + 6) - .5) * .3)));
+          // crack width swells and pinches along its length; the core is white-hot, the halo a dim orange that dies out fast
+          var cw = Math.max(.002, .006 + (fbm(u * 2.5, v * 5, P * 2, seed + 15, 2) - .45) * .05), core = 1 - Math.min(1, Math.max(0, le - cw) / (lpx * 1.3)), halo = Math.exp(-Math.max(0, le) / .045) * .55;
+          var heat = Math.max(core, halo * (.6 + rough * .6));
+          if (molten){ var sw3 = fbm(u * 3 + rough * 1.5, v * 6, P * 3, seed + 16, 4); heat = Math.max(heat, .3 + sw3 * .55); }
+          if (heat > .02){ heat = Math.min(1, heat); c = mix(c, ramp(cols.slice(2), heat), Math.min(1, heat * 1.3)); if (heat > .9) c = mix(c, [255, 248, 228], (heat - .9) * 6); }
         } else if (type === 'storm'){ // banded giant with three swirling storms (the swirl rotates the sample point)
           var su = x / W, sv = v, k2;
           for (k2 = 0; k2 < 3; k2++){
@@ -212,16 +226,23 @@ window.Webflow.push(function(){
         } else if (type === 'toxic'){ // domain-warped marbling, like a poisoned atmosphere
           var q1 = fbm(u, v * 2, P, seed, 3), q2 = fbm(u + 1.7, v * 2 + 3.1, P, seed + 1, 3);
           c = ramp(cols, Math.max(0, Math.min(1, (fbm(u + q1 * 3, v * 2 + q2 * 3, P, seed + 2, 4) - .3) * 2.2)));
-        } else if (type === 'crystal'){ // faceted cells with lit edges (wrapped Voronoi, 12 x 6 cells)
-          var gx = x / W * 12, gy = v * 6, ix = Math.floor(gx), iy = Math.floor(gy), d1 = 9, d2 = 9, cid = 0, a2, b2;
+        } else if (type === 'crystal'){ // cut-gem facets (wrapped Voronoi, 14 x 7 cells): each facet is a tilted plane that
+          // catches the light along its own direction, edges are smoothed glints over a dark groove (exact bisector distance)
+          var NX = 14, NY = 7, gx = x / W * NX, gy = v * NY, ix = Math.floor(gx), iy = Math.floor(gy), d1 = 9, d2 = 9, s1x = 0, s1y = 0, s2x = 0, s2y = 0, w1 = 0, y1 = 0, a2, b2;
           for (a2 = -1; a2 <= 1; a2++) for (b2 = -1; b2 <= 1; b2++){
-            var cxi = ix + a2, cyi = iy + b2, wx = ((cxi % 12) + 12) % 12;
-            var ex = gx - (cxi + hash(wx, cyi, seed)), ey = gy - (cyi + hash(wx, cyi, seed + 3)), dq = ex * ex + ey * ey;
-            if (dq < d1){ d2 = d1; d1 = dq; cid = hash(wx, cyi, seed + 5); } else if (dq < d2) d2 = dq;
+            var cxi = ix + a2, cyi = iy + b2, wx = ((cxi % NX) + NX) % NX, px0 = cxi + hash(wx, cyi, seed), py0 = cyi + hash(wx, cyi, seed + 3);
+            var ex = gx - px0, ey = gy - py0, dq = ex * ex + ey * ey;
+            if (dq < d1){ d2 = d1; s2x = s1x; s2y = s1y; d1 = dq; s1x = px0; s1y = py0; w1 = wx; y1 = cyi; } else if (dq < d2){ d2 = dq; s2x = px0; s2y = py0; }
           }
-          var eg = Math.sqrt(d2) - Math.sqrt(d1);
-          c = ramp(cols.slice(0, Math.max(2, cols.length - 1)), cid); c = mix(c, [0, 0, 0], .18 * (1 - Math.min(1, eg * 3)));
-          if (eg < .06) c = mix(c, cols[cols.length - 1], 1 - eg / .06);
+          var sep = Math.sqrt((s2x - s1x) * (s2x - s1x) + (s2y - s1y) * (s2y - s1y)) || 1, eg = (d2 - d1) / (2 * sep), pxu = NX / W;
+          var fa = hash(w1, y1, seed + 7) * 6.2832, fd = (gx - s1x) * Math.cos(fa) + (gy - s1y) * Math.sin(fa);
+          var shade = .72 + (hash(w1, y1, seed + 9) - .5) * .5 + fd * .5;
+          c = ramp(cols.slice(0, Math.max(2, cols.length - 1)), hash(w1, y1, seed + 5));
+          c = shade > 1 ? mix(c, cols[cols.length - 1], Math.min(.55, (shade - 1) * .9)) : mix([0, 0, 0], c, Math.max(.25, shade));
+          var lw = .022, groove = 1 - Math.min(1, Math.max(0, (eg - lw) / (lw * 3.5)));
+          c = mix(c, [0, 0, 0], .32 * groove);
+          var line = 1 - Math.min(1, Math.max(0, (eg - lw) / (pxu * 1.6)));
+          if (line > 0) c = mix(c, cols[cols.length - 1], .9 * line * (.65 + .35 * hash(w1, y1, seed + 11)));
         } else { // terra
           var land = fbm(u * 1.25, v * 2.4, 10, seed, 5), cloud = fbm(u * 2, v * 5, P * 2, seed + 7, 4);
           c = land > .52 ? mix(cols[2], cols[3], Math.min(1, (land - .52) * 4)) : mix(cols[0], cols[1], land * 1.6);
@@ -232,6 +253,19 @@ window.Webflow.push(function(){
       }
     }
     ctx.putImageData(img, 0, 0);
+    if (type === 'crystal'){ // glints: a few soft star points on facet corners, wrapped in x
+      ctx.globalCompositeOperation = 'lighter';
+      var gc = cols[cols.length - 1].map(Math.round).join(',');
+      for (var gi = 0; gi < 14; gi++){
+        var gxp = hash(gi, 21, seed) * W, gyp = (hash(gi, 22, seed) * .7 + .15) * H, gr = W * (.006 + hash(gi, 23, seed) * .01);
+        [gxp, gxp - W, gxp + W].forEach(function(xx){
+          var rg = ctx.createRadialGradient(xx, gyp, 0, xx, gyp, gr * 3); rg.addColorStop(0, 'rgba(' + gc + ',.85)'); rg.addColorStop(.25, 'rgba(' + gc + ',.25)'); rg.addColorStop(1, 'rgba(' + gc + ',0)');
+          ctx.fillStyle = rg; ctx.fillRect(xx - gr * 3, gyp - gr * 3, gr * 6, gr * 6);
+          ctx.fillStyle = 'rgba(' + gc + ',.5)'; ctx.fillRect(xx - gr * 2.4, gyp - .5, gr * 4.8, 1); ctx.fillRect(xx - .5, gyp - gr * 2.4, 1, gr * 4.8);
+        });
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
     if (type === 'rocky'){ // craters, wrapped in x
       for (var i = 0; i < 26; i++){
         var cx = hash(i, 1, seed) * W, cy = (hash(i, 2, seed) * .8 + .1) * H, cr = 2 + hash(i, 3, seed) * W * .035;
@@ -467,7 +501,7 @@ window.Webflow.push(function(){
       if (ds.label && el.hasAttribute('data-drag')){ el.setAttribute('role', 'img'); el.setAttribute('aria-label', 'Draggable planet: ' + ds.label); el.tabIndex = 0; }
       else el.setAttribute('aria-hidden', 'true');
     }
-    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; tex.style.setProperty('--tex', 'url(' + makeTexture(type, cols, seed, W) + ')'); requestAnimationFrame(function(){ tex.classList.add('on'); }); };
+    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; if (type === 'crystal' || type === 'lava') W = sz > 110 ? 1024 : sz > 50 ? 512 : 256; /* sharp edges need ~2 texels per screen pixel */ tex.style.setProperty('--tex', 'url(' + makeTexture(type, cols, seed, W) + ')'); requestAnimationFrame(function(){ tex.classList.add('on'); }); };
     if ('requestIdleCallback' in window) requestIdleCallback(paint, { timeout: 800 }); else setTimeout(paint, 30);
   }
   var planets = $$('.ab_planet[data-planet]');
@@ -574,7 +608,7 @@ window.Webflow.push(function(){
       // wormholes on screen: point-lens each star (r' = (r + sqrt(r^2 + 4 th^2)) / 2) with a smooth falloff; hover swells th and makes it ring
       LENSES.forEach(function(o){
         o.b += (o.to - o.b) * (dt ? Math.min(1, dt * 4) : 1);
-        var r = o.el.getBoundingClientRect(); if (!r.width || r.bottom < -200 || r.top > h + 200) return;
+        var r = o.r || o.el.getBoundingClientRect(); if (!r.width || r.bottom < -200 || r.top > h + 200) return;
         var R = r.width / 2, th = R * (1.06 + o.b * .34 + (o.b > .05 ? Math.sin(time * .0021) * .1 * Math.min(1, o.b) : 0));
         LS.push({ x: r.left + R, y: r.top + R, t: th, a: th * 3, z: th * 7 });
       });
@@ -607,6 +641,17 @@ window.Webflow.push(function(){
     }
     function loop(t){ var dt = last ? Math.min(.05, (t - last) / 1000) : 0; last = t; if (running) draw(t, dt); requestAnimationFrame(loop); }
     resize(); addEventListener('resize', resize);
+    // lens positions: reading them in draw() forced a full layout every frame (~400 ms of Home's load in Lighthouse), and
+    // reading them at the front of GSAP's tick still did (other code dirties layout between frames). So only measure a
+    // lens while it's near the screen (an IntersectionObserver says when, for free); off screen it reads as width 0,
+    // which draw() already skips. On load the wormhole is far down Home, so nothing is measured at all.
+    if (hasGsap){
+      var OFF = { width: 0 }, lensIO = window.IntersectionObserver ? new IntersectionObserver(function(es){ es.forEach(function(e){ e.target.__lensOn = e.isIntersecting; }); }, { rootMargin: '200px' }) : null;
+      gsap.ticker.add(function(){
+        if (!running) return;
+        LENSES.forEach(function(o){ if (lensIO && !o.io){ o.io = 1; lensIO.observe(o.el); } o.r = !lensIO || o.el.__lensOn ? o.el.getBoundingClientRect() : OFF; });
+      }, false, true);
+    }
     if (!reduce) requestAnimationFrame(loop);
     addEventListener('pointermove', function(e){ tmx = e.clientX / w - .5; tmy = e.clientY / h - .5; });
     document.addEventListener('visibilitychange', function(){ running = !document.hidden; last = 0; });
@@ -724,9 +769,13 @@ window.Webflow.push(function(){
     var cs = getComputedStyle(inner), n = $$('i', inner).filter(function(i){ return getComputedStyle(i).display !== 'none'; }).length;
     return ' · ' + n + ' columns · ' + Math.round(parseFloat(cs.columnGap)) + 'px gap · ' + Math.round(parseFloat(getComputedStyle(lgrid).paddingLeft)) + 'px margins · ' + Math.round(parseFloat(cs.maxWidth)) + 'px max';
   }
-  function toggleGrid(){ var on = !lgrid.classList.contains('on'); lgrid.classList.toggle('on', on); if (gbtn) gbtn.setAttribute('aria-pressed', on); toast(on ? 'Layout grid on' + gridInfo() : 'Layout grid off'); }
+  function toggleGrid(){ var on = !lgrid.classList.contains('on'); lgrid.classList.toggle('on', on); if (gbtn) gbtn.setAttribute('aria-pressed', on);
+    $$('.ab_menu_grid').forEach(function(b){ b.setAttribute('aria-pressed', on); b.classList.toggle('is-on', on); var s = $('span', b); if (s) s.textContent = on ? 'On' : 'Off'; });
+    toast(on ? 'Layout grid on' + gridInfo() : 'Layout grid off'); }
   if (gbtn){
     if (!gbtn.hasAttribute('tabindex')) gbtn.tabIndex = 0;
+    // touch screens: the footer button shows there too (ab-core.css), without the keyboard shortcut in its label
+    if (coarse) (function strip(n){ if (n.nodeType === 3) n.nodeValue = n.nodeValue.replace(/\s*·\s*Shift\s*\+\s*G/i, ''); else Array.prototype.forEach.call(n.childNodes, strip); })(gbtn);
     gbtn.setAttribute('aria-pressed', 'false');
     gbtn.addEventListener('click', toggleGrid);
     gbtn.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleGrid(); } });
@@ -738,6 +787,17 @@ window.Webflow.push(function(){
      localStorage ab:calm and applied on reload (00-base reads it into AB.reduce, abwarpin sets html.ab-calm before
      first paint), so every animation takes the same path as the system setting. A device that already asks for
      less motion shows "Engines off (device)", locked. */
+  // top-level sections (a pinned one is measured by its pin-spacer) and where the visitor is: the section under a line
+  // 30% down the screen and how far into it
+  function calmSecs(){
+    return $$('[class^="section_"], [class*=" section_"]').filter(function(s){ return !(s.parentElement && s.parentElement.closest('[class^="section_"], [class*=" section_"]')); })
+      .map(function(s){ return s.parentNode.classList && s.parentNode.classList.contains('pin-spacer') ? s.parentNode : s; });
+  }
+  function calmSpot(){
+    var y = innerHeight * .3, secs = calmSecs();
+    for (var i = 0; i < secs.length; i++){ var r = secs[i].getBoundingClientRect(); if (r.top <= y && r.bottom > y) return { p: location.pathname, i: i, f: (y - r.top) / r.height }; }
+    return { p: location.pathname, i: -1, y: scrollY };
+  }
   (function(){
     var off = reduce, dev = AB.sysReduce;
     var state = 'Engines ' + (off ? 'off' : 'on'), hint = dev ? 'your device asks for reduced motion' : 'press to turn the site’s motion ' + (off ? 'back on' : 'off');
@@ -746,6 +806,10 @@ window.Webflow.push(function(){
       try { if (AB.calm) localStorage.removeItem('ab:calm'); else localStorage.setItem('ab:calm', '1'); }
       catch (er){ toast('The engine switch needs site storage, which this browser is blocking.'); return; }
       toast(AB.calm ? 'Engines on · motion back online' : 'Engines off · everything holds still');
+      // the two modes lay the page out differently (pins, reveals), so the browser's own scroll restore landed somewhere
+      // else, and on iPhones mid-pin, a black screen. Remember the section instead; 30-motion puts the visitor back in it.
+      try { sessionStorage.setItem('ab:calm-at', JSON.stringify(calmSpot())); } catch (er){}
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
       setTimeout(function(){ location.reload(); }, 450);
     }
     // every switch is a real <button>: its name starts with the visible text (label-in-name), aria-pressed = motion off
@@ -771,6 +835,14 @@ window.Webflow.push(function(){
     if (bar){ var fb = make('ab_footer_grid-toggle is-calm', state + (dev ? ' (device)' : '')); fb.id = 'calmToggle'; if (gbtn && gbtn.parentNode === bar) bar.insertBefore(fb, gbtn); else bar.appendChild(fb); }
     var mfoot = $('#mmenu .ab_menu_foot');
     if (mfoot) mfoot.parentNode.insertBefore(make('ab_menu_hq ab_menu_engines', ico + '<b>' + state + '</b><span>' + (off ? 'Motion held' : 'Tap to still') + '</span>'), mfoot);
+    // the layout grid gets the same kind of switch in the mobile menu; turning it on closes the menu so the grid is visible
+    if (mfoot){
+      var gm = document.createElement('button'); gm.type = 'button'; gm.className = 'ab_menu_hq ab_menu_engines ab_menu_grid'; gm.setAttribute('aria-pressed', 'false');
+      gm.setAttribute('aria-label', 'Layout grid: show the columns the site is built on');
+      gm.innerHTML = '<svg class="ab_eng-ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1.5v9M6 1.5v9M10 1.5v9"/></svg><b>Layout grid</b><span>Off</span>';
+      gm.addEventListener('click', function(){ toggleGrid(); var mb = $('#menuBtn'); if (lgrid.classList.contains('on') && mb && document.documentElement.classList.contains('menu-open')) setTimeout(function(){ mb.click(); }, 250); });
+      mfoot.parentNode.insertBefore(gm, mfoot);
+    }
     document.addEventListener('keydown', function(e){ if (e.shiftKey && (e.key === 'M' || e.key === 'm') && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.activeElement.isContentEditable){ e.preventDefault(); flip(); } });
   })();
 
@@ -1087,7 +1159,8 @@ window.Webflow.push(function(){
     ['channels', 'Watch every channel', 'Mission monitors carry more than one channel.'],
     ['diagnostics', 'Run diagnostics', 'Launch control can tell you what\'s wrong.'],
     ['touchdown', 'Land a mission', 'Follow a flight plan all the way to the end.'],
-    ['aside', 'Read the fine print', 'Some things on this site whisper when you hover (or tap) them.']
+    ['aside', 'Read the fine print', 'Some things on this site whisper when you hover (or tap) them.'],
+    ['rabbit', 'Follow the white rabbit', 'Watch a deploy on the homepage all the way to the end. Then follow what shows up.']
   ];
   var QKEY = 'ab:quests', qFound = {};
   try { qFound = JSON.parse(localStorage.getItem(QKEY) || '{}') || {}; } catch (e){ qFound = {}; }
@@ -1150,6 +1223,29 @@ window.Webflow.push(function(){
     ['wheel', 'touchmove', 'keydown'].forEach(function(ev){ addEventListener(ev, mark, { passive: true, once: true }); });
     function aim(){ if (!touched){ if (window.ScrollTrigger) ScrollTrigger.refresh(); scrollToTarget(t); } if (AB.arrived) AB.arrived(); } // AB.arrived: lift the warp-in cover (10-space)
     function start(){ setTimeout(aim, 150); setTimeout(aim, 900); setTimeout(aim, 2000); }
+    if (document.readyState === 'complete') start(); else addEventListener('load', start);
+  })();
+  // after the Engines switch reloads the page (20-ui flip): start at the top, then once pins and late layout have
+  // settled put the visitor back in the same section, the same distance in, unless they've started scrolling
+  (function(){
+    var at = null; try { at = JSON.parse(sessionStorage.getItem('ab:calm-at') || 'null'); sessionStorage.removeItem('ab:calm-at'); } catch (e){}
+    if (!at || at.p !== location.pathname) return;
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    window.scrollTo(0, 0);
+    var touched = false, mark = function(){ touched = true; };
+    ['wheel', 'touchmove', 'keydown'].forEach(function(ev){ addEventListener(ev, mark, { passive: true, once: true }); });
+    function place(last){
+      if (!touched){
+        if (window.ScrollTrigger) ScrollTrigger.refresh();
+        var box = at.i >= 0 && calmSecs()[at.i], y = at.y || 0;
+        if (box){ var r = box.getBoundingClientRect(); y = scrollY + r.top + at.f * r.height - innerHeight * .3; }
+        y = Math.max(0, Math.round(y));
+        if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y);
+        if (window.ScrollTrigger) ScrollTrigger.update();
+      }
+      if (last && 'scrollRestoration' in history) history.scrollRestoration = 'auto';
+    }
+    function start(){ setTimeout(place, 150); setTimeout(function(){ place(true); }, 900); }
     if (document.readyState === 'complete') start(); else addEventListener('load', start);
   })();
   // same-page anchors (#work, /#launch on Home): warp, then jump. stopPropagation keeps Webflow's own smooth scroll out of it
