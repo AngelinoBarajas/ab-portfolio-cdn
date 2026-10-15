@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -536,6 +536,7 @@ window.Webflow.push(function(){
     tipEl.style.top = Math.round(Math.max(8, y)) + 'px';
   }
   function tipShow(el, title, text, aside){
+    if (aside && AB.quest) AB.quest('aside');
     clearTimeout(tipT);
     tipEl.innerHTML = '<b>' + (aside ? '<i aria-hidden="true">✦</i> ' : '') + esc(title) + '</b>' + esc(text);
     tipEl.classList.toggle('is-aside', !!aside);
@@ -640,11 +641,108 @@ window.Webflow.push(function(){
   };
   // after page scripts have written their copy (Mission [[terms]], Process legs…)
   setTimeout(function(){ tipLink(); }, 900);
+  // twinkles: a hint there's something to hover / tap. An aside in the page twinkles as it scrolls into view, then one
+  // on screen sparkles every 3-6s. The nav's asides (logo, clock) only get an occasional one, while the nav shows.
+  // Skipped for reduced motion, in hidden tabs, while a tip or the menu is open
+  if (!reduce) (function(){
+    var navEl = document.getElementById('nav'), seen = [];
+    function inNav(el){ return navEl && navEl.contains(el); }
+    function navShown(){ return navEl && !navEl.classList.contains('is-hidden'); }
+    function onScreen(el){ var r = el.getBoundingClientRect(); return r.width > 4 && r.height > 4 && r.bottom > 80 && r.top < innerHeight - 30 && r.right > 0 && r.left < innerWidth ? r : null; }
+    function targets(){
+      var content = [], nav = [];
+      ASIDES.forEach(function(a){ var els; try { els = document.querySelectorAll(a.t); } catch (e){ return; }
+        for (var i = 0; i < els.length; i++){ var el = els[i], nv = inNav(el), r = nv ? (navShown() && el.getBoundingClientRect()) : onScreen(el);
+          if (r && r.width > 4) (nv ? nav : content).push({ el: el, r: r }); } });
+      return { content: content, nav: nav };
+    }
+    function blocked(){ return document.hidden || tipCur || document.documentElement.classList.contains('menu-open'); }
+    function one(x, y, size, delay){
+      var s = document.createElement('span'); s.className = 'ab-twinkle'; s.setAttribute('aria-hidden', 'true'); s.textContent = '✦';
+      s.style.left = Math.round(Math.max(10, Math.min(innerWidth - 24, x))) + 'px'; s.style.top = Math.round(Math.max(10, Math.min(innerHeight - 24, y))) + 'px';
+      s.style.fontSize = size + 'px'; s.style.animationDelay = delay + 's';
+      document.body.appendChild(s); setTimeout(function(){ s.remove(); }, 1900 + delay * 1000);
+    }
+    function burst(r){
+      var cx = Math.random() < .5 ? r.left : r.right, cy = Math.random() < .5 ? r.top : r.bottom;
+      // corner of a tall/wide thing: pull it a little inside so it reads as belonging to it
+      cx += (cx === r.left ? 1 : -1) * Math.min(14, r.width * .2); cy += (cy === r.top ? 1 : -1) * Math.min(12, r.height * .2);
+      one(cx, cy, 22, 0);
+      one(cx + (Math.random() < .5 ? -1 : 1) * (14 + Math.random() * 10), cy + (Math.random() < .5 ? -1 : 1) * (10 + Math.random() * 8), 11, .18);
+      one(cx + (Math.random() < .5 ? -1 : 1) * (8 + Math.random() * 14), cy + (Math.random() < .5 ? -1 : 1) * (14 + Math.random() * 8), 9, .34);
+    }
+    function tick(){
+      var t = targets(), pick = null;
+      if (!blocked()){
+        if (t.content.length) pick = t.content[Math.floor(Math.random() * t.content.length)];
+        else if (t.nav.length && Math.random() < .3) pick = t.nav[Math.floor(Math.random() * t.nav.length)];
+        if (pick) burst(pick.r);
+      }
+      setTimeout(tick, (t.content.length ? 3000 : 6000) + Math.random() * 3000);
+    }
+    setTimeout(tick, 2500);
+    // an aside in the page twinkles right away the first time it scrolls into view
+    if ('IntersectionObserver' in window) setTimeout(function(){
+      var io = new IntersectionObserver(function(es){ es.forEach(function(e){
+        if (!e.isIntersecting || seen.indexOf(e.target) > -1) return; seen.push(e.target);
+        setTimeout(function(){ var r = onScreen(e.target); if (r && !blocked()) burst(r); }, 350);
+      }); }, { threshold: .4 });
+      ASIDES.forEach(function(a){ try { Array.prototype.forEach.call(document.querySelectorAll(a.t), function(el){ if (!inNav(el)) io.observe(el); }); } catch (e){} });
+    }, 1200);
+  })();
+
+  /* ===== core/24-quests.js ===== */
+  /* ---------- side quests: the site's easter eggs, logged per browser (localStorage ab:quests).
+     Any bundle reports a find with AB.quest('id'). A toast says so (after the egg's own toast has had its moment);
+     the first find also says where the log lives (About › Player one). The log UI is in ab-about. ---------- */
+  var QUESTS = [
+    ['boss', 'Defeat The Scope Creep', 'A certain card on the About page gets interesting at level 20.'],
+    ['konami', 'Enter the cheat code', 'Some codes never die. Up, up… (on a phone, swipe it on the Player one screen, then tap twice).'],
+    ['badge', 'Flip the crew badge', 'Every ID has a back side.'],
+    ['lanyard', 'Swing the lanyard', 'That badge is on a string for a reason.'],
+    ['book', 'Knock a book off the shelf', 'The bookshelf is a little crowded.'],
+    ['endurance', 'Fly the Endurance close', 'Get close to something very heavy.'],
+    ['escape', 'Break the Endurance free', 'Near the horizon? Hit the thrusters: tap the black hole, fast.'],
+    ['spin', 'Spin a planet', 'Not every planet sits still.'],
+    ['questions', 'Ask every question', 'A philosopher never stops at one.'],
+    ['satellite', 'Make the satellite leave', 'Something on the homepage really hates being dragged.'],
+    ['toys', 'Throw a headline around', 'Headlines here are toys.'],
+    ['blackhole', 'Feed the black hole', 'Scroll all the way down. It\'s hungry.'],
+    ['channels', 'Watch every channel', 'Mission monitors carry more than one channel.'],
+    ['diagnostics', 'Run diagnostics', 'Launch control can tell you what\'s wrong.'],
+    ['touchdown', 'Land a mission', 'Follow a flight plan all the way to the end.'],
+    ['aside', 'Read the fine print', 'Some things on this site whisper when you hover (or tap) them.']
+  ];
+  var QKEY = 'ab:quests', qFound = {};
+  try { qFound = JSON.parse(localStorage.getItem(QKEY) || '{}') || {}; } catch (e){ qFound = {}; }
+  function qCount(){ var n = 0; QUESTS.forEach(function(q){ if (qFound[q[0]]) n++; }); return n; }
+  function qSave(){ try { localStorage.setItem(QKEY, JSON.stringify(qFound)); } catch (e){} }
+  function qEmit(id){ var d = { id: id, n: qCount(), total: QUESTS.length }; try { document.dispatchEvent(new CustomEvent('ab:quest', { detail: d })); } catch (e){} }
+  function quest(id){
+    var q = null; QUESTS.forEach(function(x){ if (x[0] === id) q = x; });
+    if (!q || qFound[id]) return false;
+    qFound[id] = Date.now(); qSave();
+    var n = qCount(), N = QUESTS.length, onAbout = !!document.querySelector('[data-gm]');
+    setTimeout(function(){
+      toast('✦ Side quest complete · ' + q[1] + ' · ' + n + '/' + N);
+      if (n === N) setTimeout(function(){ toast('Every side quest found. The crew badge went gold.'); }, 2800);
+      else if (n === 1) setTimeout(function(){ toast(onAbout ? 'Side quests are logged on the Player one card' : 'Side quests are logged on About › Player one'); }, 2800);
+    }, 2400);
+    qEmit(id);
+    return true;
+  }
+  quest.list = QUESTS;
+  quest.has = function(id){ return !!qFound[id]; };
+  quest.count = qCount;
+  quest.reset = function(){ qFound = {}; qSave(); qEmit(''); };
+  AB.quest = quest;
 
   /* ===== core/30-motion.js ===== */
 
   /* ---------- lenis (smooth scroll on the GSAP ticker) ---------- */
   var lenis = null;
+  // a phone's address bar showing/hiding is a height-only resize: never re-measure pins for it (they'd shift the page)
+  if (hasGsap && window.ScrollTrigger) ScrollTrigger.config({ ignoreMobileResize: true });
   if (hasGsap && !reduce && window.Lenis){
     lenis = new Lenis({ autoRaf: false, lerp: 0.11 });
     lenis.on('scroll', ScrollTrigger.update);
@@ -657,6 +755,18 @@ window.Webflow.push(function(){
     else t.scrollIntoView();
     if (window.ScrollTrigger) ScrollTrigger.update();
   }
+  // arriving with a hash (/#launch, /process#launch…): the browser jumps before pins and late layout add height above
+  // the target, so the visitor lands short. Re-aim once layout settles, unless they've started scrolling themselves.
+  (function(){
+    var h = location.hash, t = null; if (!h || h.length < 2) return;
+    try { t = document.getElementById(decodeURIComponent(h.slice(1))); } catch (e){}
+    if (!t) return;
+    var touched = false, mark = function(){ touched = true; };
+    ['wheel', 'touchmove', 'keydown'].forEach(function(ev){ addEventListener(ev, mark, { passive: true, once: true }); });
+    function aim(){ if (touched) return; if (window.ScrollTrigger) ScrollTrigger.refresh(); scrollToTarget(t); }
+    function start(){ setTimeout(aim, 150); setTimeout(aim, 900); setTimeout(aim, 2000); }
+    if (document.readyState === 'complete') start(); else addEventListener('load', start);
+  })();
   // same-page anchors (#work, /#launch on Home): warp, then jump. stopPropagation keeps Webflow's own smooth scroll out of it
   $$('a[href*="#"]').forEach(function(a){
     if (a.hasAttribute('data-board-frame') || a.hasAttribute('data-social') || a.hasAttribute('data-copy-email')) return;
@@ -1022,6 +1132,19 @@ window.Webflow.push(function(){
     return '';
   }
   function cardTxt(sel, root){ var n = $(sel, root); return n ? n.textContent.trim() : ''; }
+  // "Test flight" (Mission Type): a proof of concept flown before a client mission depends on it. Its chip becomes a badge
+  // (dashed, with a little rocket) wherever types are listed; returns whether the mission is one.
+  var TF_ICO = '<svg class="ab_tf-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.6 2.4c2.1-.6 3.5-.4 3.9 0 .4.4.6 1.8 0 3.9L9 10.8 5.2 7z"/><path d="M5.2 7 2.6 7.5 1.6 9.4h2.6M9 10.8l-.5 2.6-1.9 1V11.8"/><path class="tr" d="M4.2 11.8 1.5 14.5"/><circle cx="10.6" cy="5.4" r="1"/></svg>';
+  function testFlight(chips){
+    var hit = false;
+    (chips || []).forEach(function(c){
+      if (!/^test flight$/i.test(c.textContent.trim())) return;
+      hit = true; if (c.classList.contains('is-test-flight')) return;
+      c.classList.add('is-test-flight'); c.insertAdjacentHTML('afterbegin', TF_ICO);
+      c.setAttribute('title', 'Test flight: a proof of concept, self-initiated');
+    });
+    return hit;
+  }
   function cardColor(node, prop){ return node ? rgbToHex(getComputedStyle(node)[prop]) : ''; }
 
   function missionCard(card, i){
@@ -1048,6 +1171,12 @@ window.Webflow.push(function(){
     var pl = $('.ab_planet', card); if (pl){ pl.setAttribute('data-seed', i * 7 + 3); if (!pl.getAttribute('data-ring')) pl.removeAttribute('data-ring'); else pl.setAttribute('data-tilt', '-16'); if (!pl.getAttribute('data-glow')) pl.setAttribute('data-glow', 'transparent'); }
     var st = $('.ab_status', card); if (st) st.setAttribute('data-state', m.placeholder ? 'phd' : m.live ? 'live' : 'ship');
     card.setAttribute('data-types', m.types.join('|'));
+    m.test = testFlight($$('.ab_mission-card_tag', card));
+    if (m.test){
+      card.classList.add('is-test-flight');
+      var cover = $('.ab_mission-card_cover', card);
+      if (cover && !$('.ab_tf-stamp', cover)) cover.insertAdjacentHTML('beforeend', '<span class="ab_tf-stamp text-style-mono">' + TF_ICO + 'Test flight</span>');
+    }
     if (a.__sel){ var tag = $('.sel-tag', a.__sel); if (tag) tag.textContent = 'Frame / ' + m.slug; }
     if (m.placeholder){
       card.classList.add('is-ph'); a.setAttribute('href', '#'); a.setAttribute('data-ph', '');
@@ -1058,7 +1187,7 @@ window.Webflow.push(function(){
     }
     return m;
   }
-  Object.assign(AB, { missionCard: missionCard });
+  Object.assign(AB, { missionCard: missionCard, testFlight: testFlight });
 
   /* ===== core/37-code.js ===== */
   /* ---------- code blocks (CMS snippets on the Mission template systems/problems and the Services "under the hood"; one Copy handler site-wide) ---------- */
@@ -1107,9 +1236,16 @@ window.Webflow.push(function(){
     function layout(){
       if (!go) return;
       var r = card.getBoundingClientRect(), g = go.getBoundingClientRect(), pr = planet ? planet.getBoundingClientRect() : { left: r.right - 120, top: r.top + 40, width: 80, height: 80 };
-      var x0 = g.right - r.left + 16, y0 = g.top - r.top + g.height / 2, x1 = pr.left - r.left + pr.width * .1, y1 = pr.top - r.top + pr.height * .5;
+      var x0 = g.right - r.left + 16, y0 = g.top - r.top + g.height / 2, x1 = pr.left - r.left + pr.width * .1, y1 = pr.top - r.top + pr.height * .5, dx = x1 - x0, d;
       svg.setAttribute('viewBox', '0 0 ' + r.width + ' ' + r.height);
-      var d = 'M' + x0 + ' ' + y0 + ' C ' + (x0 + (x1 - x0) * .35) + ' ' + (y0 + 40) + ', ' + (x0 + (x1 - x0) * .6) + ' ' + (y1 - 90) + ', ' + x1 + ' ' + y1;
+      if (dx >= 140){
+        // room to fly: launch beside the button, lift, then drop onto the planet (the swing scales with the distance)
+        d = 'M' + x0 + ' ' + y0 + ' C ' + (x0 + dx * .35) + ' ' + (y0 + Math.min(40, dx * .15)) + ', ' + (x0 + dx * .6) + ' ' + (y1 - Math.min(90, dx * .3)) + ', ' + x1 + ' ' + y1;
+      } else {
+        // the planet sits right beside the button (narrow cards): launch from under the button and skim the card's floor up to it
+        var bx = g.left - r.left + 10, by = Math.min(r.height - 12, g.bottom - r.top + 16), ex = pr.left - r.left + pr.width * .5, ey = Math.min(pr.bottom - r.top - pr.height * .12, r.height - 14), sx = ex - bx;
+        d = 'M' + bx + ' ' + by + ' C ' + (bx + sx * .45) + ' ' + (by + 6) + ', ' + (ex - sx * .12) + ' ' + (by + 4) + ', ' + ex + ' ' + ey;
+      }
       path.setAttribute('d', d); done.setAttribute('d', d); L = path.getTotalLength(); done.style.strokeDasharray = L + ' ' + (L + 20); done.style.strokeDashoffset = L;
     }
     layout(); addEventListener('resize', layout); if (document.fonts) document.fonts.ready.then(layout);
@@ -1171,7 +1307,7 @@ window.Webflow.push(function(){
         Draggable.create(el, { type: 'x,y', bounds: hero, inertia: !!window.InertiaPlugin, edgeResistance: .7, zIndexBoost: false,
           onPress: function(){ if (back) back.kill(); gsap.to(el, { scale: 1.04, duration: .2 }); },
           onRelease: function(){ gsap.to(el, { scale: 1, duration: .3 }); },
-          onDragEnd: schedule, onThrowComplete: schedule });
+          onDragEnd: function(){ schedule(); if (AB.quest) AB.quest('toys'); }, onThrowComplete: schedule });
         nudge(el, schedule);
       });
       AB.dragCue({ host: title.parentNode, first: items[0], items: items });
@@ -1206,7 +1342,11 @@ window.Webflow.push(function(){
     (o.items || [first]).forEach(function(el){ el.addEventListener('pointerdown', stop, { once: true }); });
     function place(){
       var c = host.getBoundingClientRect(), r = first.getBoundingClientRect();
-      hint.style.left = (o.at === 'end' ? r.right - c.left - 10 : r.left - c.left + Math.min(r.width * .6, 220)) + 'px';
+      var x = o.at === 'end' ? r.right - c.left - 10 : r.left - c.left + Math.min(r.width * .6, 220);
+      // keep the tag on screen (a long first word ends at the column edge on phones); the arrow still points at the anchor
+      var maxX = Math.min(c.width, innerWidth - 8 - c.left) - hint.offsetWidth, left = Math.max(Math.min(x, maxX), 8 - c.left);
+      hint.style.left = left + 'px';
+      hint.style.setProperty('--ax', Math.max(6, Math.min(hint.offsetWidth - 16, x - left + 10)) + 'px');
       hint.style.top = (r.top - c.top - (o.at === 'end' ? 6 : 30)) + 'px';
     }
     var shown = 0;
@@ -1332,7 +1472,7 @@ window.Webflow.push(function(){
     }
     function home(p, drag){ gsap.to(p, { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, duration: 1, ease: 'elastic.out(1,.55)', onComplete: function(){ if (drag) drag.enable(); } }); }
     function consume(p, drag){
-      if (drag) drag.disable();
+      if (drag) drag.disable(); if (AB.quest) AB.quest('blackhole'); 
       var b = bhCenter(), c = center(p), r0 = Math.hypot(c.x - b.x, c.y - b.y), a0 = Math.atan2(c.y - b.y, c.x - b.x), o = { t: 0 };
       var core = $('.bh-core', bhw), rh = core ? core.getBoundingClientRect().width / 2 : 20;
       var done = function(){
@@ -1373,7 +1513,7 @@ window.Webflow.push(function(){
     var anim = hasGsap && !reduce;
     function open(){
       if (isOpen) return; isOpen = true; setOrigin();
-      menu.hidden = false; menu.classList.add('is-open'); btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', 'Close menu');
+      menu.hidden = false; menu.classList.add('is-open'); btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', 'Close menu'); document.documentElement.classList.add('menu-open');
       if (lenis) lenis.stop(); document.documentElement.style.overflow = 'hidden'; if (nav) nav.classList.remove('is-hidden');
       if (!anim){ if (links[0]) links[0].focus(); return; }
       gsap.fromTo(menu, { clipPath: circ(0) }, { clipPath: circ(radius()), duration: .8, ease: 'power3.inOut', onComplete: function(){ gsap.set(menu, { clearProps: 'clipPath' }); } });
@@ -1383,7 +1523,7 @@ window.Webflow.push(function(){
       setTimeout(function(){ if (links[0]) links[0].focus({ preventScroll: true }); }, 300);
     }
     function close(focusBtn){
-      if (!isOpen) return; isOpen = false; btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Open menu');
+      if (!isOpen) return; isOpen = false; btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Open menu'); document.documentElement.classList.remove('menu-open');
       if (lenis) lenis.start(); document.documentElement.style.overflow = '';
       var fin = function(){ menu.classList.remove('is-open'); menu.hidden = true; gsap.set(menu, { clearProps: 'clipPath' }); if (focusBtn) btn.focus(); };
       if (!anim){ menu.classList.remove('is-open'); menu.hidden = true; if (focusBtn) btn.focus(); return; }

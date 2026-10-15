@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-work v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-work v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abWorkInit) return;
@@ -29,7 +29,8 @@ window.Webflow.push(function(){
     M.forEach(function(m){ m.types.forEach(function(t){ types[t] = (types[t] || 0) + 1; }); var y = parseInt(m.year, 10); if (y) years.push(y); if (m.live) live++; if (!m.placeholder) real++; });
     function set(k, v){ $$('[data-arc="' + k + '"]').forEach(function(e){ e.textContent = v; }); }
     set('total-pad', pad2(N)); set('real', real); set('live', live);
-    var nt = Object.keys(types).length; if (nt) set('types', nt);
+    // Test flight is a status (proof of concept), not a discipline
+    var nt = Object.keys(types).filter(function(t){ return !/^test flight$/i.test(t); }).length; if (nt) set('types', nt);
     if (years.length){ var y0 = Math.min.apply(null, years), y1 = Math.max.apply(null, years); set('years', y0 === y1 ? y0 : y0 + '–' + y1); }
     $$('[data-arc="total"]').forEach(function(e){ e.textContent = N; e.setAttribute('data-count', N); });
     // CTA card: the next free mission number
@@ -44,6 +45,8 @@ window.Webflow.push(function(){
     if (b) b.textContent = n;
     if (!n && t !== 'all'){ var item = c.closest('.w-dyn-item') || c; item.style.display = 'none'; }
     c.setAttribute('aria-pressed', t === 'all' ? 'true' : 'false');
+    // proofs of concept get the test-flight badge look on their filter chip too
+    if (/^test flight$/i.test(t || '')){ c.classList.add('is-test-flight'); c.insertAdjacentHTML('afterbegin', '<svg class="ab_tf-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.6 2.4c2.1-.6 3.5-.4 3.9 0 .4.4.6 1.8 0 3.9L9 10.8 5.2 7z"/><path d="M5.2 7 2.6 7.5 1.6 9.4h2.6M9 10.8l-.5 2.6-1.9 1V11.8"/><path class="tr" d="M4.2 11.8 1.5 14.5"/><circle cx="10.6" cy="5.4" r="1"/></svg>'); c.setAttribute('title', 'Test flights: proofs of concept, self-initiated'); }
   });
 
   /* ---------- list view (built from the cards) ---------- */

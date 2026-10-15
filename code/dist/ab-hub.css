@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-hub.css v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-hub.css v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
 /* AB Portfolio · ab-hub.css · Services hub (/services) only. States, pseudo-elements, glass and script-built parts the Designer can't hold.
    Webflow classes: ab_hub-* (+ ab_mc/ab_mon/ab_screen/ab_console .is-hub, ab_chip). Script-built parts use hb-* classes. */
 /* the planner panel grows a lot when a main is picked; native scroll anchoring then jumps the page (and fights Lenis) */
@@ -267,11 +267,11 @@ html:has(.section_hub-hero),.main-wrapper:has(.section_hub-hero){overflow-anchor
   .ab_hub-wp::before{display:none}
   .ab_hub-wp_node{left:-34px!important;top:22px!important;margin:0}
   .ab_hub-flight_hud{position:sticky;top:76px;right:auto;margin:0 var(--_spacing---layout--gutter) 16px;padding:8px 12px;background:rgba(7,8,13,.85);border:1px solid var(--_color---neutral--hair);width:max-content}
-  .hbf-dock{position:relative!important;left:auto!important;top:auto!important;transform:none;width:120px;margin:10px 0 170px 20px}
-  .hbf-moon i{left:94px}.hbf-moon em{left:116px}
-  .hbf-live{left:-20px;transform:translateY(12px);text-align:left;max-width:calc(100vw - 80px)}
-  .section_hub-flight.is-landed .hbf-live{transform:none}
-  .hbf-live-a{justify-content:flex-start}
+  .hbf-dock{position:relative!important;left:-18px!important;top:auto!important;transform:none;width:140px;margin:56px auto 0}
+  .hbf-moon i{left:102px}.hbf-moon em{left:124px}
+  .ab_hub-flight_track > .hbf-live{position:relative;left:auto;top:auto;width:auto;max-width:none;margin:64px 0 0 -36px;padding-bottom:8px;transform:translateY(12px)}
+  .section_hub-flight.is-landed .ab_hub-flight_track > .hbf-live{transform:none}
+  .hbf-live-a{justify-content:center}
   .ab_hub-wp_meta{grid-template-columns:minmax(0,1fr)}
 }
 
@@ -304,8 +304,12 @@ html:has(.section_hub-hero),.main-wrapper:has(.section_hub-hero){overflow-anchor
 .hb-pp-mrz{position:absolute!important;left:clamp(16px,2.2vw,28px);right:clamp(16px,2.2vw,28px);bottom:clamp(12px,1.6vw,20px);font-family:var(--_typography---font--mono);font-size:clamp(8.5px,.8vw,11px);letter-spacing:.14em;color:var(--_color---text--tertiary);line-height:1.5;white-space:nowrap;overflow:hidden}
 .hb-pp-r-h{font-family:var(--_typography---font--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--_color---text--tertiary);display:flex;justify-content:space-between}
 .hb-pp-none{position:absolute;inset:40% 10% auto;text-align:center;font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--_color---text--tertiary)}
-.hb-pp-turn{position:absolute;top:0;bottom:0;width:50%;left:50%;background:linear-gradient(160deg,rgba(44,52,84,.92),rgba(14,16,30,.95));border-left:1px solid rgba(255,255,255,.14);transform-origin:0 50%;opacity:0;pointer-events:none;box-shadow:0 0 30px rgba(0,0,0,.35);-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform,opacity}
-.hb-pp-turn.is-back{left:0;transform-origin:100% 50%;border-left:0;border-right:1px solid rgba(255,255,255,.14)}
+.hb-pp-turn{position:absolute;top:0;bottom:0;width:50%;left:50%;z-index:4;transform-origin:0 50%;-webkit-transform-style:preserve-3d;transform-style:preserve-3d;visibility:hidden;pointer-events:none;will-change:transform}
+.hb-pp-turn.is-back{left:0;transform-origin:100% 50%}
+.hb-pp-turn.is-on{visibility:visible}
+/* the sheet's two faces: opaque so the page underneath never shows through mid-turn */
+.hb-pp-turn .hb-pp-face{position:absolute;inset:0;min-height:0;overflow:hidden;-webkit-backface-visibility:hidden;backface-visibility:hidden;background:linear-gradient(160deg,#20263d,#0c0e19);box-shadow:0 10px 40px rgba(0,0,0,.45);border:0}
+.hb-pp-turn .hb-pp-face.is-rev{transform:rotateY(180deg)}
 .hb-patches{position:absolute!important;inset:clamp(40px,4vw,54px) clamp(10px,1.4vw,18px) clamp(10px,1.4vw,18px)}
 /* mission badges: digital, glowing tiles on the glass logbook; they drift a little against the tilt */
 .hb-patch{--shape:polygon(25% 2%,75% 2%,100% 50%,75% 98%,25% 98%,0 50%);position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:clamp(78px,7.2vw,100px);aspect-ratio:1.12;color:var(--_color---text--primary);text-decoration:none;transform:translate(-50%,-50%);
@@ -331,9 +335,10 @@ html:has(.section_hub-hero),.main-wrapper:has(.section_hub-hero){overflow-anchor
 @media (max-width:700px){
   .hb-cols .hb-c-via,.hb-cols .hb-c-gate,.hb-cols .hb-c-status,.ab_hub-row .hb-c-via,.ab_hub-row .hb-c-gate,.ab_hub-row .hb-c-status,.ab_hub-call_row .hb-c-via,.ab_hub-call_row .hb-c-gate{display:none}
   .ab_hub-sym_label{max-width:100%}
-  .ab_hub-sym_chips{flex-wrap:nowrap;overflow-x:auto;margin-left:calc(var(--_spacing---layout--gutter) * -1);margin-right:calc(var(--_spacing---layout--gutter) * -1);padding:2px var(--_spacing---layout--gutter) 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-  .ab_hub-sym_chips::-webkit-scrollbar{display:none}
-  .ab_chip.is-diag{flex:none;white-space:nowrap}
+  .ab_hub-sym_chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .ab_chip.is-diag{white-space:normal;text-align:left;line-height:1.35;padding:7px 9px;font-size:10.5px;min-width:0}
+  .ab_chip.is-diag.is-reset{grid-column:1 / -1;text-align:center}
+  .ab_console.is-hub{display:none}
   .ab_hub-scr{padding:44px 6px 10px}
   .ab_hub-wide{display:none}
   .ab_hub-prompt{font-size:10.5px}
@@ -350,7 +355,21 @@ html:has(.section_hub-hero),.main-wrapper:has(.section_hub-hero){overflow-anchor
   .ab_hub-log{cursor:auto}
   .hb-pp-page.is-l{border-right:0;border-bottom:1px dashed rgba(255,255,255,.16);min-height:300px}
   .hb-pp-page.is-r{min-height:340px}
-  .hb-pp-turn{display:none}
+  /* page turns go top to bottom: the sheet hinges on the line between the two stacked pages (script sets its top/height) */
+  .ab_hub-log{grid-template-rows:1fr 1fr}
+  .hb-pp-turn{left:0;right:0;width:auto;transform-origin:50% 0}
+  .hb-pp-turn.is-back{left:0;transform-origin:50% 100%}
+  .hb-pp-turn .hb-pp-face.is-rev{transform:rotateX(180deg)}
+  /* flight plan header: Edit + Abort wrap inside the column */
+  .ab_hub-flight_acts{flex:1 1 100%;min-width:0;max-width:100%}
+  .ab_hub-flight_acts .button{flex:1 1 auto;justify-content:center}
+  /* final call: the monitor spans the column, ON REQUEST lines up under AB-09, buttons stack full width */
+  .ab_mon.is-call{display:block;width:100%}
+  .ab_hub-call_row{flex-wrap:wrap;row-gap:10px}
+  .ab_hub-call_row .hb-c-status{margin-left:calc(var(--cw) * 1.9)}
+  .ab_hub-call_btns{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+  .ab_hub-call_btns .button{width:100%;justify-content:center}
+  .ab_hub-call_btns .button.is-primary{order:-1}
 }
 @media (prefers-reduced-motion:reduce){
   .ab_hub-prompt::after,.ab_hub-call_row .hb-caret,.ab_hub-planner.is-ping,.hb-pl-tag,.hb-arc.is-lit,.ab_hub-row.is-now .hb-c-status .hb-fl,.hb-key.is-now i,.hb-port.is-rec::before,.ab_hub-pass_ok::before,.section_hub-hero .ab_rec_dot.is-live,.ab_hub-sym_dot,.hbf-flame,.hbf-moon,.hbf-moon em,.section_hub-flight.is-landed .hbf-shock,.hb-map-hint::before{animation:none}

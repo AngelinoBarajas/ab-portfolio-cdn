@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core.css v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core.css v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
 /* =========================================================
    AB Portfolio · ab-core.css (site-wide)
    Only what the Webflow Designer can't express: pseudo-elements, state
@@ -127,6 +127,12 @@ html.is-quake .ab_footer_component{animation:ab-quake .5s cubic-bezier(.36,.07,.
 .ab_menu_component{background-image:radial-gradient(60% 50% at 80% 90%,rgba(124,92,255,.25),transparent 70%),radial-gradient(50% 40% at 10% 20%,rgba(255,106,61,.12),transparent 70%);padding-bottom:calc(32px + env(safe-area-inset-bottom,0px))}
 .ab_menu_tag,.ab_menu_links,.ab_menu_foot{position:relative;z-index:2}
 .ab_menu_link:hover,.ab_menu_link:active{color:var(--_color---brand--signal)}
+/* mobile menu: orange marks the page you're on (not Contact), with a small tag */
+.ab_menu_link.is-contact{color:var(--_color---text--primary)}
+.ab_menu_link.w--current,.ab_menu_link.w--current .ab_menu_link-path{color:var(--_color---brand--signal)}
+.ab_menu_link.w--current{flex-wrap:wrap;row-gap:4px}
+.ab_menu_link.w--current .ab_menu_link-path{display:none}
+.ab_menu_link.w--current::after{content:"You are here";align-self:center;padding:3px 8px;border:1px solid var(--_color---brand--signal);font-family:var(--_typography---font--mono);font-size:10px;font-weight:500;letter-spacing:.14em;line-height:1.2;text-transform:uppercase;white-space:nowrap;color:var(--_color---brand--signal)}
 
 /* ---------- hero ---------- */
 .ab_hero_meta,.ab_hero_bottom{pointer-events:none}
@@ -158,7 +164,7 @@ html.is-quake .ab_footer_component{animation:ab-quake .5s cubic-bezier(.36,.07,.
 @media (min-width:768px) and (max-width:1100px){.ab_planet.is-hero-moon{top:330px}}
 .ab_drag-hint{position:absolute;z-index:6;display:flex;align-items:center;gap:6px;padding:5px 9px 5px 6px;background:var(--_color---brand--signal);color:var(--_color---brand--on-signal);font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;pointer-events:none;opacity:0;transform:translateY(-100%)}
 .ab_drag-hint svg{flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.ab_drag-hint::after{content:"";position:absolute;left:10px;top:100%;border:5px solid transparent;border-top-color:var(--_color---brand--signal)}
+.ab_drag-hint::after{content:"";position:absolute;left:var(--ax,10px);top:100%;border:5px solid transparent;border-top-color:var(--_color---brand--signal)}
 
 /* ---------- selection UI ([data-selectable]) ---------- */
 :where([data-selectable]){position:relative}
@@ -731,3 +737,15 @@ section:hover > .ab_frame-label{color:var(--_color---ui--select)}
 .ab_chip{transition:background-color .2s,border-color .2s,color .2s}
 .ab_chip[aria-pressed="true"]{border-color:var(--_color---text--primary);color:var(--_color---text--primary);background-color:rgba(255,255,255,.06)}
 .ab_chip:focus-visible{outline:2px solid var(--_color---ui--select);outline-offset:2px}
+/* aside twinkle: a gold ✦ (+ two small ones) that sparkles near an aside (core/23-tips); dark outline so it reads on light sections too */
+.ab-twinkle{position:fixed;z-index:60;margin:-.55em 0 0 -.45em;line-height:1;color:#ffd166;pointer-events:none;opacity:0;text-shadow:0 0 1px #0b0c14,0 0 2px #0b0c14,0 0 8px #ffb27a,0 0 18px rgba(255,106,61,.85);animation:ab-twinkle 1.6s ease-in-out forwards}
+@keyframes ab-twinkle{0%{opacity:0;transform:scale(.2) rotate(0)}30%{opacity:1;transform:scale(1.25) rotate(35deg)}55%{opacity:.9;transform:scale(.85) rotate(60deg)}75%{opacity:1;transform:scale(1.05) rotate(80deg)}100%{opacity:0;transform:scale(.3) rotate(130deg)}}
+
+/* ---------- test flight: a proof of concept (Mission Type "Test flight"): dashed badge + a little rocket ---------- */
+.ab_tf-ico{width:12px;height:12px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;margin-right:5px;vertical-align:-2px}
+.ab_tf-ico circle{fill:currentColor;stroke:none}
+.ab_tf-ico .tr{stroke-dasharray:1.2 1.6}
+.is-test-flight.ab_mission-card_tag,.is-test-flight.ab_meta_chip,.is-test-flight.ab_arc_chip{display:inline-flex;align-items:center;border-style:dashed!important;border-color:var(--_color---brand--signal)!important;color:var(--_color---brand--signal)}
+.is-test-flight.ab_arc_chip[aria-pressed="true"]{color:var(--_color---brand--on-signal)}
+.ab_tf-stamp{position:absolute;right:0;top:14px;z-index:2;display:flex;align-items:center;padding:4px 10px 4px 8px;background:rgba(7,8,13,.82);color:var(--_color---text--primary);border:1px dashed var(--_color---brand--signal);border-right:0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.ab_tf-stamp .ab_tf-ico{color:var(--_color---brand--signal)}

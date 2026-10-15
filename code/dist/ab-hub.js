@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-hub v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-hub v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHubInit) return;
@@ -339,7 +339,7 @@ window.Webflow.push(function(){
       if (i > -1){
         if (old > -1 && old !== i) status(old, baseStatus(old));
         if (was > -1 && was !== i && was !== old) status(was, baseStatus(was));
-        status(i, 'PRIORITY GO', 60);
+        status(i, 'PRIORITY GO', 60); if (AB.quest) AB.quest('diagnostics'); 
         cur = -1; print(i, false);
         prompt('DIAGNOSTIC MATCH · AB-' + HUB[i].no + ' ' + HUB[i].short.toUpperCase() + ' · PRIORITY GO');
         toast('Priority go · ' + HUB[i].t1 + ' ' + HUB[i].t2);
@@ -407,7 +407,6 @@ window.Webflow.push(function(){
   function flownLinks(list){ return list.map(function(f){ return '<a href="' + misHref(f.slug) + '">' + esc(f.name) + '</a>'; }).join(' '); }
   function pickBtn(j){ var s = HUB[j]; return '<button type="button" data-pick="' + j + '" style="--c:' + s.c + '"' + (stops.length >= 2 && main > -1 ? ' disabled' : '') + '><i></i>' + esc(s.short) + ' <b>' + esc(s.code) + '</b></button>'; }
 
-  var glided = false;
   function clickPort(i){
     if (main < 0){ main = i; }
     else if (i === main){ main = stops.length ? stops.shift() : -1; }
@@ -423,7 +422,8 @@ window.Webflow.push(function(){
     $$('.ab_hub-step').forEach(function(li){ var n = +li.getAttribute('data-step'); li.classList.toggle('is-on', n === step); li.classList.toggle('is-done', n < step); });
     map.classList.toggle('has-main', main > -1);
     var side = innerWidth > 991, arr = side ? ' →' : ' ↓';
-    hint.textContent = step === 1 ? 'Tap a planet, or pick in the panel' + arr : stops.length < 2 ? 'Next: add stops in the panel' + arr : 'Ready: launch from the panel' + arr;
+    // phones keep the reader on the map (no scroll to the panel), so the hint says stops can be tapped right here too
+    hint.textContent = step === 1 ? 'Tap a planet, or pick in the panel' + arr : stops.length < 2 ? (side ? 'Next: add stops in the panel' + arr : 'Next: tap a planet to add a stop') : 'Ready: launch from the panel' + arr;
     ports.forEach(function(p, j){
       var k = stops.indexOf(j), isRec = s && j !== main && k < 0 && rec.indexOf(j) > -1;
       p.classList.toggle('is-main', j === main); p.classList.toggle('is-stop', k > -1); p.classList.toggle('is-rec', !!isRec);
@@ -475,7 +475,6 @@ window.Webflow.push(function(){
     }
     panel.innerHTML = h;
     if (animate && !reduce){ panel.classList.remove('is-ping'); void panel.offsetWidth; panel.classList.add('is-ping'); }
-    if (animate && !side && step === 2 && !stops.length && !glided){ glided = true; setTimeout(function(){ goTo(panel, false, 80); }, 250); }
     $$('[data-pick]', panel).forEach(function(b){ b.addEventListener('click', function(){ clickPort(+b.getAttribute('data-pick')); }); });
     $$('[data-stop]', panel).forEach(function(b){ b.addEventListener('click', function(){ clickPort(+b.getAttribute('data-stop')); }); });
     var rs = $('[data-reset]', panel); if (rs) rs.addEventListener('click', function(){ main = -1; stops = []; drawPlan(false); });
@@ -526,11 +525,13 @@ window.Webflow.push(function(){
     dock.innerHTML = '<span class="hbf-shock" aria-hidden="true"></span>' +
       st.map(function(o, k){ return '<span class="hbf-moon" style="--c:' + o.c + ';--a:' + (k * 150 + 25) + 'deg" aria-hidden="true"><i></i><em>' + esc(o.code) + '</em></span>'; }).join('') +
       '<div class="hbf-live"><span>Touchdown · ' + esc(m.code) + '</span><b>Mission <span class="t-outline">live</span></b>' +
-      '<div class="hbf-live-a">' + btnHTML('is-primary', PROC + '#launch', 'Request this mission', '→', ' data-req') + btnHTML('is-ghost', '/contact#call', 'Book a call') + '</div></div>';
+      '<div class="hbf-live-a">' + btnHTML('is-primary', PROC + '#launch', 'Request this mission', '→', ' data-req') + btnHTML('is-ghost', '/contact#call', 'Book a call') + btnHTML('is-ghost is-replot', '#trajectory', 'Re-plot route', '↺', ' data-replot') + '</div></div>';
     dock.insertBefore(planetEl(m, 90, 'hbf-dock-pl'), dock.children[1] || null);
     track.appendChild(dock);
     $$('.ab_planet', track).forEach(build);
     // the Process page reads ab:dest (main first, then stops) and pre-fills its star chart + form
+    // re-plot: warp back up to the planner on this page (the trajectory stays set; the flight plan stays below until relaunched)
+    $('[data-replot]', dock).addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); warp(function(){ goTo($('#trajectory'), true, 20); }, true); });
     $('[data-req]', dock).addEventListener('click', function(){ try { localStorage.setItem('ab:dest', fsel.map(function(j){ return HUB[j].slug; }).join(',')); } catch (err){} });
   }
   function flayout(){
@@ -538,6 +539,9 @@ window.Webflow.push(function(){
     fwide = innerWidth > 860;
     wps.forEach(function(w){ w.style.left = w.style.top = ''; });
     var dock = $('.hbf-dock', track); if (!dock) return;
+    // "Mission live" + its buttons: under the planet (absolute) on wide screens, in the flow after it on phones so nothing is clipped
+    var live = $('.hbf-live', track);
+    if (live){ if (fwide){ if (live.parentNode !== dock) dock.appendChild(live); } else if (live.parentNode !== track) track.appendChild(live); }
     if (!fwide){ track.style.width = ''; dock.style.left = dock.style.top = ''; return; }
     var h = track.offsetHeight, step = Math.max(360, innerWidth * .28), x0 = Math.min(240, innerWidth * .16);
     var dockX = x0 + step * STAGES.length + innerWidth * .22, W = dockX + innerWidth * .45, CARD_TOP = 150;
@@ -569,6 +573,7 @@ window.Webflow.push(function(){
     if (on === landed) return; landed = on;
     fsec.classList.toggle('is-landed', on);
     if (!on) return;
+    if (AB.quest) AB.quest('touchdown'); 
     fset('n', 'T+0'); fset('l', 'Touchdown');
     if (reduce || !hasGsap) return;
     var dock = $('.hbf-dock', track), cols = sel().map(function(j){ return HUB[j].c; }).concat(['#FF6A3D', '#F2F0EA']);
@@ -604,7 +609,7 @@ window.Webflow.push(function(){
       window.__abMissionST = fst; // core holds the nav steady inside this range
     } else {
       // phones: the route is a vertical rail; stages light as they cross the middle, touchdown when the planet shows
-      fst = ScrollTrigger.create({ trigger: track, start: 'top 60%', end: 'bottom 60%', scrub: true,
+      fst = ScrollTrigger.create({ trigger: track, start: 'top 60%', endTrigger: $('.hbf-dock', track) || track, end: 'bottom 75%', scrub: true,
         onUpdate: function(self){ var k = -1, mid = innerHeight * .6; wps.forEach(function(w, i){ if (w.getBoundingClientRect().top < mid) k = i; }); fstage(k); land(self.progress > .98); } });
     }
   }
@@ -645,7 +650,8 @@ window.Webflow.push(function(){
       toast('Flight plan plotted · ' + fsel.map(function(j){ return HUB[j].code; }).join(' + '));
     });
   }
-  var frT; addEventListener('resize', function(){ if (!flightOpen()) return; clearTimeout(frT); frT = setTimeout(function(){ fbuild(); if (window.ScrollTrigger) ScrollTrigger.refresh(); }, 250); });
+  // width changes only on touch screens: the phone address bar resizes the height while scrolling and a rebuild reset the route
+  var frT, frW = innerWidth; addEventListener('resize', function(){ if (!flightOpen() || (coarse && innerWidth === frW)) return; frW = innerWidth; clearTimeout(frT); frT = setTimeout(function(){ fbuild(); if (window.ScrollTrigger) ScrollTrigger.refresh(); }, 250); });
 
   drawPlan(false);
   // test-only: ?fly=0,5,2 launches that trajectory; ?p=0..1 sets the flight position
@@ -675,38 +681,45 @@ window.Webflow.push(function(){
       return esc(l1) + '<br>' + esc(l2);
     };
     var SLOTS = [[27, 17], [73, 20], [27, 51], [73, 54], [27, 85], [73, 87]];
-    var fillSpread = function(k){
+    var htmlL = function(k){
       var f = FLIGHTS[k], ph = /placeholder/i.test(f.status);
-      pp.style.setProperty('--mc', f.c);
-      pageL.innerHTML = '<div class="hb-pp-no"><span>Mission ' + esc(f.no) + '</span><span>Crew logbook</span></div>' +
+      return '<div class="hb-pp-no"><span>Mission ' + esc(f.no) + '</span><span>Crew logbook</span></div>' +
         '<h3 class="hb-pp-name">' + esc(f.name) + '</h3><p class="hb-pp-client">' + esc(f.client) + '</p>' +
         '<dl class="hb-pp-dl"><div><dt>Status</dt><dd' + (ph ? ' class="is-ph"' : '') + '>' + esc(f.status) + '</dd></div><div><dt>Patches</dt><dd>' + f.svc.length + ' service' + (f.svc.length === 1 ? '' : 's') + '</dd></div></dl>' +
         '<a class="hb-pp-open" href="' + misHref(f.slug) + '">' + (ph ? 'See the archive' : 'Open the debrief') + ' <span aria-hidden="true">→</span></a>' +
         '<div class="hb-pp-mrz" aria-hidden="true">' + logLine(f) + '</div>';
-      var r = rnd(hash(f.slug));
-      pageR.innerHTML = '<div class="hb-pp-r-h"><span>Patches earned</span><span>' + pad(k + 1) + '</span></div><div class="hb-patches">' +
+    };
+    var htmlR = function(k){
+      var f = FLIGHTS[k], r = rnd(hash(f.slug));
+      return '<div class="hb-pp-r-h"><span>Patches earned</span><span>' + pad(k + 1) + '</span></div><div class="hb-patches">' +
         (f.svc.length ? f.svc.map(function(s, j){
           var sl = SLOTS[j % SLOTS.length], x = sl[0] + (r() - .5) * 6, y = sl[1] + (r() - .5) * 4;
           return '<a class="hb-patch" href="' + SVC + s.slug + '" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;--c:' + s.c + '" aria-label="' + esc(s.t1 + ' ' + s.t2) + ' service"><small>Verified</small><b>' + esc(s.code) + '</b><em>' + esc(s.short) + '</em></a>';
         }).join('') : '<p class="hb-pp-none">No patches yet</p>') + '</div>';
-      if (nEl) nEl.textContent = pad(k + 1) + ' / ' + pad(FLIGHTS.length);
     };
-    // page turns: nothing re-animates (the glare + tilt follow the pointer instead)
+    var meta = function(k){ pp.style.setProperty('--mc', FLIGHTS[k].c); if (nEl) nEl.textContent = pad(k + 1) + ' / ' + pad(FLIGHTS.length); };
+    var fillSpread = function(k){ pageL.innerHTML = htmlL(k); pageR.innerHTML = htmlR(k); meta(k); };
+    // page turns: a real two-sided sheet. Its front is the page being turned (identical to the page under it, so nothing pops),
+    // its back is the next mission's facing page; the page underneath already shows the new content. Desktop turns on the
+    // spine (side to side), phones on the line between the stacked pages (top to bottom). Nothing swaps mid-turn.
     var turn = function(n){
       if (busy) return;
-      var k = (spread + n + FLIGHTS.length) % FLIGHTS.length, flat = innerWidth <= 700;
-      if (reduce || !hasGsap || flat){
-        spread = k; fillSpread(k);
-        if (flat && hasGsap && !reduce) gsap.fromTo(pp, { x: n * 30, opacity: .3 }, { x: 0, opacity: 1, duration: .35, ease: 'power2.out' });
-        return;
-      }
+      var k = (spread + n + FLIGHTS.length) % FLIGHTS.length, flat = innerWidth <= 700, fwd = n > 0;
+      if (reduce || !hasGsap){ spread = k; fillSpread(k); return; }
       busy = true;
-      sheet.classList.toggle('is-back', n < 0);
-      gsap.timeline({ onComplete: function(){ busy = false; gsap.set(sheet, { opacity: 0, rotationY: 0 }); } })
-        .set(sheet, { opacity: 1, rotationY: 0 })
-        .to(sheet, { rotationY: n > 0 ? -90 : 90, duration: .32, ease: 'power2.in' })
-        .add(function(){ spread = k; fillSpread(k); })
-        .to(sheet, { rotationY: n > 0 ? -180 : 180, opacity: 0, duration: .32, ease: 'power2.out' });
+      var under = fwd ? pageR : pageL, over = fwd ? pageL : pageR, back = fwd ? htmlL(k) : htmlR(k);
+      sheet.classList.toggle('is-back', !fwd);
+      if (flat){ sheet.style.top = under.offsetTop + 'px'; sheet.style.height = under.offsetHeight + 'px'; sheet.style.bottom = 'auto'; }
+      else sheet.style.top = sheet.style.height = sheet.style.bottom = '';
+      sheet.innerHTML = '<div class="hb-pp-page ' + (fwd ? 'is-r' : 'is-l') + ' hb-pp-face">' + under.innerHTML + '</div>' +
+        '<div class="hb-pp-page ' + (fwd ? 'is-l' : 'is-r') + ' hb-pp-face is-rev">' + back + '</div>';
+      under.innerHTML = fwd ? htmlR(k) : htmlL(k);
+      spread = k; meta(k);
+      var ax = flat ? 'rotationX' : 'rotationY', from = { rotationX: 0, rotationY: 0 }, to = { duration: .8, ease: 'power2.inOut',
+        onComplete: function(){ over.innerHTML = back; sheet.classList.remove('is-on'); sheet.innerHTML = ''; gsap.set(sheet, { rotationX: 0, rotationY: 0 }); busy = false; } };
+      to[ax] = flat ? (fwd ? 180 : -180) : (fwd ? -180 : 180);
+      sheet.classList.add('is-on');
+      gsap.fromTo(sheet, from, to);
     };
     glass(pp, function(){ return busy; });
     var prevB = $('[data-log-prev]'), nextB = $('[data-log-next]');
