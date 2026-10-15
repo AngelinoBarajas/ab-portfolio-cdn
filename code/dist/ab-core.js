@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.3.2 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -24,29 +24,57 @@ window.Webflow.push(function(){
   }
 
   /* ---------- site settings (CMS · Site Settings, hidden [data-settings-source] list) ---------- */
-  var S0 = {};
-  $$('[data-settings-source] [data-field]').forEach(function(f){ var v = f.textContent.trim(); if (v) S0[f.getAttribute('data-field')] = v; });
+  // Webflow utility pages (404) can't hold Collection Lists, so every page with the site-data block caches it
+  // (localStorage ab:site) and a page without it reads the cache, or fetches the Home page's block once.
+  var SITE_KEY = 'ab:site', hasSiteData = !!$('[data-settings-source]');
+  function readSettings(root){ var s = {}; $$('[data-settings-source] [data-field]', root).forEach(function(f){ var v = f.textContent.trim(); if (v) s[f.getAttribute('data-field')] = v; }); return s; }
+  function readQuotes(root){
+    return $$('[data-quote-source] .w-dyn-item', root).map(function(it){
+      var g = function(k){ var n = $('[data-field="' + k + '"]', it); return n ? n.textContent.trim() : ''; };
+      return { t: g('quote'), a: g('author'), c: g('context') };
+    }).filter(function(q){ return q.t; });
+  }
+  // Glossary (CMS): Terms (auto-linked in copy) and Asides (a tip on one element, by CSS selector), read by core/23-tips
+  function readGloss(root){
+    return $$('[data-glossary-source] .w-dyn-item', root).map(function(it){
+      var g = function(k){ var n = $('[data-field="' + k + '"]', it); return n ? n.textContent.trim() : ''; };
+      return { n: g('name'), d: g('definition'), k: g('kind'), t: g('target') };
+    }).filter(function(x){ return x.n && x.d; });
+  }
+  var hasGloss = !!$('[data-glossary-source]');
+  var S0 = readSettings(), QUOTES = readQuotes(), GLOSS = readGloss(), siteCache = null;
+  try { siteCache = JSON.parse(localStorage.getItem(SITE_KEY) || 'null'); } catch (e){}
+  var cache = siteCache || {};
+  if (hasSiteData){ cache.s = S0; cache.q = QUOTES; } else if (siteCache){ S0 = siteCache.s || {}; QUOTES = siteCache.q || []; }
+  if (hasGloss) cache.g = GLOSS; else if (siteCache && siteCache.g) GLOSS = siteCache.g;
+  if (hasSiteData || hasGloss){ try { localStorage.setItem(SITE_KEY, JSON.stringify(cache)); } catch (e){} }
   function bind(key, val){ if (!val) return; $$('[data-bind="' + key + '"]').forEach(function(e){ e.textContent = val; }); }
-  bind('availability', S0.availability);
-  if (S0.availability) bind('availability-short', S0.availability.replace(/^Available\s*/i, ''));
-  bind('tz-label', S0['tz-label']);
-  bind('email', S0.email);
-  if (!S0.email){ var eb = $('[data-bind="email"]'); if (eb) S0.email = eb.textContent.trim(); }
+  function applySettings(){
+    bind('availability', S0.availability);
+    if (S0.availability) bind('availability-short', S0.availability.replace(/^Available\s*/i, ''));
+    bind('tz-label', S0['tz-label']);
+    bind('email', S0.email);
+    $$('[data-social]').forEach(function(a){ var url = S0[a.getAttribute('data-social')]; if (url){ a.href = url; a.target = '_blank'; a.rel = 'noopener'; } });
+  }
+  applySettings();
+  var designerEmail = $('[data-bind="email"]');
+  if (!S0.email && designerEmail) S0.email = designerEmail.textContent.trim();
   var events = (S0['space-events'] || 'shooting,meteors,comets,satellites,flares,ufo').split(',').map(function(s){ return s.trim(); });
-  // social links: real URLs from Site Settings, else a hint
+  // social links without a Site Settings URL: a hint (checked on click, so a late fetch can still fill them)
   $$('[data-social]').forEach(function(a){
-    var url = S0[a.getAttribute('data-social')];
-    if (url){ a.href = url; a.target = '_blank'; a.rel = 'noopener'; }
-    else a.addEventListener('click', function(e){ e.preventDefault(); toast('Add your profile links in Site Settings.'); });
+    a.addEventListener('click', function(e){ if (S0[a.getAttribute('data-social')]) return; e.preventDefault(); toast('Add your profile links in Site Settings.'); });
   });
+  if (((!hasSiteData && !siteCache) || (!hasGloss && !(siteCache && siteCache.g))) && window.fetch && window.DOMParser){
+    fetch('/', { credentials: 'same-origin' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(html){
+      if (!html) return;
+      var doc = new DOMParser().parseFromString(html, 'text/html'), s = readSettings(doc), q = readQuotes(doc), g = readGloss(doc);
+      if (!hasSiteData){ Object.keys(s).forEach(function(k){ S0[k] = s[k]; }); QUOTES.push.apply(QUOTES, q); cache.s = s; cache.q = q; applySettings(); }
+      if (!hasGloss && g.length){ GLOSS.length = 0; GLOSS.push.apply(GLOSS, g); cache.g = g; if (AB.tip) AB.tip.refresh(); }
+      try { localStorage.setItem(SITE_KEY, JSON.stringify(cache)); } catch (e){}
+    })['catch'](function(){});
+  }
 
-  /* ---------- quotes (CMS · Quotes, hidden [data-quote-source] list) ---------- */
-  var QUOTES = $$('[data-quote-source] .w-dyn-item').map(function(it){
-    var g = function(k){ var n = $('[data-field="' + k + '"]', it); return n ? n.textContent.trim() : ''; };
-    return { t: g('quote'), a: g('author'), c: g('context') };
-  }).filter(function(q){ return q.t; });
-
-  Object.assign(AB, { hasGsap: hasGsap, reduce: reduce, coarse: coarse, $: $, $$: $$, num: num, esc: esc, pad2: pad2, hex: hex, rgbToHex: rgbToHex, onView: onView, settings: S0, quotes: QUOTES });
+  Object.assign(AB, { hasGsap: hasGsap, reduce: reduce, coarse: coarse, $: $, $$: $$, num: num, esc: esc, pad2: pad2, hex: hex, rgbToHex: rgbToHex, onView: onView, settings: S0, quotes: QUOTES, gloss: GLOSS });
 
   /* ===== core/10-space.js ===== */
 
@@ -210,7 +238,7 @@ window.Webflow.push(function(){
     var timers = { shooting: rnd(2, 5), meteors: rnd(6, 12), comets: rnd(14, 24), satellites: rnd(8, 16), flares: rnd(3, 6), ufo: rnd(50, 90) };
     var gaps = { shooting: [5, 11], meteors: [11, 22], comets: [45, 75], satellites: [22, 38], flares: [4, 9], ufo: [120, 200] };
     function resize(){
-      dpr = Math.min(window.devicePixelRatio || 1, 1.5); w = innerWidth; h = innerHeight;
+      dpr = coarse ? 1 : Math.min(window.devicePixelRatio || 1, 1.5); w = innerWidth; h = innerHeight;
       c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       var n = Math.min(900, Math.round(w * h / 2400)); stars = [];
       for (var i = 0; i < n; i++){
@@ -337,21 +365,29 @@ window.Webflow.push(function(){
 
   /* ---------- page transitions: warp out, and the next page arrives out of the warp ---------- */
   var WARP_IN = 'ab:warp-in';
+  // leaving: warp in and HOLD on the fully covered screen (warp() fades back out, which showed the old page
+  // again while the next one loaded); the next page starts covered and fades in
   function go(href){
     try { sessionStorage.setItem(WARP_IN, '1'); } catch(e){}
-    warp(function(){ location.href = href; });
+    var flash = $('#warpFlash');
+    if (!hasGsap || reduce || !flash){ location.href = href; return; }
+    flash.style.pointerEvents = 'auto';
+    gsap.timeline()
+      .to(sf.state, { warp: 1, duration: .55, ease: 'power3.in' })
+      .to(flash, { opacity: 1, duration: .25 }, '-=.2')
+      .add(function(){ location.href = href; });
   }
   (function arrive(){
     var html = document.documentElement, flag = null;
     try { flag = sessionStorage.getItem(WARP_IN); sessionStorage.removeItem(WARP_IN); } catch(e){}
     var flash = $('#warpFlash');
     if (flag && hasGsap && !reduce && flash){
-      gsap.set(flash, { opacity: .85 }); sf.state.warp = 1;
+      gsap.set(flash, { opacity: 1 }); sf.state.warp = 1;
       html.classList.remove('ab-warp-in');
       gsap.timeline().to(flash, { opacity: 0, duration: .6, ease: 'power2.out' }, .05).to(sf.state, { warp: 0, duration: 1.1, ease: 'power2.out' }, 0);
     } else html.classList.remove('ab-warp-in');
     // back/forward cache: a page restored mid-warp would keep its flash up
-    addEventListener('pageshow', function(e){ if (e.persisted && flash){ if (hasGsap) gsap.set(flash, { opacity: 0 }); else flash.style.opacity = 0; sf.state.warp = 0; } });
+    addEventListener('pageshow', function(e){ if (e.persisted && flash){ if (hasGsap) gsap.set(flash, { opacity: 0 }); else flash.style.opacity = 0; flash.style.pointerEvents = ''; sf.state.warp = 0; } });
   })();
 
   Object.assign(AB, { toast: toast, copyText: copyText, fmt: fmt, buildPlanet: buildPlanet, planets: planets, sf: sf, warp: warp, go: go, inject: inject });
@@ -437,6 +473,174 @@ window.Webflow.push(function(){
 
   Object.assign(AB, { addSel: addSel, decorate: decorate });
 
+  /* ===== core/21-mark.js ===== */
+  /* ---------- the AB planet monogram (logo/ab-logo.svg): one source for every surface ----------
+     AB.markSVG({ cls, grid, dims }) → nav/footer logo, Work card "Mark" cover, Home board preview, the AB Identity
+     monitor channels (build / grid / light) and the Applications mockups. Paths: lg-a (the A's stroke),
+     lg-planet (planet + ring, also the A's right leg), lg-b. Construction (logo units, 490.16 × 241.75): planet
+     centered at 240,121 on the cap-height midline, r 98 with a 68 core, ring on a 21.5° axis. */
+  var MARK = { a: "M75.02,202.12c-.23-.51-.42-1.03-.55-1.55-1.4-5.03,1.1-10.58,4.69-15.7,1.61-2.32,3.46-4.55,5.26-6.61,5.43-6.24,12.69-13.56,20.36-21.34l.75-2.51,11.82-39.51c1.65-5.15,3.28-10.61,4.92-16.33,1.65-5.75,3.22-11.29,4.75-16.7,1.51-5.37,2.74-10.18,3.69-14.41h2.81c.93,3.29,1.99,7.09,3.16,11.44,1.17,4.29,2.32,8.67,3.5,13.08.01.02.01.05.02.07.25.96.5,1.9.75,2.84,0,0,0-.01,0-.02.31-1.23.64-2.45,1-3.66,5.47-18.49,15.98-35.18,30.56-48.19,4.24-3.79,8.74-7.19,13.45-10.2.68-.43,1.37-.86,2.05-1.27.2-.12.39-.23.59-.35.35-.21.7-.41,1.05-.61,0,0,0,0,0,0L178.49,0h-90.3L0,241.75h79.41l9.76-32.61c-7.32-.11-12.07-2.47-14.15-7.02Z", b: "M483.84,145.81c-4.21-8.18-9.79-14.58-16.7-19.13-6.9-4.58-14.58-7.81-23-9.67v-1.4c7.25-2.11,13.93-5.34,20.02-9.66,6.09-4.35,11.01-10.27,14.77-17.76,3.74-7.49,5.61-17.1,5.61-28.79s-3.04-22.02-9.13-30.95c-6.09-8.89-14.18-15.87-24.25-20.9-10.07-5.03-21.2-7.55-33.39-7.55h-230.76l9.78,26.79s.03-.01.04-.02c1.18-.56,2.37-1.1,3.57-1.62,13-5.68,27.11-8.67,41.53-8.67,3.76,0,7.56.2,11.32.61,23.01,2.48,44,12.2,60.73,28.13,7.39,5.78,12.49,9.09,19.56,11.17.11.04.74.19,2.29.19,5.1,0,13.7-1.64,23.47-3.78,3.33-.73,6.8-1.51,10.31-2.3,17.46-3.95,35.49-8.04,48.18-8.04,8.29,0,13.67,1.76,16.94,5.5,1.55,1.77,2.24,4.06,1.94,6.46-.88,7.19-10.49,14.5-37.61,33.36-.2.15-.42.29-.65.45-17.81,12.37-37.93,26.35-52.23,39.84-.08,1.32-.2,2.68-.35,4-.44,4.06-1.11,8.06-2.01,12h49.72c3.5,0,6.61.82,9.31,2.45,2.69,1.63,4.8,3.92,6.32,6.87,1.53,2.91,2.29,6.15,2.29,9.63,0,7.52-1.65,13.13-4.92,16.88-3.29,3.74-7.62,5.63-13,5.63h-59.03v-16.16c-5.76,10.99-13.49,20.95-22.93,29.36-11.58,10.34-25.16,17.88-39.75,22.22-1.25.37-2.52.72-3.78,1.05-.01,0-.03.01-.04.01l7.2,19.74h144.68c13.11,0,24.95-2.69,35.49-8.1,10.54-5.37,18.97-12.86,25.3-22.47,6.32-9.61,9.48-20.85,9.48-33.74s-2.1-23.42-6.32-31.63Z", planet: "M430.06,52.02c-2.11-2.4-6.48-3.35-12.27-3.35-14.89,0-39.14,6.29-58.49,10.47-9.63,2.08-18.03,3.64-23.47,3.64-1.62,0-2.99-.14-4.02-.45-8.15-2.37-13.95-6.19-21.9-12.42-15.1-14.47-34.93-24.24-57.33-26.67-3.59-.38-7.15-.56-10.65-.56-13.9,0-27.26,2.94-39.41,8.3-1.2.52-2.39,1.07-3.56,1.65-.01.01-.03.01-.04.02-1.28.62-2.56,1.29-3.81,1.98-.44.24-.88.47-1.32.73-.66.37-1.33.75-1.98,1.14-.42.24-.84.5-1.25.75-.13.08-.26.16-.39.24-.75.48-1.5.95-2.23,1.44-21.79,14.41-37.72,37.37-42.56,64.71-.26,1.45-.49,2.92-.68,4.4-.11.77-.2,1.54-.28,2.31-.49,4.53-.66,9.04-.54,13.48-.22.27-.45.56-.68.84-.43.53-.86,1.06-1.3,1.58-2.69,3.25-5.54,6.5-8.46,9.73-2.57,2.84-5.19,5.66-7.84,8.44-3.56,3.76-7.16,7.46-10.7,11.06-.64.65-1.28,1.3-1.92,1.95-3.59,3.65-7.09,7.18-10.4,10.55-.54.55-1.06,1.1-1.59,1.64h-.01c-4.48,4.6-8.54,8.87-11.9,12.72-13.24,15.16-10.32,20.62.66,20.62.42,0,.84-.01,1.28-.02.37-.02.74-.04,1.13-.06,2.26-.13,4.78-.46,7.51-.93.46-.08.93-.16,1.41-.25,10.79-2.02,24.56-6.24,38.23-11.07,3.13-1.12,6.26-2.24,9.34-3.4,3.45-1.29,6.86-2.59,10.17-3.9.53-.2,1.06-.41,1.59-.62,2.01-.78,3.97-1.57,5.88-2.34.6-.25,1.19-.49,1.78-.73,12.27-5.01,22.12-9.43,26.23-11.55,1.59-.82,3.19-1.65,4.79-2.5.02,0,.04-.02.06-.03,8.45-4.41,16.94-9.01,25.43-13.68.9-.49,1.79-.99,2.68-1.48,1.09-.6,2.17-1.21,3.26-1.81.05-.03.12-.06.17-.09.55-.3,1.1-.61,1.66-.92,1.1-.61,2.2-1.22,3.3-1.83,1.26-.7,2.52-1.4,3.78-2.1.02-.01.03-.02.05-.03,1.15-.63,2.3-1.28,3.45-1.92,2.91-1.63,5.83-3.25,8.73-4.87,19.37-10.81,38.35-21.38,55.87-30.9,19.24-10.43,34.92-19.03,51.78-27.15,10.31-4.95,21.08-9.71,33.38-14.6,8.05-3.19,12.31-4.63,13.5-4.63,2.25,0-6.71,5.23-21.84,13.47-10.87,5.93-18.38,9.63-25.04,12.93-7.2,3.59-13.43,6.7-21.83,11.64-6.76,3.97-13.06,7.82-18.16,11.14l-.03.02-.14.09c-2.69,1.76-5.03,3.36-6.93,4.75-1.52,1.12-2.37,2.44-2.75,4.34-.15.73-.23,1.55-.26,2.48v1.22c-.04,2.13-.16,4.28-.39,6.44-3.09,28.53-23.59,50.94-49.78,57.79-1.27.32-2.55.62-3.84.88-.01,0-.03.01-.04.01-1.42.28-2.85.51-4.3.71-1.27.17-2.54.3-3.83.39-.65.06-1.3.09-1.95.12-.58.02-1.18.04-1.77.04-.39.02-.78.02-1.17.02-.9,0-1.8-.02-2.7-.06-1.08-.04-2.16-.11-3.24-.21-.44-.03-.9-.08-1.35-.13,0,0-.25-.03-.7-.09-.32-.04-.63-.1-.94-.14-4.3-.65-16.1-2.85-23.81-8.24l-32.24,20.66h-.02l7.34,41.93h82.22l-8.74-23.95c1.25-.21,2.49-.44,3.73-.69,1.4-.29,2.8-.6,4.19-.96.02,0,.04,0,.06-.01,1.26-.32,2.52-.66,3.76-1.03,29.81-8.74,54.2-31.37,64.82-61.14,1.16-3.22,2.14-6.52,2.96-9.9,1-4.12,1.73-8.35,2.2-12.67.23-2.06.38-4.08.47-6.14,12.99-12.64,31.32-25.8,48.08-37.48,24.6-17.18,45.83-31.19,41.84-35.76ZM239.07,131.17c-1.19.62-2.35,1.24-3.49,1.85-.01.01-.03.01-.04.02-1.3.67-2.56,1.34-3.82,1.97-1.14.59-2.25,1.15-3.35,1.71-.49.24-.98.49-1.47.73-.07.03-.15.07-.22.11-1.06.51-2.09,1-3.11,1.48-.93.43-1.85.85-2.76,1.26-1.49.68-2.94,1.31-4.35,1.9-11.91,4.95-21.45,7.29-28.52,7.29-2.76,0-5.14-.36-7.13-1.06-4.77-10.54-6.85-22.43-5.52-34.76,1.9-17.57,10.4-32.8,22.77-43.52.82-.72,1.65-1.41,2.5-2.06.2-.17.41-.33.61-.48.51-.4,1.03-.78,1.56-1.16.31-.22.62-.45.93-.67.74-.51,1.5-1.01,2.26-1.5,1.22-.78,2.46-1.52,3.73-2.22.01-.02.03-.02.04-.03,1.15-.63,2.31-1.23,3.5-1.79,8.79-4.2,18.56-6.52,28.77-6.52,2.41,0,4.84.12,7.28.4,25.08,2.7,45.43,18.87,54.65,40.54-25.41,14.06-47.07,26.97-64.82,36.51Z" };
+  function markPaths(){ return '<path class="lg-a" style="--i:0" d="' + MARK.a + '"/><path class="lg-planet" style="--i:1" d="' + MARK.planet + '"/><path class="lg-b" style="--i:2" d="' + MARK.b + '"/>'; }
+  function markSVG(o){
+    o = o || {};
+    var grid = o.grid ? '<g class="lg-grid" fill="none">' +
+      '<path class="lg-g" d="M-24 0H514M-24 241.75H514M-24 121H514"/>' +
+      '<circle class="lg-g" cx="240" cy="121" r="98"/><circle class="lg-g" cx="240" cy="121" r="68"/>' +
+      '<path class="lg-g" d="M45 198L435 44"/><path class="lg-g" d="M-12 272L104 -30"/><path class="lg-g" d="M240 -24V266"/></g>' : '';
+    var dims = o.dims ? '<g class="lg-d">' +
+      '<text x="-22" y="-8">CAP 241.75</text><text x="352" y="-8">⌀ 196 · CORE 136</text><text class="is-hot" x="392" y="30">RING 21.5°</text><text x="-22" y="115">MIDLINE</text></g>' : '';
+    return '<svg class="' + (o.cls || 'ab_mark') + '" viewBox="' + (o.grid ? '-30 -30 550 302' : '0 0 490.16 241.75') + '" aria-hidden="true" focusable="false">' +
+      grid + dims + '<g class="lg-m">' + markPaths() + '</g></svg>';
+  }
+  Object.assign(AB, { MARK: MARK, markSVG: markSVG });
+
+  /* ===== core/22-logo.js ===== */
+  /* ---------- logo: the AB monogram is inlined (from logo/ab-logo.svg) so it can draw itself ----------
+     Nav + footer links carry the Webflow Image (.ab_logo-img, the no-JS fallback); this swaps in the SVG.
+     The outline warps in (spins in from a point), fills, then a slow glow pulse (all CSS, see ab-core.css "logo"); hover pulls the letters
+     toward the planet like a small black hole. The footer copy draws when it scrolls into view. */
+  (function(){
+    function svg(){ return markSVG({ cls: 'ab_logo-svg' }); }
+    $$('.ab_nav_logo').forEach(function(a){
+      var img = $('img', a); if (!img || $('.ab_logo-svg', a)) return;
+      img.insertAdjacentHTML('beforebegin', svg()); img.style.display = 'none';
+      var s = $('.ab_logo-svg', a);
+      $$('path', s).forEach(function(p){ var L = p.getTotalLength ? Math.ceil(p.getTotalLength()) : 2000; p.style.setProperty('--len', L); });
+      if (reduce) return;
+      var inFooter = !!a.closest('footer, .ab_footer_brand');
+      if (!inFooter || !('IntersectionObserver' in window)){ s.classList.add('is-draw'); return; }
+      var io = new IntersectionObserver(function(es){ if (es[0].isIntersecting){ s.classList.add('is-draw'); io.disconnect(); } }, { threshold: .6 });
+      io.observe(a);
+    });
+  })();
+
+  /* ===== core/23-tips.js ===== */
+  /* ---------- tips (CMS · Glossary): Terms auto-link in copy, Asides attach to one element by CSS selector ---------- */
+  // Terms: the first mention per section in body copy becomes a dashed-underline button (Mission copy can also mark
+  // [[term]] by hand). Asides: witty or behind-the-scenes notes on elements (logo, metrics, black hole…), title with ✦.
+  // Hover shows (hover devices), focus shows, tap toggles (touch; not on links, buttons or draggables). One tip at a time.
+  var tipEl = document.createElement('div'); tipEl.className = 'gl-tip'; tipEl.id = 'abTip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl);
+  var TERMS = {}, ASIDES = [], tipCur = null, tipT = 0;
+  function tipData(){
+    TERMS = {}; ASIDES = []; passEls = null;
+    (AB.gloss || []).forEach(function(g){
+      if (/aside/i.test(g.k || '')){ if (g.t){ try { document.querySelector(g.t); ASIDES.push(g); } catch (e){} } }
+      else TERMS[g.n] = g.d;
+    });
+  }
+  function tipPlace(el){
+    var r = el.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    var x = r.width > w ? r.left + (r.width - w) / 2 : r.left, y = r.bottom + 10;
+    if (y + h > innerHeight - 8 && r.top - h - 10 > 8) y = r.top - h - 10;
+    tipEl.style.left = Math.round(Math.max(12, Math.min(innerWidth - w - 12, x))) + 'px';
+    tipEl.style.top = Math.round(Math.max(8, y)) + 'px';
+  }
+  function tipShow(el, title, text, aside){
+    clearTimeout(tipT);
+    tipEl.innerHTML = '<b>' + (aside ? '<i aria-hidden="true">✦</i> ' : '') + esc(title) + '</b>' + esc(text);
+    tipEl.classList.toggle('is-aside', !!aside);
+    tipPlace(el); tipEl.classList.add('show'); tipCur = el;
+    if (el.matches && el.matches('button,a,[tabindex]')) el.setAttribute('aria-describedby', 'abTip');
+  }
+  function tipHide(){ clearTimeout(tipT); tipEl.classList.remove('show'); if (tipCur && tipCur.removeAttribute) tipCur.removeAttribute('aria-describedby'); tipCur = null; }
+  // what a pointer/focus target shows: a term button, or the nearest element an aside targets
+  function tipFor(t){
+    if (!t || !t.closest) return null;
+    var b = t.closest('.gl');
+    if (b){ var term = b.getAttribute('data-term'); return TERMS[term] ? { el: b, title: term, text: TERMS[term] } : null; }
+    for (var i = 0; i < ASIDES.length; i++){ var m = t.closest(ASIDES[i].t); if (m) return { el: m, title: ASIDES[i].n, text: ASIDES[i].d, aside: true }; }
+    return null;
+  }
+  function tipOpen(f){ if (f) tipShow(f.el, f.title, f.text, f.aside); }
+  if (!coarse){
+    document.addEventListener('mouseover', function(e){
+      var f = tipFor(e.target); if (!f){ return; } if (f.el === tipCur) return;
+      clearTimeout(tipT); tipT = setTimeout(function(){ tipOpen(f); }, f.aside ? 180 : 0);
+    });
+    document.addEventListener('mouseout', function(e){
+      var f = tipFor(e.target); if (!f) return;
+      if (e.relatedTarget && f.el.contains(e.relatedTarget)) return;
+      clearTimeout(tipT); if (tipCur === f.el) tipT = setTimeout(tipHide, 80);
+    });
+  }
+  // asides on elements that let the pointer through (footer black hole, Process countdown): open by position instead
+  // (planets: inside the circle), checked every 90ms while the mouse moves, never mid-drag
+  var passEls = null, passAt = 0, passT = 0;
+  function passList(){
+    passEls = [];
+    ASIDES.forEach(function(A){ $$(A.t).forEach(function(el){ if (getComputedStyle(el).pointerEvents === 'none') passEls.push({ el: el, a: A, round: el.classList.contains('ab_planet') }); }); });
+    passAt = Date.now();
+  }
+  if (!coarse){
+    document.addEventListener('mousemove', function(e){
+      var now = Date.now(); if (now - passT < 90) return; passT = now;
+      if (!passEls || now - passAt > 3000) passList();
+      if (!passEls.length || e.buttons) return;
+      var hit = null;
+      for (var i = 0; i < passEls.length && !hit; i++){
+        var r = passEls[i].el.getBoundingClientRect(); if (!r.width) continue;
+        var inside = passEls[i].round ? Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)) < r.width * .3
+          : e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        if (inside) hit = passEls[i];
+      }
+      if (hit){ if (tipCur !== hit.el) tipShow(hit.el, hit.a.n, hit.a.d, true); }
+      else if (tipCur && tipCur.__pass !== false){ for (var j = 0; j < passEls.length; j++){ if (passEls[j].el === tipCur){ tipHide(); break; } } }
+    }, { passive: true });
+  }
+  document.addEventListener('focusin', function(e){ var f = tipFor(e.target); if (f && f.el === e.target) tipOpen(f); });
+  document.addEventListener('focusout', function(){ tipHide(); });
+  // grabbing a draggable (planet, black hole) or tapping elsewhere closes the tip
+  document.addEventListener('pointerdown', function(e){ if (tipCur && !(e.target.closest && e.target.closest('.gl'))) tipHide(); }, true);
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.gl');
+    if (b){ e.stopPropagation(); if (tipCur === b) tipHide(); else tipOpen(tipFor(b)); return; }
+    if (!coarse) return;
+    var f = tipFor(e.target);
+    if (!f || (e.target.closest && e.target.closest('a,button,input,select,textarea,[data-drag],.is-drag'))) { tipHide(); return; }
+    if (tipCur === f.el) tipHide(); else tipOpen(f);
+  });
+  addEventListener('scroll', function(){ if (tipCur) tipHide(); }, { passive: true });
+
+  // auto-link: first mention of each term per section, at most one per paragraph, in body copy only (never headings, links, buttons, forms,
+  // chips/tags, hidden CMS sources or text that scripts rewrite)
+  var TIP_SKIP = 'a,button,h1,h2,h3,h4,h5,h6,label,input,textarea,select,code,pre,.gl,[data-no-gloss],[data-split],[data-leg],[data-dest-sum],[data-dest-title],[data-bind],[aria-hidden="true"],.w-dyn-bind-empty,[data-site-data],.ab_cms-source,.w-condition-invisible,.ab_toast,.gl-tip,[class*="chip"],[class*="_tag"],[class*="-tag"]';
+  function tipRe(term){
+    var e = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(^|[^A-Za-z0-9_-])(' + e + 's?)(?![A-Za-z0-9_-])', /[a-z]/.test(term) ? 'i' : '');
+  }
+  function tipLink(root){
+    var names = Object.keys(TERMS).sort(function(a, b){ return b.length - a.length; }); if (!names.length) return;
+    var res = names.map(function(n){ return [n, tipRe(n)]; });
+    $$('p, li, .text-size-lede, [class*="_text"], [class*="-text"], [class*="_desc"], [class*="-desc"], [class*="_sum"]', root || $('main') || document.body).forEach(function(p){
+      if ((p.closest && p.closest(TIP_SKIP)) || !p.getClientRects().length || $('div,p,ul,ol,section,article', p)) return;
+      var sec = p.closest('section') || document.body, seen = sec.__glSeen;
+      if (!seen){ seen = sec.__glSeen = {}; $$('.gl', sec).forEach(function(g){ seen[g.getAttribute('data-term')] = 1; }); }
+      var walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null, false), nodes = [], n;
+      while ((n = walker.nextNode())) if (!(n.parentNode.closest && n.parentNode.closest(TIP_SKIP))) nodes.push(n);
+      // one link per paragraph keeps dense copy readable
+      var linked = !!$('.gl', p);
+      nodes.forEach(function(node){
+        for (var i = 0; i < res.length && !linked; i++){
+          var term = res[i][0]; if (seen[term]) continue;
+          var m = res[i][1].exec(node.nodeValue); if (!m) continue;
+          var start = m.index + m[1].length, word = m[2];
+          var after = node.splitText(start); after.nodeValue = after.nodeValue.slice(word.length);
+          var b = document.createElement('button'); b.type = 'button'; b.className = 'gl'; b.setAttribute('data-term', term); b.textContent = word;
+          node.parentNode.insertBefore(b, after); seen[term] = 1; linked = true;
+        }
+      });
+    });
+  }
+  tipData();
+  AB.tip = {
+    show: function(el){ for (var i = 0; i < ASIDES.length; i++){ if (el.matches && el.matches(ASIDES[i].t)){ tipShow(el, ASIDES[i].n, ASIDES[i].d, true); return; } } },
+    hide: function(el){ if (!el || tipCur === el) tipHide(); },
+    link: tipLink,
+    refresh: function(){ tipData(); tipLink(); }
+  };
+  // after page scripts have written their copy (Mission [[terms]], Process legs…)
+  setTimeout(function(){ tipLink(); }, 900);
+
   /* ===== core/30-motion.js ===== */
 
   /* ---------- lenis (smooth scroll on the GSAP ticker) ---------- */
@@ -459,7 +663,7 @@ window.Webflow.push(function(){
     var raw = a.getAttribute('href') || '';
     if (a.hash.length < 2 || a.pathname.replace(/\/$/, '') !== location.pathname.replace(/\/$/, '') || !/^(\/?#|\/[^#]*#)/.test(raw)) return;
     a.addEventListener('click', function(e){
-      var id = decodeURIComponent(a.hash.slice(1)), t = document.getElementById(id); if (!t) return;
+      var id = decodeURIComponent(a.hash.slice(1)), t = document.getElementById(id); if (!t && id !== 'top') return; // #top works on pages without a #top element (404)
       e.preventDefault(); e.stopPropagation();
       var top = id === 'top';
       warp(function(){ scrollToTarget(top ? 0 : t); });
@@ -496,9 +700,9 @@ window.Webflow.push(function(){
     if (nav) addEventListener('scroll', function(){
       var y = scrollY;
       var ms = window.__abMissionST, inPin = ms && y >= ms.start - 10 && y <= ms.end + 10;
-      nav.classList.toggle('is-hidden', !inPin && y > 300 && y > lastY + 4);
-      if (inPin) nav.classList.remove('is-hidden');
-      if (y < lastY - 4 || y < 300) nav.classList.remove('is-hidden');
+      // only a clear direction changes the state: Lenis eases out in tiny steps, which used to flip it back and forth
+      if (inPin || y < 300 || y < lastY - 4) nav.classList.remove('is-hidden');
+      else if (y > lastY + 4) nav.classList.add('is-hidden');
       lastY = y;
     }, { passive: true });
 
@@ -536,13 +740,15 @@ window.Webflow.push(function(){
         (function hook(){
           if (!p.__body){ if (tries++ < 60) setTimeout(hook, 100); return; }
           var b = p.__body, size = p.getBoundingClientRect().width || 100, weight = gsap.utils.clamp(.45, 1.6, 140 / size);
-          gsap.to(b, { yPercent: gsap.utils.random(-3, 3), rotation: gsap.utils.random(-2, 2), duration: gsap.utils.random(3, 5.5), ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * .3 });
+          var fl = gsap.to(b, { yPercent: gsap.utils.random(-3, 3), rotation: gsap.utils.random(-2, 2), duration: gsap.utils.random(3, 5.5), ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * .3 });
+          if (window.IntersectionObserver) onView(p, function(on){ if (on) fl.resume(); else fl.pause(); });
           bouncers.push({ w: weight, qy: gsap.quickTo(b, 'y', { duration: 1.3, ease: 'elastic.out(1, 0.32)' }), qs: gsap.quickTo(b, 'scaleY', { duration: 1, ease: 'elastic.out(1, 0.4)' }), qx: gsap.quickTo(b, 'scaleX', { duration: 1, ease: 'elastic.out(1, 0.4)' }), last: 0 });
         })();
       });
-      var lastScroll = scrollY, vel = 0;
+      var lastScroll = scrollY, curScroll = lastScroll, vel = 0;
+      if (!lenis) addEventListener('scroll', function(){ curScroll = scrollY; }, { passive: true });
       gsap.ticker.add(function(){
-        var v = lenis ? lenis.velocity : (scrollY - lastScroll); lastScroll = scrollY;
+        var v = lenis ? lenis.velocity : (curScroll - lastScroll); lastScroll = curScroll;
         vel += (v - vel) * .25;
         bouncers.forEach(function(b){
           var ty = gsap.utils.clamp(-46, 46, -vel * 2.4 * b.w);
@@ -569,14 +775,30 @@ window.Webflow.push(function(){
       });
     } else decorate(document);
 
+    /* ---------- metric icons ([data-metric-icon] on a metric: code | clock | cup), drawn in the signal color ---------- */
+    var MICON = {
+      code: '<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/>',
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+      cup: '<path d="M4 9h12v5a6 6 0 0 1-6 6a6 6 0 0 1-6-6z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 2.5c-1 1.2 1 2.3 0 3.5M12 2.5c-1 1.2 1 2.3 0 3.5"/>'
+    };
+    $$('[data-metric-icon]').forEach(function(m){
+      var k = m.getAttribute('data-metric-icon'); if (!MICON[k] || $('.ab_metric_icon', m)) return;
+      m.insertAdjacentHTML('afterbegin', '<span class="ab_metric_icon" aria-hidden="true"><svg viewBox="0 0 24 24">' + MICON[k] + '</svg></span>');
+      if (reduce) return;
+      var ps = $$('.ab_metric_icon path, .ab_metric_icon circle', m);
+      ps.forEach(function(p){ var L = p.getTotalLength ? p.getTotalLength() : 60; p.style.strokeDasharray = L; p.style.strokeDashoffset = L; });
+      ScrollTrigger.create({ trigger: m, start: 'top 90%', once: true, onEnter: function(){ gsap.to(ps, { strokeDashoffset: 0, duration: 1.2, stagger: .15, ease: 'power2.inOut' }); } });
+    });
+
     /* ---------- metrics ([data-count]) ---------- */
     $$('[data-count]').forEach(function(el){
       var o = { v: 0 };
       if (reduce) return;
       // target read on enter: page bundles may update data-count after this runs (Work sets it from the CMS list)
       ScrollTrigger.create({ trigger: el, start: 'top 90%', once: true, onEnter: function(){
-        var target = +el.getAttribute('data-count');
-        gsap.fromTo(o, { v: 0 }, { v: target, duration: 1.6, ease: 'power3.out', onUpdate: function(){ el.textContent = Math.round(o.v); } });
+        var raw = el.getAttribute('data-count'); if (raw == null || raw === '' || isNaN(+raw)) return;
+        var target = +raw, suf = el.getAttribute('data-suffix') || '';
+        gsap.fromTo(o, { v: 0 }, { v: target, duration: 1.6, ease: 'power3.out', onUpdate: function(){ var n = Math.round(o.v); el.textContent = (target >= 1000 ? n.toLocaleString('en-US') : n) + suf; } });
       } });
     });
 
@@ -669,6 +891,25 @@ window.Webflow.push(function(){
     }
   })();
 
+  /* ===== core/32-cards.js ===== */
+  /* ---------- bento cards site-wide: orange cursor spotlight (ab-core.css .ab_bento-card::before reads --mx/--my)
+     + a gentle 3D tilt. One place for every bento (Home services, Services "What's included", Mission manifest, About).
+     No tilt while a button is held, over draggable bits (.mf-tag, planets), or on a card marked [data-no-tilt]. ---------- */
+  function cardFx(c){
+    if (!c || c.__fx) return; c.__fx = true;
+    c.addEventListener('pointermove', function(e){
+      var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      c.style.setProperty('--mx', (x * 100) + '%'); c.style.setProperty('--my', (y * 100) + '%');
+      if (reduce || !hasGsap || coarse || e.buttons || c.hasAttribute('data-no-tilt')) return;
+      if (e.target.closest && e.target.closest('.mf-tag, .ab_planet')) return;
+      gsap.to(c, { rotationY: (x - .5) * 5, rotationX: (.5 - y) * 5, transformPerspective: 1000, duration: .5, ease: 'power2.out', overwrite: 'auto' });
+    });
+    c.addEventListener('pointerleave', function(){ if (hasGsap) gsap.to(c, { rotationY: 0, rotationX: 0, duration: .8, ease: 'elastic.out(1,.6)', overwrite: 'auto' }); });
+    c.addEventListener('pointerdown', function(){ if (hasGsap) gsap.to(c, { rotationY: 0, rotationX: 0, duration: .3, overwrite: 'auto' }); });
+  }
+  $$('.ab_bento-card').forEach(cardFx);
+  Object.assign(AB, { cardFx: cardFx });
+
   /* ===== core/35-orbit.js ===== */
 
   /* ---------- tool logos (Simple Icons, CC0 · 24×24 paths), keyed by the lowercased CMS tool name ---------- */
@@ -680,6 +921,10 @@ window.Webflow.push(function(){
     'three.js': 'M.38 0a.268.268 0 0 0-.256.332l2.894 11.716a.268.268 0 0 0 .01.04l2.89 11.708a.268.268 0 0 0 .447.128L23.802 7.15a.268.268 0 0 0-.112-.45l-5.784-1.667a.268.268 0 0 0-.123-.035L6.38 1.715a.268.268 0 0 0-.144-.04L.456.01A.268.268 0 0 0 .38 0zm.374.654L5.71 2.08 1.99 5.664zM6.61 2.34l4.864 1.4-3.65 3.515zm-.522.12l1.217 4.926-4.877-1.4zm6.28 1.538l4.878 1.404-3.662 3.53zm-.52.13l1.208 4.9-4.853-1.392zm6.3 1.534l4.947 1.424-3.715 3.574zm-.524.12l1.215 4.926-4.876-1.398zm-15.432.696l4.964 1.424-3.726 3.586zM8.047 8.15l4.877 1.4-3.66 3.527zm-.518.137l1.236 5.017-4.963-1.432zm6.274 1.535l4.965 1.425-3.73 3.586zm-.52.127l1.235 5.012-4.958-1.43zm-9.63 2.438l4.873 1.406-3.656 3.523zm5.854 1.687l4.863 1.403-3.648 3.51zm-.54.04l1.214 4.927-4.875-1.4zm-3.896 4.02l5.037 1.442-3.782 3.638z',
     'gsap': 'M9.83,7.59C10.647,7.595 11.267,7.828 11.672,8.282C12.055,8.713 12.239,9.336 12.219,10.132L12.205,10.193C12.197,10.211 12.185,10.229 12.17,10.243C12.14,10.272 12.099,10.288 12.057,10.288L10.398,10.288C10.29,10.288 10.199,10.2 10.199,10.093C10.199,9.669 10.071,9.435 9.809,9.383L9.689,9.372C9.347,9.372 9.125,9.583 9.119,9.951C9.112,10.361 9.344,10.734 10.004,11.374C10.872,12.19 11.221,12.913 11.204,13.867C11.177,15.411 10.127,16.41 8.531,16.41C7.716,16.41 7.093,16.191 6.678,15.761C6.258,15.324 6.066,14.683 6.106,13.855C6.108,13.813 6.125,13.772 6.155,13.743C6.185,13.714 6.226,13.698 6.267,13.698L7.983,13.698C8.007,13.699 8.03,13.705 8.052,13.715C8.073,13.726 8.092,13.741 8.107,13.76C8.12,13.775 8.129,13.793 8.135,13.813C8.14,13.832 8.141,13.853 8.137,13.873C8.118,14.171 8.171,14.394 8.288,14.518C8.363,14.598 8.469,14.639 8.599,14.639C8.916,14.639 9.102,14.414 9.109,14.024C9.115,13.687 9.007,13.39 8.427,12.792C7.676,12.058 7.003,11.3 7.024,10.108C7.037,9.416 7.311,8.784 7.798,8.327C8.312,7.845 9.014,7.59 9.83,7.59ZM4.047,7.618C4.794,7.612 5.381,7.842 5.789,8.303C6.221,8.79 6.44,9.524 6.441,10.485C6.44,10.527 6.422,10.567 6.392,10.597C6.362,10.626 6.322,10.643 6.28,10.643L4.479,10.643C4.448,10.642 4.417,10.629 4.395,10.607C4.373,10.584 4.361,10.553 4.36,10.522C4.346,9.899 4.172,9.576 3.828,9.538L3.757,9.534C3.067,9.535 2.66,10.472 2.444,10.992C2.142,11.719 1.988,12.507 2.018,13.293C2.033,13.659 2.092,14.173 2.438,14.386C2.746,14.575 3.185,14.45 3.451,14.24C3.716,14.031 3.93,13.669 4.02,13.339C4.033,13.293 4.033,13.258 4.021,13.241C4.015,13.233 4.003,13.229 3.989,13.226L3.485,13.222C3.461,13.222 3.436,13.216 3.414,13.206C3.392,13.196 3.372,13.181 3.356,13.162C3.344,13.148 3.335,13.13 3.331,13.112C3.327,13.093 3.327,13.074 3.331,13.056L3.647,11.682C3.663,11.611 3.726,11.558 3.804,11.548L3.804,11.545L6.839,11.545C6.846,11.545 6.854,11.545 6.86,11.546C6.939,11.556 6.995,11.63 6.994,11.71L6.994,11.714L6.678,13.085C6.661,13.163 6.583,13.22 6.494,13.22L6.113,13.22C6.1,13.22 6.086,13.225 6.075,13.233C6.064,13.241 6.056,13.253 6.052,13.266C5.7,14.46 5.223,15.282 4.594,15.775C4.058,16.195 3.399,16.391 2.517,16.391C1.725,16.391 1.191,16.136 0.738,15.633C0.14,14.967 -0.107,13.879 0.043,12.566C0.313,10.103 1.589,7.618 4.047,7.618ZM21.016,7.75C23.026,7.75 24.03,8.662 23.999,10.461C23.962,12.569 22.678,14.119 20.745,14.477C20.47,14.527 20.191,14.547 19.912,14.545L18.978,14.541C18.963,14.541 18.948,14.547 18.937,14.558C18.926,14.568 18.92,14.583 18.92,14.598C18.92,14.608 18.922,14.618 18.928,14.627C18.933,14.636 18.941,14.643 18.95,14.648L19.744,15.062C19.809,15.096 19.835,15.153 19.82,15.226C19.815,15.249 19.618,16.139 19.613,16.159C19.596,16.237 19.533,16.282 19.442,16.282L17.739,16.282C17.715,16.282 17.69,16.277 17.668,16.267C17.646,16.257 17.626,16.241 17.61,16.223C17.598,16.208 17.589,16.191 17.585,16.173C17.58,16.155 17.581,16.135 17.585,16.116L19.481,7.875C19.5,7.789 19.581,7.751 19.653,7.751L21.016,7.75ZM17.273,7.762C17.292,7.77 17.31,7.781 17.324,7.795C17.338,7.81 17.351,7.828 17.358,7.847C17.366,7.866 17.369,7.886 17.369,7.906L17.358,16.119C17.361,16.138 17.36,16.158 17.355,16.177C17.35,16.196 17.34,16.213 17.328,16.228C17.313,16.245 17.295,16.259 17.274,16.268C17.254,16.277 17.232,16.282 17.21,16.281L15.397,16.281C15.377,16.282 15.356,16.277 15.337,16.27C15.318,16.262 15.3,16.25 15.286,16.236C15.272,16.221 15.26,16.204 15.253,16.185C15.245,16.166 15.241,16.146 15.241,16.125L15.28,15.328C15.282,15.241 15.28,15.217 15.229,15.211L15.161,15.209L13.447,15.209C13.323,15.209 13.314,15.22 13.27,15.334L12.914,16.191C12.882,16.252 12.818,16.281 12.722,16.281L10.927,16.281C10.818,16.281 10.74,16.173 10.781,16.072L14.499,7.873C14.524,7.824 14.562,7.75 14.648,7.75L17.214,7.75C17.234,7.75 17.254,7.754 17.273,7.762ZM15.5,9.985C15.492,9.953 15.466,9.956 15.445,9.998C15.43,10.028 15.416,10.06 15.405,10.091L14.121,13.274C14.114,13.294 14.109,13.31 14.105,13.322C14.104,13.328 14.103,13.335 14.104,13.341C14.105,13.347 14.108,13.353 14.111,13.358C14.115,13.363 14.12,13.367 14.126,13.37C14.131,13.373 14.137,13.376 14.143,13.376L15.215,13.39C15.334,13.38 15.34,13.374 15.352,13.253C15.354,13.21 15.506,10.022 15.5,9.985ZM20.112,9.582C20.097,9.582 20.083,9.588 20.072,9.599C20.061,9.609 20.055,9.624 20.054,9.639C20.054,9.649 20.057,9.659 20.062,9.668C20.068,9.677 20.075,9.685 20.084,9.69C20.097,9.697 20.869,10.104 20.926,10.135C20.968,10.158 20.969,10.198 20.955,10.267C20.948,10.298 20.415,12.642 20.416,12.644C20.419,12.647 20.435,12.655 20.515,12.655L20.551,12.655C21.446,12.619 21.934,11.561 21.952,10.534C21.961,9.979 21.772,9.638 21.429,9.588L21.358,9.582L20.112,9.582Z',
     'webflow': 'm24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z',
+    'webflow cms': 'm24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z',
+    'claude': 'm4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z',
+    // Finsweet has no Simple Icons entry: its {F mark, drawn to match
+    'finsweet': 'M9 4.5C7.1 4.5 6 5.5 6 7.4v2.2c0 .9-.4 1.4-1.4 1.4H4v2h.6c1 0 1.4.5 1.4 1.4v2.2c0 1.9 1.1 2.9 3 2.9h.6v-2h-.4c-.8 0-1.1-.4-1.1-1.2v-2.2c0-1.1-.5-1.9-1.4-2.1.9-.2 1.4-1 1.4-2.1V7.7c0-.8.3-1.2 1.1-1.2h.4v-2zM12.5 5H20v2.6h-4.7v3.2h4.2v2.6h-4.2V19h-2.8z',
     'photoshop': 'M9.85 8.42c-.37-.15-.77-.21-1.18-.2-.26 0-.49 0-.68.01-.2-.01-.34 0-.41.01v3.36c.14.01.27.02.39.02h.53c.39 0 .78-.06 1.15-.18.32-.09.6-.28.82-.53.21-.25.31-.59.31-1.03.01-.31-.07-.62-.23-.89-.17-.26-.41-.46-.7-.57zM19.75.3H4.25C1.9.3 0 2.2 0 4.55v14.899c0 2.35 1.9 4.25 4.25 4.25h15.5c2.35 0 4.25-1.9 4.25-4.25V4.55C24 2.2 22.1.3 19.75.3zm-7.391 11.65c-.399.56-.959.98-1.609 1.22-.68.25-1.43.34-2.25.34-.24 0-.4 0-.5-.01s-.24-.01-.43-.01v3.209c.01.07-.04.131-.11.141H5.52c-.08 0-.12-.041-.12-.131V6.42c0-.07.03-.11.1-.11.17 0 .33 0 .56-.01.24-.01.49-.01.76-.02s.56-.01.87-.02c.31-.01.61-.01.91-.01.82 0 1.5.1 2.06.31.5.17.96.45 1.34.82.32.32.57.71.73 1.14.149.42.229.85.229 1.3.001.86-.199 1.57-.6 2.13zm7.091 3.89c-.28.4-.671.709-1.12.891-.49.209-1.09.318-1.811.318-.459 0-.91-.039-1.359-.129-.35-.061-.7-.17-1.02-.32-.07-.039-.121-.109-.111-.189v-1.74c0-.029.011-.07.041-.09.029-.02.06-.01.09.01.39.23.8.391 1.24.49.379.1.779.15 1.18.15.38 0 .65-.051.83-.141.16-.07.27-.24.27-.42 0-.141-.08-.27-.24-.4-.16-.129-.489-.279-.979-.471-.51-.18-.979-.42-1.42-.719-.31-.221-.569-.51-.761-.85-.159-.32-.239-.67-.229-1.021 0-.43.12-.84.341-1.21.25-.4.619-.72 1.049-.92.469-.239 1.059-.349 1.769-.349.41 0 .83.03 1.24.09.3.04.59.12.86.23.039.01.08.05.1.09.01.04.02.08.02.12v1.63c0 .04-.02.08-.05.1-.09.02-.14.02-.18 0-.3-.16-.62-.27-.96-.34-.37-.08-.74-.13-1.12-.13-.2-.01-.41.02-.601.07-.129.03-.24.1-.31.2-.05.08-.08.18-.08.27s.04.18.101.26c.09.11.209.2.34.27.229.12.47.23.709.33.541.18 1.061.43 1.541.73.33.209.6.49.789.83.16.318.24.67.23 1.029.011.471-.129.94-.389 1.331z',
     'illustrator': 'M10.53 10.73c-.1-.31-.19-.61-.29-.92-.1-.31-.19-.6-.27-.89-.08-.28-.15-.54-.22-.78h-.02c-.09.43-.2.86-.34 1.29-.15.48-.3.98-.46 1.48-.14.51-.29.98-.44 1.4h2.54c-.06-.211-.14-.46-.23-.721-.09-.269-.18-.559-.27-.859zM19.75.3H4.25C1.9.3 0 2.2 0 4.55v14.9c0 2.35 1.9 4.25 4.25 4.25h15.5c2.35 0 4.25-1.9 4.25-4.25V4.55C24 2.2 22.1.3 19.75.3zM14.7 16.83h-2.091c-.069.01-.139-.04-.159-.11l-.82-2.38H7.91l-.76 2.35c-.02.09-.1.15-.19.141H5.08c-.11 0-.14-.061-.11-.18L8.19 7.38c.03-.1.06-.21.1-.33.04-.21.06-.43.06-.65-.01-.05.03-.1.08-.11h2.59c.08 0 .12.03.13.08l3.65 10.3c.03.109 0 .16-.1.16zm3.4-.15c0 .11-.039.16-.129.16H16.01c-.1 0-.15-.061-.15-.16v-7.7c0-.1.041-.14.131-.14h1.98c.09 0 .129.05.129.14v7.7zm-.209-9.03c-.231.24-.571.37-.911.35-.33.01-.65-.12-.891-.35-.23-.25-.35-.58-.34-.92-.01-.34.12-.66.359-.89.242-.23.562-.35.892-.35.391 0 .689.12.91.35.22.24.34.56.33.89.01.34-.11.67-.349.92z',
     'lightroom': 'M19.75.3H4.25C1.9.3 0 2.2 0 4.55v14.9c0 2.35 1.9 4.25 4.25 4.25h15.5c2.35 0 4.25-1.9 4.25-4.25V4.55C24 2.2 22.1.3 19.75.3zm-6.99 16.389c0 .051-.029.09-.06.121-.03.02-.06.029-.101.029H6.26c-.11 0-.16-.061-.16-.18V6.44c-.01-.07.04-.13.11-.14h2c.05-.01.11.03.11.08v8.43h4.62c.101 0 .131.049.11.14l-.29 1.739zm6.25-7.859v1.95c0 .08-.05.11-.16.11-.649-.04-1.3.08-1.89.34-.2.09-.39.21-.54.37v5.1c0 .1-.04.14-.13.14h-1.95c-.08.01-.15-.04-.16-.119V11.14c0-.24 0-.49-.01-.75s-.01-.52-.02-.78c-.01-.22-.03-.44-.061-.66-.01-.05.02-.1.07-.11.01-.01.02-.01.04 0h1.75c.1 0 .18.07.21.16.04.07.07.15.08.23.02.1.039.21.05.31.01.11.021.23.021.36.299-.35.66-.64 1.069-.86.46-.25.97-.37 1.49-.36.069-.01.13.04.14.11.001.01.001.02.001.04z'
@@ -764,11 +1009,93 @@ window.Webflow.push(function(){
   AB.orbit = orbitSystem;
 
 
+  /* ===== core/36-missions.js ===== */
+  /* ---------- mission cards (Work archive + Services related missions): covers, colors, number, status, link ----------
+     The card markup is the Work page's Missions Collection item (.ab_mission-card); Services clones those cards from /work. */
+  // cover art for missions without a cover image (cover kind Mark / Brand / App / Site)
+  function coverHTML(m){
+    var word = esc((m.name.split(/\s+/)[0] || '').toUpperCase()), rest = esc(m.name.split(/\s+/).slice(1).join(' '));
+    if (m.kind === 'mark') return markSVG({ grid: true });
+    if (m.kind === 'brand') return '<div class="cb-bag"><i></i><b>' + word + '</b><span>' + (rest ? rest + ' · ' : '') + 'Est. ' + esc(m.year) + '</span></div><div class="cb-bag two"><i></i><b>' + word + '</b><span>Single origin</span></div>';
+    if (m.kind === 'app') return '<div class="ca-ph"><div class="ca-top"><b>Today</b><i></i></div><div class="ca-ring"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16"/><circle class="v" cx="20" cy="20" r="16"/></svg><span>12<small>day streak</small></span></div><div class="ca-row"><i></i><i></i></div><div class="ca-row"><i></i><i></i></div></div><div class="ca-ph back"><div class="ca-top"><b>Classes</b></div><div class="ca-row"><i></i><i></i></div><div class="ca-row"><i></i><i></i></div><div class="ca-row"><i></i><i></i></div></div>';
+    if (m.kind === 'site') return '<div class="cs-nav"><b>' + word + '</b><i></i><i></i><i></i></div><div class="cs-grid"><div class="cs-h">Buildings that<br>hold the light.</div><div class="cs-img"></div><div class="cs-img b"></div><div class="cs-img c"></div></div>';
+    return '';
+  }
+  function cardTxt(sel, root){ var n = $(sel, root); return n ? n.textContent.trim() : ''; }
+  function cardColor(node, prop){ return node ? rgbToHex(getComputedStyle(node)[prop]) : ''; }
+
+  function missionCard(card, i){
+    var a = $('[data-card-link]', card), cv = $('.ab_mission-card_cv', card), img = $('img', cv);
+    var m = {
+      el: card, a: a, cv: cv, i: i,
+      slug: a.getAttribute('data-slug') || '', name: cardTxt('.ab_mission-card_title', card), client: cardTxt('.ab_mission-card_client', card),
+      year: cardTxt('[data-card="year"]', card), status: a.getAttribute('data-status') || cardTxt('[data-card="status"]', card),
+      kind: (a.getAttribute('data-cover-kind') || '').toLowerCase(),
+      types: $$('.ab_mission-card_tag', card).map(function(t){ return t.textContent.trim(); }).filter(Boolean)
+    };
+    m.placeholder = /placeholder/i.test(m.status); m.live = /live/i.test(m.status);
+    m.no = pad2(i + 1);
+    // brand colors come from hidden nodes whose style is bound to the CMS Color fields in the Designer
+    var bg = cardColor($('[data-field="brand-bg"]', card), 'backgroundColor'), fg = cardColor($('[data-field="brand-fg"]', card), 'color'), ac = cardColor($('[data-field="brand-accent"]', card), 'backgroundColor');
+    cv.style.setProperty('--cbg', bg || '#161a2e'); cv.style.setProperty('--cfg', fg || '#F2F0EA'); cv.style.setProperty('--cac', ac || '#FF6A3D');
+    // cover: the bound image when there is one, otherwise drawn from the cover kind
+    var hasImg = img && img.getAttribute('src') && !/placeholder/i.test(img.getAttribute('src')) && !img.closest('.w-condition-invisible');
+    if (hasImg){ m.kind = 'img'; img.alt = ''; }
+    else { if (img) img.remove(); if (!m.kind || m.kind === 'image') m.kind = 'site'; cv.insertAdjacentHTML('beforeend', coverHTML(m)); }
+    cv.classList.add('is-' + m.kind);
+    // number, planet seed, status chip, link
+    var no = $('.ab_mission-card_no', card); if (no) no.textContent = m.no;
+    var pl = $('.ab_planet', card); if (pl){ pl.setAttribute('data-seed', i * 7 + 3); if (!pl.getAttribute('data-ring')) pl.removeAttribute('data-ring'); else pl.setAttribute('data-tilt', '-16'); if (!pl.getAttribute('data-glow')) pl.setAttribute('data-glow', 'transparent'); }
+    var st = $('.ab_status', card); if (st) st.setAttribute('data-state', m.placeholder ? 'phd' : m.live ? 'live' : 'ship');
+    card.setAttribute('data-types', m.types.join('|'));
+    if (a.__sel){ var tag = $('.sel-tag', a.__sel); if (tag) tag.textContent = 'Frame / ' + m.slug; }
+    if (m.placeholder){
+      card.classList.add('is-ph'); a.setAttribute('href', '#'); a.setAttribute('data-ph', '');
+      a.setAttribute('aria-label', m.name + ' (placeholder)');
+      var go = $('.ab_mission-card_go', card); if (go) go.innerHTML = 'Debrief pending <span class="ab_mission-card_arrow" aria-hidden="true">→</span>';
+    } else {
+      a.setAttribute('href', '/work/' + m.slug); a.setAttribute('aria-label', m.name + ', open the mission debrief');
+    }
+    return m;
+  }
+  Object.assign(AB, { missionCard: missionCard });
+
+  /* ===== core/37-code.js ===== */
+  /* ---------- code blocks (CMS snippets on the Mission template systems/problems and the Services "under the hood"; one Copy handler site-wide) ---------- */
+  function codeLang(c){ var t = c.trim(); if (t.charAt(0) === '<') return 'html'; if (/^(\/\*|:root|[.#@a-z][^{(=]*\{)/i.test(t) && !/function|var |=>/.test(t)) return 'css'; return 'js'; }
+  function hl(code, lang){
+    var re = lang === 'css' ? /(\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(#[0-9a-fA-F]{3,8}\b|-?\d*\.?\d+(?:px|vh|vw|rem|em|%|s|ms|fr)?)|(--[\w-]+|[a-z-]+(?=\s*:))|(@media|!important)/g
+      : lang === 'html' ? /(<!--[\s\S]*?-->)|("[^"]*")|(\b\d+\.?\d*\b)|(<\/?[\w-]+|\/?>)|([\w-]+(?==))/g
+      : /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b\d+\.?\d*\b)|(\b(?:var|function|return|if|else|for|new|true|false|null|this|typeof|continue|break)\b)|(\b(?:window|document|Math|Object)\b)/g;
+    var out = '', last = 0, m, cls = ['c', 's', 'n', 'k', 'g'];
+    while ((m = re.exec(code))){ out += esc(code.slice(last, m.index)); for (var g = 1; g <= 5; g++) if (m[g] != null){ out += '<i class="t-' + cls[g - 1] + '">' + esc(m[0]) + '</i>'; break; } last = re.lastIndex; }
+    return out + esc(code.slice(last));
+  }
+  function codeBlock(code, label){ var lang = codeLang(code); return '<figure class="cb"><figcaption><span class="cb-l">' + lang.toUpperCase() + '</span><span class="cb-n">' + esc(label || 'excerpt') + '</span><button type="button" class="cb-copy">Copy</button></figcaption><pre><code>' + hl(code, lang) + '</code></pre></figure>'; }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.cb-copy'); if (!b) return;
+    var t = b.closest('.cb').querySelector('code').textContent;
+    function done(){ b.textContent = 'Copied'; b.classList.add('ok'); setTimeout(function(){ b.textContent = 'Copy'; b.classList.remove('ok'); }, 1400); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, done); else done();
+  });
+  Object.assign(AB, { codeBlock: codeBlock });
+
   /* ===== core/38-next.js ===== */
   /* ---------- next cards (.ab_next-card): HUD corners, streaks, spotlight + tilt, a ship that flies to the planet on hover ---------- */
   var nextCount = 0;
   function nextCard(card){
     if (!card || card.__nx) return; card.__nx = true; var ci = nextCount++;
+    // multi-word names break onto two balanced lines so the title never runs under the planet
+    var tt = $('.ab_next-card_title', card);
+    if (tt && !tt.children.length){
+      var w = tt.textContent.trim().split(/\s+/);
+      if (w.length > 1){
+        var cut = 1, best = 1e9;
+        for (var wi = 1; wi < w.length; wi++){ var dd = Math.abs(w.slice(0, wi).join(' ').length - w.slice(wi).join(' ').length); if (dd < best){ best = dd; cut = wi; } }
+        tt.setAttribute('aria-label', w.join(' '));
+        tt.innerHTML = esc(w.slice(0, cut).join(' ')) + '<br>' + esc(w.slice(cut).join(' '));
+      }
+    }
     var NS = 'http://www.w3.org/2000/svg', planet = $('.ab_planet', card), go = $('.ab_next-card_go', card);
     card.insertAdjacentHTML('afterbegin', '<span class="nx-grid" aria-hidden="true"></span><span class="nx-c tl" aria-hidden="true"></span><span class="nx-c tr" aria-hidden="true"></span><span class="nx-c bl" aria-hidden="true"></span><span class="nx-c br" aria-hidden="true"></span>' +
       '<span class="nx-hud" aria-hidden="true"><span>RA <b>' + (4 + ci * 3) + 'h ' + (21 + ci * 7) + 'm</b></span><span>DEC <b>+' + (12 + ci * 5) + '°</b></span><span>ETA <b class="nx-eta">T−00:10</b></span></span>' +
@@ -816,6 +1143,89 @@ window.Webflow.push(function(){
   $$('.ab_next-card').forEach(nextCard);
   AB.nextCard = nextCard; // page bundles call this for cards they build (Mission next-mission)
 
+  /* ===== core/39-herodrag.js ===== */
+  /* ---------- hero toys site-wide: on every page hero except Home (which has its own), the H1's words
+     and the hero planet can be thrown around like Home's, and drift back after a few seconds.
+     Runs after the page bundles (setTimeout 0), since Services rebuilds its title lines and Mission fills its own. ---------- */
+  (function(){
+    if (!hasGsap || !window.Draggable) return;
+    setTimeout(function(){
+      var hero = $('#hero'), title = $('#heroTitle');
+      if (!hero || !title || $('.ab_hero_component') || title.hasAttribute('data-drag-ready')) return;
+      title.setAttribute('data-drag-ready', '');
+      if (!title.getAttribute('aria-label')) title.setAttribute('aria-label', title.textContent.replace(/\s+/g, ' ').trim());
+      // Work + Services titles are lines of .ab_dbh_word (keep them whole: outline/star effects live on the line);
+      // a plain title (Mission) is split into word spans
+      var items = $$('.ab_dbh_word', title);
+      if (!items.length){
+        var words = title.textContent.trim().split(/\s+/); title.innerHTML = '';
+        words.forEach(function(w, i){ var s = document.createElement('span'); s.className = 'w'; s.textContent = w; title.appendChild(s); if (i < words.length - 1) title.appendChild(document.createTextNode(' ')); });
+        items = $$('.w', title);
+      }
+      items.forEach(function(el){ el.classList.add('is-toy'); el.setAttribute('aria-hidden', 'true'); el.tabIndex = -1; });
+      var planet = $('.ab_planet[data-drag]', hero);
+      if (planet && !planet.hasAttribute('data-parallax')) items.push(planet);
+      items.forEach(function(el){
+        var back;
+        function schedule(){ if (back) back.kill(); back = gsap.delayedCall(6, function(){ gsap.to(el, { x: 0, y: 0, rotation: 0, duration: 1.4, ease: 'elastic.out(1,.55)' }); }); }
+        Draggable.create(el, { type: 'x,y', bounds: hero, inertia: !!window.InertiaPlugin, edgeResistance: .7, zIndexBoost: false,
+          onPress: function(){ if (back) back.kill(); gsap.to(el, { scale: 1.04, duration: .2 }); },
+          onRelease: function(){ gsap.to(el, { scale: 1, duration: .3 }); },
+          onDragEnd: schedule, onThrowComplete: schedule });
+        nudge(el, schedule);
+      });
+      AB.dragCue({ host: title.parentNode, first: items[0], items: items });
+    }, 0);
+  })();
+
+  /* ---------- drag cue (every hero with draggables): until something on THIS hero is dragged, the first draggable
+     tugs and a "Drag me" hand chip points at it, 3 times, 10 s apart. One sessionStorage key per hero type
+     (ab:toys:work|services|mission|about|404, Home keeps ab:dragged), so dragging on one page doesn't hide it on the others; per visit, so it comes back next time.
+     opts: host (positioned box the chip sits in), first (element it points at), items (presses that end it),
+     key (optional), at ('mid' default = over the first item, 'end' = at its right edge), tug (degrees). ---------- */
+  function heroKind(){
+    if ($('.section_lost')) return '404';
+    var p = location.pathname.split('/').filter(Boolean);
+    if (!p.length) return 'home';
+    return p.length > 1 ? (p[0] === 'work' ? 'mission' : p[0]) : p[0];
+  }
+  AB.dragCue = function(o){
+    var KEY = o.key || 'ab:toys:' + heroKind(), done = false, first = o.first, host = o.host;
+    if (!hasGsap || !first || !host) return;
+    try { if (sessionStorage.getItem(KEY)) return; } catch (e){}
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    var hint = document.createElement('div'); hint.className = 'ab_drag-hint'; hint.setAttribute('aria-hidden', 'true'); hint.style.opacity = 0;
+    hint.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12m0-6.5v-1a1.5 1.5 0 0 1 3 0V12m0-6a1.5 1.5 0 0 1 3 0v6m0-3.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7L3.4 15a1.6 1.6 0 0 1 2.6-1.9L8 15.5"/></svg><span>Drag me</span>';
+    host.appendChild(hint);
+    function stop(){
+      if (done) return; done = true;
+      try { sessionStorage.setItem(KEY, '1'); } catch (e){}
+      gsap.killTweensOf(first, 'rotation'); gsap.killTweensOf(hint); gsap.set(first, { rotation: 0 });
+      gsap.to(hint, { opacity: 0, duration: .3, onComplete: function(){ hint.remove(); } });
+    }
+    (o.items || [first]).forEach(function(el){ el.addEventListener('pointerdown', stop, { once: true }); });
+    function place(){
+      var c = host.getBoundingClientRect(), r = first.getBoundingClientRect();
+      hint.style.left = (o.at === 'end' ? r.right - c.left - 10 : r.left - c.left + Math.min(r.width * .6, 220)) + 'px';
+      hint.style.top = (r.top - c.top - (o.at === 'end' ? 6 : 30)) + 'px';
+    }
+    var shown = 0;
+    function go(){
+      if (done || shown++ >= 3) return;
+      place();
+      if (reduce){ gsap.set(hint, { opacity: 1 }); gsap.delayedCall(4, function(){ if (!done) gsap.to(hint, { opacity: 0, duration: .3 }); }); return; }
+      gsap.timeline()
+        .fromTo(hint, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .35, ease: 'power2.out' })
+        .to(hint, { x: -6, duration: .35, ease: 'sine.inOut', yoyo: true, repeat: 3 }, '<.1')
+        .to(first, { rotation: o.tug || -4, duration: .35, ease: 'sine.inOut', yoyo: true, repeat: 3, onComplete: function(){ if (!done) gsap.set(first, { rotation: 0 }); } }, '<')
+        .to(hint, { opacity: 0, duration: .4 }, '+=1.6');
+      gsap.delayedCall(10, go);
+    }
+    gsap.delayedCall(o.delay || 2.6, go);
+    addEventListener('resize', function(){ if (!done) place(); });
+    return { stop: stop };
+  };
+
   /* ===== core/40-footer.js ===== */
 
   /* ---------- quotes: reserve the tallest quote's height so swapping never shifts the page ---------- */
@@ -845,7 +1255,7 @@ window.Webflow.push(function(){
     // wordmark: scale to fit the row; letters rise toward the cursor, click to launch one
     var wm = $('#wordmark'); if (!wm) return;
     function fitWM(){ wm.style.fontSize = '100px'; var p = wm.parentNode, r = p.clientWidth - parseFloat(getComputedStyle(p).paddingLeft) * 2; wm.style.fontSize = Math.min(200, 100 * r / wm.scrollWidth * .995) + 'px'; }
-    var txt = wm.textContent.trim(); wm.setAttribute('aria-label', txt); wm.textContent = '';
+    var txt = wm.textContent.trim(); wm.setAttribute('role', 'img'); wm.setAttribute('aria-label', txt); wm.textContent = '';
     txt.split(/\s+/).forEach(function(word, wi, arr){
       var ws = document.createElement('span'); ws.className = 'wl-word';
       word.split('').forEach(function(ch){ var s = document.createElement('span'); s.className = 'wl'; s.setAttribute('aria-hidden', 'true'); s.textContent = ch; ws.appendChild(s); });
@@ -880,7 +1290,8 @@ window.Webflow.push(function(){
 
   /* ---------- feed the black hole: tidal stretch while dragging, spaghettification on capture ---------- */
   (function(){
-    var bhw = $('.ab_planet[data-planet="blackhole"]'), feedPlanets = $$('.ab_planet.is-feed');
+    // the footer's own black hole (About's Interstellar card has one too, earlier in the page)
+    var foot = $('#siteFoot') || document, bhw = $('.ab_planet[data-planet="blackhole"]', foot), feedPlanets = $$('.ab_planet.is-feed');
     if (!bhw || !feedPlanets.length || !hasGsap || !window.Draggable) return;
     var count = 0, grow = 1, countEl = $('#feedCount'), NOVA = 7, novae = 0;
     feedPlanets.forEach(function(p){ p.tabIndex = 0; p.setAttribute('role', 'button'); p.setAttribute('aria-label', 'Planet. Press Enter to send it into the black hole.'); });

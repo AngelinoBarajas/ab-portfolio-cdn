@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core.css v0.3.2 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core.css v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
 /* =========================================================
    AB Portfolio · ab-core.css (site-wide)
    Only what the Webflow Designer can't express: pseudo-elements, state
@@ -31,7 +31,7 @@ html.lenis,html.lenis body{height:auto}
 .ab_grain{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
 .ab_warp-flash{position:fixed;inset:0;z-index:70;pointer-events:none;background:var(--_color---neutral--void);opacity:0}
 /* arriving from a warp: a tiny head script sets html.ab-warp-in from sessionStorage before first paint (and drops it after 1.5 s as a failsafe); ab-core hands over to #warpFlash */
-html.ab-warp-in body::after{content:"";position:fixed;inset:0;z-index:70;pointer-events:none;background:var(--_color---neutral--void);opacity:.85}
+html.ab-warp-in body::after{content:"";position:fixed;inset:0;z-index:70;pointer-events:none;background:var(--_color---neutral--void);opacity:1}
 
 /* ---------- planets (.ab_planet[data-planet]) ---------- */
 .ab_planet.is-drag{cursor:grab;touch-action:none;z-index:3}
@@ -110,10 +110,14 @@ html.is-quake .ab_footer_component{animation:ab-quake .5s cubic-bezier(.36,.07,.
 /* ---------- nav ---------- */
 .ab_nav_bar{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);transition:transform .4s ease}
 .ab_nav_component.is-hidden .ab_nav_bar{transform:translateY(-130%)}
+/* Home testimonials: the CMS list wrappers stay out of the quote grid; its empty state never shows */
+.ab_quotes .w-dyn-list,.ab_quotes .w-dyn-items,.ab_quotes .w-dyn-item{display:contents}
+.ab_quotes .w-dyn-empty{display:none}
+.ab_sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .ab_nav_link::before{content:"";position:absolute;left:-13px;top:50%;width:6px;height:6px;margin-top:-3px;background:var(--_color---brand--signal);transform:scale(0) rotate(45deg);transition:transform .3s cubic-bezier(.2,.9,.2,1.4)}
 .ab_nav_link::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--_color---brand--signal);transform:scaleX(0);transform-origin:right;transition:transform .35s cubic-bezier(.7,0,.2,1)}
-.ab_nav_link:hover,.ab_nav_link:focus-visible,.ab_nav_link.is-active{color:var(--_color---text--primary)}
-.ab_nav_link:hover::before,.ab_nav_link:focus-visible::before,.ab_nav_link.is-active::before{transform:scale(1) rotate(0deg)}
+.ab_nav_link:hover,.ab_nav_link:focus-visible,.ab_nav_link.is-active,.ab_nav_link.w--current{color:var(--_color---text--primary)}
+.ab_nav_link:hover::before,.ab_nav_link:focus-visible::before,.ab_nav_link.is-active::before,.ab_nav_link.w--current::before{transform:scale(1) rotate(0deg)}
 .ab_nav_link:hover::after,.ab_nav_link:focus-visible::after{transform:scaleX(1);transform-origin:left}
 .ab_nav_status-dot{box-shadow:0 0 10px #3BE38A;animation:ab-blink 2s infinite}
 @media (max-width:1100px){.ab_nav_clock-wrap{display:none}}
@@ -160,6 +164,7 @@ html.is-quake .ab_footer_component{animation:ab-quake .5s cubic-bezier(.36,.07,.
 :where([data-selectable]){position:relative}
 .sel{position:absolute;inset:-1px;border:1px solid var(--_color---ui--select);pointer-events:none;opacity:0;transform:scale(1.02);transition:opacity .25s,transform .35s cubic-bezier(.2,.9,.2,1.2);z-index:5}
 [data-selectable]:hover > .sel,[data-selectable].is-selected > .sel,[data-selectable]:focus-visible > .sel{opacity:1;transform:none}
+[data-selectable]:hover,[data-selectable].is-selected,[data-selectable]:focus-visible{z-index:8}
 .sel i{position:absolute;width:9px;height:9px;background:#fff;border:1.5px solid var(--_color---ui--select)}
 .sel .tl{left:-5px;top:-5px}.sel .tc{left:calc(50% - 4.5px);top:-5px}.sel .tr{right:-5px;top:-5px}
 .sel .ml{left:-5px;top:calc(50% - 4.5px)}.sel .mr{right:-5px;top:calc(50% - 4.5px)}
@@ -174,6 +179,13 @@ html.is-quake .ab_footer_component{animation:ab-quake .5s cubic-bezier(.36,.07,.
 .ab_board_frame.is-selected .ab_board_fname,.ab_board_frame:hover .ab_board_fname{opacity:0}
 .ab_board_frame canvas.pv{position:absolute;right:16px;top:16px}
 .ab_board_frame img.pv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ab_kg{position:absolute;right:18px;top:18px;width:230px;--kc:#a597ff}
+.ab_kg svg{display:block;width:100%;height:auto;overflow:visible}
+.ab_kg path{fill:none;stroke:var(--kc);stroke-width:1.6;stroke-dasharray:160;stroke-dashoffset:160;animation:ab-kgDraw 4.8s calc(var(--k) * .18s) ease-in-out infinite}
+.ab_kg rect{fill:#15122e;stroke:#3a3f5c;stroke-width:1.2}
+.ab_kg rect.c{fill:var(--kc);stroke:var(--kc)}
+@keyframes ab-kgDraw{0%{stroke-dashoffset:160}35%,80%{stroke-dashoffset:0}100%{stroke-dashoffset:-160}}
+@media (prefers-reduced-motion:reduce){.ab_kg path{animation:none;stroke-dashoffset:0}}
 .ab_board_ftitle.is-serif{font-family:"Lora",Georgia,serif;font-weight:600;font-stretch:100%;text-transform:none}
 .ab_board_fopen{position:absolute;left:24px;top:22px;font-family:var(--_typography---font--mono);font-size:11px;padding:4px 8px;border:1px solid currentColor;opacity:0;transition:opacity .25s}
 .ab_board_frame:hover .ab_board_fopen,.ab_board_frame.is-selected .ab_board_fopen{opacity:.85}
@@ -396,6 +408,14 @@ html.is-quake .ab_footer_component{animation:ab-quake .5s cubic-bezier(.36,.07,.
 .ab_planner_read b{color:var(--_color---text--primary);font-weight:500}
 .ab_planner_read.is-below{position:static;margin-top:-8px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.6}
 .ab_planner_chips.is-shake{animation:ab-shake .4s}
+.ab_planner_addons{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px}
+.ab_planner_addon-label{font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--_color---text--tertiary)}
+.ab_planner_chip.is-addon{border-style:dashed}
+.ab_planner_chip.is-addon[aria-pressed="true"]{border-style:solid}
+/* budget: "not sure yet" (still scouting) overrides the slider */
+.ab_planner_chip.is-unsure{--c:var(--_color---text--tertiary);margin-top:14px;border-style:dashed}
+.ab_planner_chip.is-unsure[aria-pressed="true"]{--c:var(--_color---brand--signal);border-style:solid}
+.ab_planner_range.is-unsure{opacity:.35}
 @keyframes ab-shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 .button.is-launch{overflow:visible}
 .ab_planner_flame{position:absolute;left:50%;bottom:-40px;width:18px;height:40px;transform:translateX(-50%);background:linear-gradient(var(--_color---brand--signal),transparent);opacity:0;filter:blur(2px);pointer-events:none}
@@ -535,11 +555,11 @@ section:hover > .ab_frame-label{color:var(--_color---ui--select)}
 .ab_mission-card_cv.is-img img{width:100%;height:100%;object-fit:cover;object-position:top left;display:block}
 .ab_mission-card_cv.is-mark{display:grid;place-items:center;background:#07080D}
 .ab_mission-card_cv.is-mark svg{width:58%;height:auto;overflow:visible}
-.ab_mission-card_cv .lg-g{fill:none;stroke:#4C8DFF;stroke-width:.6;opacity:.5}
-.ab_mission-card_cv .lg-m{fill:none;stroke:#F2F0EA;stroke-width:20}
-.ab_mission-card_cv .lg-s{fill:#FF6A3D}
-.ab_mission-card_cv .lg-orbit{transform-origin:0 0;transition:transform 1.4s cubic-bezier(.2,.9,.2,1)}
-.ab_mission-card:hover .lg-orbit{transform:rotate(-90deg)}
+.ab_mission-card_cv.is-mark .ab_mark{width:74%}
+.ab_mission-card_cv.is-mark .lg-m path{fill:#F2F0EA}
+.ab_mission-card:hover .ab_mark .lg-planet{transform:rotate(-10deg) scale(1.05)}
+.ab_mission-card:hover .ab_mark .lg-a{transform:translateX(14px) scale(.95) skewX(-6deg)}
+.ab_mission-card:hover .ab_mark .lg-b{transform:translateX(-14px) scale(.95) skewX(6deg)}
 .ab_mission-card_cv.is-brand{display:flex;align-items:center;justify-content:center;gap:6%;background:radial-gradient(80% 90% at 30% 20%,#3a281c,var(--cbg))}
 .cb-bag{width:30%;aspect-ratio:3/4.2;background:var(--cfg);color:var(--cbg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6%;padding:6%;box-shadow:0 18px 30px -12px rgba(0,0,0,.6);transform:rotate(-5deg);transition:transform .6s cubic-bezier(.2,.9,.2,1.2)}
 .cb-bag.two{background:var(--cac);transform:rotate(6deg) translateY(8%)}
@@ -634,5 +654,80 @@ section:hover > .ab_frame-label{color:var(--_color---ui--select)}
   .t-outline,.t-stars,.orb b,.ab_nebula,.ab_nav_status-dot,.ab_transmission_live::before,.ab_planner_led,.v-pipe .line i,.v-term .cur{animation:none}
   .button.is-primary::before{transition:none}
   .ab_dbh_eyebrow::before,.ab_meta_live::before,.ab_status_dot,.nx-streaks i,.nx-ship .fl{animation:none}
-  .ab_mission-card_cv,.cb-bag,.ca-ph,.cs-img,.ab_planet.is-card,.lg-orbit{transition:none}
+  .ab_mission-card_cv,.cb-bag,.ca-ph,.cs-img,.ab_planet.is-card,.ab_mark path{transition:none}
 }
+
+/* ---------- code blocks (AB.codeBlock: Mission systems/problems, Services under the hood) ---------- */
+.cb{margin:14px 0 0;border:1px solid var(--_color---neutral--hair-strong);background:#05060a;position:relative}
+.cb figcaption{display:flex;align-items:center;gap:10px;padding:7px 10px 7px 12px;border-bottom:1px solid var(--_color---neutral--hair);font-family:var(--_typography---font--mono);font-size:10.5px;letter-spacing:.08em;color:var(--_color---text--tertiary)}
+.cb-l{color:#05060a;background:#7cc4ff;padding:2px 6px;font-weight:500}
+.cb-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:lowercase}
+.cb-copy{all:unset;cursor:pointer;padding:3px 8px;border:1px solid var(--_color---neutral--hair-strong);color:var(--_color---text--primary);transition:border-color .2s,color .2s}
+.cb-copy:hover,.cb-copy:focus-visible{border-color:var(--_color---brand--signal);color:var(--_color---brand--signal)}
+.cb-copy.ok{border-color:#3BE38A;color:#3BE38A}
+.cb pre{margin:0!important;padding:14px!important;border:0!important;background:none!important;overflow-x:auto;font-family:var(--_typography---font--mono);font-size:12px;line-height:1.65;color:#c9d3e6;tab-size:2}
+.cb code{white-space:pre}
+.cb i{font-style:normal}
+.cb .t-c{color:#6b7394;font-style:italic}.cb .t-s{color:#9be28a}.cb .t-n{color:#ffb86b}.cb .t-k{color:#ff8a65}.cb .t-g{color:#7cc4ff}
+.cb pre{max-width:100%}
+
+/* ---------- logo (core/22-logo.js inlines the SVG): draw on, fill, glow pulse, black-hole hover ---------- */
+.ab_logo-svg{display:block;height:24px;width:auto;overflow:visible;color:inherit}
+.ab_logo-svg path{fill:currentColor;stroke:currentColor;stroke-width:10;stroke-linejoin:round;stroke-opacity:0;transform-box:view-box;transform-origin:240px 121px;transition:transform .9s cubic-bezier(.2,.9,.2,1)}
+.ab_logo-svg.is-draw{animation:ab-logo-warp 1s cubic-bezier(.16,1,.3,1) both}
+.ab_logo-svg.is-draw path{animation:ab-logo-fill .6s ease-out calc(.85s + var(--i) * .12s) both}
+@keyframes ab-logo-warp{0%{transform:scale(.05) rotate(-720deg);opacity:0;filter:blur(3px) drop-shadow(0 0 6px rgba(255,106,61,.9))}30%{opacity:1}100%{transform:none;opacity:1;filter:none}}
+@keyframes ab-logo-fill{from{fill-opacity:0;stroke-opacity:1}to{fill-opacity:1;stroke-opacity:0}}
+.ab_nav_logo:hover .lg-planet,.ab_nav_logo:focus-visible .lg-planet{transform:rotate(-14deg) scale(1.08)}
+.ab_nav_logo:hover .lg-a,.ab_nav_logo:focus-visible .lg-a{transform:translateX(22px) scale(.92) skewX(-8deg)}
+.ab_nav_logo:hover .lg-b,.ab_nav_logo:focus-visible .lg-b{transform:translateX(-22px) scale(.92) skewX(8deg)}
+@media (prefers-reduced-motion:reduce){.ab_logo-svg,.ab_logo-svg path{animation:none!important;transition:none}}
+/* ---------- AB planet monogram (AB.markSVG): shared by covers, board, monitor, mockups ---------- */
+.ab_mark{display:block;width:100%;height:auto;overflow:visible}
+.ab_mark .lg-m path{fill:currentColor;transform-box:view-box;transform-origin:240px 121px;transition:transform .9s cubic-bezier(.2,.9,.2,1)}
+.ab_mark .lg-g{fill:none;stroke:#4C8DFF;stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
+.ab_mark .lg-d{font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.06em;fill:#4C8DFF}
+.ab_mark .lg-d .is-hot{fill:#FF6A3D}
+
+/* ---------- metric icons (core/30-motion.js) ---------- */
+.ab_metric_icon{display:block;width:34px;height:34px;margin-bottom:18px;color:var(--_color---brand--signal)}
+.ab_metric_icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+/* ---------- hero toys site-wide (core/39-herodrag.js) ---------- */
+.ab_dbh_title[data-drag-ready]{pointer-events:none}
+.ab_dbh_title .is-toy{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;pointer-events:auto}
+.ab_dbh_title .is-toy:active{cursor:grabbing}
+.ab_dbh_title .ab_dbh_word.is-toy,.ab_dbh_title .w{display:inline-block}
+.ab_dbh_title .is-toy:focus-visible{outline:2px solid var(--_color---ui--select);outline-offset:4px}
+
+/* ---------- tips (core/23-tips): glossary terms + asides ---------- */
+.gl{all:unset;cursor:help;border-bottom:1px dashed var(--_color---brand--signal);color:inherit;position:relative;white-space:nowrap}
+.gl:hover{border-bottom-style:solid}
+.gl:focus-visible{outline:2px solid var(--_color---ui--select);outline-offset:2px}
+.gl-tip{position:fixed;left:0;top:0;z-index:85;max-width:280px;padding:12px 14px;background:var(--_color---neutral--panel);border:1px solid var(--_color---brand--signal);font-family:var(--_typography---font--mono);font-size:12px;line-height:1.5;color:var(--_color---text--primary);pointer-events:none;opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .2s,transform .2s,visibility 0s .2s}
+.gl-tip.show{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .2s}
+.gl-tip b{display:block;color:var(--_color---brand--signal);font-weight:500;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
+.gl-tip.is-aside{border-color:var(--_color---ui--select)}
+.gl-tip.is-aside b{color:var(--_color---ui--select)}
+.gl-tip b i{font-style:normal}
+@media (prefers-reduced-motion:reduce){.gl-tip,.gl-tip.show{transition:none;transform:none}}
+
+/* ---------- mission-control monitor (Mission debrief channels, Services hub manifest): frame screws, REC, CRT decor ---------- */
+.ab_mon::before,.ab_mon::after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:#2a2e44;box-shadow:inset 0 1px 1px rgba(0,0,0,.6);top:6px}
+.ab_mon::before{left:6px}.ab_mon::after{right:6px}
+.ab_mon_rec::before{content:"";width:8px;height:8px;border-radius:50%;background:#ff4b3a;box-shadow:0 0 8px #ff4b3a;animation:ab-blink 1.2s steps(1) infinite}
+.ab_mon_tc{font-variant-numeric:tabular-nums}.ab_tele_v{font-variant-numeric:tabular-nums}
+.mon-bar .rec{display:inline-flex;align-items:center;gap:7px;color:#ff4b3a}
+.mon-bar .tc{font-variant-numeric:tabular-nums;color:var(--_color---text--secondary)}
+.scan{position:absolute;inset:0;z-index:20;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);mix-blend-mode:overlay}
+.vig{position:absolute;inset:0;z-index:21;pointer-events:none;box-shadow:inset 0 0 80px rgba(0,0,0,.55);background:radial-gradient(120% 90% at 50% 50%,transparent 60%,rgba(0,0,0,.35))}
+.roll{position:absolute;left:0;right:0;height:18%;z-index:22;pointer-events:none;background:linear-gradient(transparent,rgba(255,255,255,.05),transparent);animation:ab-roll 7s linear infinite}
+@keyframes ab-roll{from{top:-20%}to{top:110%}}
+.brk{position:absolute;width:18px;height:18px;border:1.5px solid rgba(242,240,234,.55);z-index:24;pointer-events:none}
+.brk.tl{left:10px;top:10px;border-right:0;border-bottom:0}.brk.tr{right:10px;top:10px;border-left:0;border-bottom:0}
+.brk.bl{left:10px;bottom:10px;border-right:0;border-top:0}.brk.br{right:10px;bottom:10px;border-left:0;border-top:0}
+.osd{position:absolute;left:16px;top:14px;z-index:24;pointer-events:none;font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.1em;color:#fff;text-transform:uppercase;background:rgba(7,8,13,.72);padding:4px 8px}
+@media (prefers-reduced-motion:reduce){.roll,.ab_mon_rec::before{animation:none}}
+/* ---------- square mono chip (.ab_chip: hub diagnostics, pass tools; layout in the Designer) ---------- */
+.ab_chip{transition:background-color .2s,border-color .2s,color .2s}
+.ab_chip[aria-pressed="true"]{border-color:var(--_color---text--primary);color:var(--_color---text--primary);background-color:rgba(255,255,255,.06)}
+.ab_chip:focus-visible{outline:2px solid var(--_color---ui--select);outline-offset:2px}

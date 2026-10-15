@@ -1,8 +1,9 @@
-/*! AB Portfolio · ab-home v0.3.2 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.14.0 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
   window.__abHomeInit = true;
+  var __steps = [];
   /* ===== home/00-hero.js ===== */
   /* ---------- shared helpers from ab-core.js ---------- */
   var AB = window.AB;
@@ -109,40 +110,29 @@ window.Webflow.push(function(){
     nudge(sat);
   }
 
-  /* ---------- drag cue: until someone drags something, a word tugs and a "drag me" hand appears ---------- */
+  /* ---------- drag cue: until someone drags something, a word tugs and a "drag me" hand appears (AB.dragCue in core) ---------- */
   (function(){
     var comp = $('.ab_hero_component'), first = $('#heroTitle .w');
-    if (!comp || !first || !canDrag) return;
-    var KEY = 'ab:dragged', done = false;
-    try { if (localStorage.getItem(KEY)) return; } catch (e){}
-    var hint = document.createElement('div'); hint.className = 'ab_drag-hint'; hint.setAttribute('aria-hidden', 'true');
-    hint.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12m0-6.5v-1a1.5 1.5 0 0 1 3 0V12m0-6a1.5 1.5 0 0 1 3 0v6m0-3.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7L3.4 15a1.6 1.6 0 0 1 2.6-1.9L8 15.5"/></svg><span>Drag me</span>';
-    comp.appendChild(hint);
-    function stop(){
-      if (done) return; done = true;
-      try { localStorage.setItem(KEY, '1'); } catch (e){}
-      gsap.killTweensOf(first, 'rotation'); gsap.killTweensOf(hint); gsap.set(first, { rotation: 0 });
-      gsap.to(hint, { opacity: 0, duration: .3, onComplete: function(){ hint.remove(); } });
-    }
+    if (!comp || !first || !canDrag || !AB.dragCue) return;
     // any press on a draggable hero thing counts as "found it"
-    $$('[data-drag], #sat', hero).forEach(function(el){ el.addEventListener('pointerdown', stop, { once: true }); });
-    function place(){ var c = comp.getBoundingClientRect(), r = first.getBoundingClientRect(); hint.style.left = (r.right - c.left - 10) + 'px'; hint.style.top = (r.top - c.top - 6) + 'px'; }
-    var shown = 0;
-    function cue(){
-      if (done || shown++ >= 3) return;
-      place();
-      if (reduce){ gsap.set(hint, { opacity: 1 }); gsap.delayedCall(4, function(){ if (!done) gsap.to(hint, { opacity: 0, duration: .3 }); }); return; }
-      gsap.timeline()
-        .fromTo(hint, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .35, ease: 'power2.out' })
-        .to(hint, { x: -6, duration: .35, ease: 'sine.inOut', yoyo: true, repeat: 3 }, '<.1')
-        .to(first, { rotation: -5, duration: .35, ease: 'sine.inOut', yoyo: true, repeat: 3 }, '<')
-        .to(hint, { opacity: 0, duration: .4 }, '+=1.6');
-      gsap.delayedCall(10, cue);
-    }
-    gsap.delayedCall(2.6, cue);
-    addEventListener('resize', function(){ if (!done) place(); });
+    AB.dragCue({ host: comp, first: first, items: $$('[data-drag], #sat', hero), key: 'ab:dragged', at: 'end', tug: -5 });
   })();
 
+  __steps.push(function(){
+  /* ===== home/05-quotes.js ===== */
+  /* ---------- testimonials: Missions › Client quote (the Designer list filters out Hide from site). A mission
+     without a quote drops out; with no quotes left the whole section hides, so a removed client leaves no trace. ---------- */
+  (function(){
+    var sec = $('.section_testimonials'); if (!sec) return;
+    $$('.ab_quotes .w-dyn-item', sec).forEach(function(it){
+      var q = $('.ab_quote_text', it);
+      if (!q || !q.textContent.trim() || q.classList.contains('w-dyn-bind-empty')) it.parentNode.removeChild(it);
+    });
+    if (!$('.ab_quotes .ab_quote', sec)) sec.style.display = 'none';
+  })();
+
+  });
+  __steps.push(function(){
   /* ===== home/10-work.js ===== */
 
   /* =========================================================
@@ -191,9 +181,17 @@ window.Webflow.push(function(){
           f.__pv = { type: pv.type, pins: pv.pins, pinHome: pv.pinHome, pinColor: acc || pv.pinColor };
         }
         else if (cover === 'mark'){
-          var mk = document.createElement('div'); mk.className = 'pv'; mk.setAttribute('aria-hidden', 'true'); mk.style.cssText = 'position:absolute;right:22px;top:22px;width:120px;height:120px';
-          mk.innerHTML = '<svg viewBox="-80 -80 160 160" width="100%" height="100%"><circle r="61.8" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="3 3"/><path d="M 0 -61.8 A 61.8 61.8 0 1 0 61.8 0" fill="none" stroke="currentColor" stroke-width="12"/><rect x="47" y="-15" width="30" height="30" fill="#FF6A3D"/></svg>';
+          var mk = document.createElement('div'); mk.className = 'pv'; mk.setAttribute('aria-hidden', 'true'); mk.style.cssText = 'position:absolute;right:22px;top:26px;width:170px';
+          mk.innerHTML = AB.markSVG({ grid: true });
           inner.appendChild(mk);
+        }
+        else if (slug === 'knowledge-system'){
+          // a tiny knowledge graph: one entry in the middle, its tags and the pages they link, lines drawing on a loop
+          var kg = document.createElement('div'); kg.className = 'pv ab_kg'; kg.setAttribute('aria-hidden', 'true');
+          var N = [[40, 30], [40, 90], [40, 150], [200, 22], [212, 90], [200, 158]], ln = '', nd = '';
+          N.forEach(function(p, k){ ln += '<path style="--k:' + k + '" d="M120 90C' + (p[0] > 120 ? 160 : 80) + ' 90 ' + (p[0] > 120 ? 160 : 80) + ' ' + p[1] + ' ' + p[0] + ' ' + p[1] + '"/>'; nd += '<rect x="' + (p[0] - (p[0] > 120 ? 0 : 34)) + '" y="' + (p[1] - 9) + '" width="34" height="18" rx="3"/>'; });
+          kg.innerHTML = '<svg viewBox="0 0 250 180">' + ln + nd + '<rect class="c" x="92" y="72" width="56" height="36" rx="5"/></svg>';
+          inner.appendChild(kg);
         }
         var op = document.createElement('span'); op.className = 'ab_board_fopen'; op.textContent = 'Open case →'; inner.appendChild(op);
         var t = document.createElement('div'); t.className = 'ab_board_ftitle' + (/lora|serif/i.test(f.getAttribute('data-font') || '') ? ' is-serif' : ''); t.textContent = name; inner.appendChild(t);
@@ -390,20 +388,12 @@ window.Webflow.push(function(){
     updateMM();
   })();
 
+  });
+  __steps.push(function(){
   /* ===== home/20-services.js ===== */
 
-  /* ---------- services bento: spotlight + tilt ---------- */
+  /* ---------- services bento (spotlight + tilt come from core AB.cardFx) ---------- */
   var cards = $$('#capabilities .ab_bento-card');
-  cards.forEach(function(c){
-    c.addEventListener('pointermove', function(e){
-      var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-      c.style.setProperty('--mx', (x * 100) + '%'); c.style.setProperty('--my', (y * 100) + '%');
-      if (reduce || !hasGsap || coarse || e.buttons) return;
-      gsap.to(c, { rotationY: (x - .5) * 5, rotationX: (.5 - y) * 5, transformPerspective: 1000, duration: .5, ease: 'power2.out' });
-    });
-    c.addEventListener('pointerleave', function(){ if (hasGsap) gsap.to(c, { rotationY: 0, rotationX: 0, duration: .8, ease: 'elastic.out(1,.6)' }); });
-    c.addEventListener('pointerdown', function(){ if (hasGsap) gsap.to(c, { rotationY: 0, rotationX: 0, duration: .3 }); });
-  });
   if (hasGsap && !coarse && !reduce && cards.length){
     gsap.from(cards, { y: 40, opacity: 0, duration: .9, stagger: .08, ease: 'power3.out', clearProps: 'transform,opacity', scrollTrigger: { trigger: '.ab_bento_grid', start: 'top 85%', once: true } });
   }
@@ -461,7 +451,9 @@ window.Webflow.push(function(){
       var eases = ['expo.out', 'power3.inOut', 'elastic.out(1,0.4)', 'back.out(2.2)', 'bounce.out'], ei = 0;
       v.innerHTML = '<div class="v-ease"><svg viewBox="0 0 200 120" preserveAspectRatio="none"><path d="M0 110H200M0 10H200" stroke="currentColor" stroke-opacity=".15" fill="none" vector-effect="non-scaling-stroke"/><path class="cv" fill="none" stroke="#FF6A3D" stroke-width="2" vector-effect="non-scaling-stroke"/><circle class="dt" r="5" fill="#FF6A3D"/></svg><div class="track"><i></i></div></div><button type="button">expo.out ↻</button>';
       var cv = $('.cv', v), dt = $('.dt', v), sq = $('.track i', v), btn = $('button', v), tr = $('.track', v), tw;
-      var lo = 0, hi = 1;
+      var lo = 0, hi = 1, trH = 0, seen = true;
+      function measure(){ trH = tr.clientHeight; }
+      measure(); addEventListener('resize', measure);
       function Y(val){ return 108 - (val - lo) / (hi - lo) * 96; }
       function play(){
         var E = gsap.parseEase(eases[ei]), d = '';
@@ -470,12 +462,13 @@ window.Webflow.push(function(){
         for (var i = 0; i <= 60; i++){ var t = i / 60; d += (i ? 'L' : 'M') + (t * 200).toFixed(1) + ' ' + Y(E(t)).toFixed(1); }
         cv.setAttribute('d', d); btn.textContent = eases[ei] + ' ↻';
         var o = { t: 0 }; if (tw) tw.kill();
-        tw = gsap.to(o, { t: 1, duration: 1.6, ease: 'none', repeat: -1, repeatDelay: .6, onUpdate: function(){ var e = E(o.t); dt.setAttribute('cx', o.t * 200); dt.setAttribute('cy', Y(e)); sq.style.bottom = ((e - lo) / (hi - lo) * (tr.clientHeight - 14)) + 'px'; } });
-        if (reduce) tw.progress(1).pause();
+        tw = gsap.to(o, { t: 1, duration: 1.6, ease: 'none', repeat: -1, repeatDelay: .6, onUpdate: function(){ var e = E(o.t); dt.setAttribute('cx', o.t * 200); dt.setAttribute('cy', Y(e)); sq.style.bottom = ((e - lo) / (hi - lo) * (trH - 14)) + 'px'; } });
+        if (reduce) tw.progress(1).pause(); else if (!seen) tw.pause();
       }
       function next(){ ei = (ei + 1) % eases.length; play(); }
       btn.addEventListener('click', next); $('svg', v).addEventListener('click', next); $('svg', v).style.cursor = 'pointer';
       play();
+      if (!reduce && window.IntersectionObserver) onView(v, function(on){ seen = on; if (!tw) return; if (on){ measure(); tw.resume(); } else tw.pause(); });
     },
     logo: function(v){
       v.innerHTML = '<div class="v-logo"><svg viewBox="-110 -110 220 220">' +
@@ -524,6 +517,8 @@ window.Webflow.push(function(){
   };
   $$('.ab_bento-card[data-visual]').forEach(function(card){ var f = VIZ[card.getAttribute('data-visual')], v = $('.ab_bento-card_viz', card); if (f && v) f(v); });
 
+  });
+  __steps.push(function(){
   /* ===== home/30-process.js ===== */
 
   /* ---------- mission sequence (Process: 6 static steps → pinned flight path) ---------- */
@@ -646,6 +641,8 @@ window.Webflow.push(function(){
     el.next.addEventListener('click', function(){ go(cur + 1); });
   })();
 
+  });
+  __steps.push(function(){
   /* ===== home/40-stack.js ===== */
 
   /* ---------- orbit (Tools Collection List → chips on two rings), shared system in ab-core ---------- */
@@ -694,6 +691,8 @@ window.Webflow.push(function(){
     });
   })();
 
+  });
+  __steps.push(function(){
   /* ===== home/50-planner.js ===== */
 
   /* ---------- launch: mission planner (native Webflow form #planner) ---------- */
@@ -714,10 +713,25 @@ window.Webflow.push(function(){
     // the flight-plan readout lives under the visual (full width, wraps), not inside it next to Earth
     var viz = $('.ab_planner_viz', form);
     if (read && viz && viz.contains(read)){ viz.parentNode.insertBefore(read, viz.nextSibling); read.classList.add('is-below'); read.setAttribute('aria-live', 'polite'); }
-    var chips = $$('.ab_planner_chip', form), bud = $('#plBud'), budOut = $('#plBudOut');
-    var BUD = ['<$5k', '$5–10k', '$10–25k', '$25k+'], WIN = ['ASAP', '1–2 months', '3+ months', 'Flexible'];
-    var fType = $('#plTypesField'), fBud = $('#plBudField'), fBrief = $('#plBriefField');
-    chips.forEach(function(c){ c.setAttribute('aria-pressed', 'false'); });
+    var bud = $('#plBud'), budOut = $('#plBudOut');
+    var BUD = ['<$20k', '$20–40k', '$40–60k', '$60–80k', '$80–100k'], MAXB = BUD.length - 1, WIN = ['ASAP', '1–2 months', '3+ months', 'Flexible'];
+    // the budget scale lives here (the Designer embed may carry an older one): slider range, ticks, default
+    bud.max = MAXB; bud.value = 1;
+    var ticks = $('.ab_planner_ticks', form); if (ticks) ticks.innerHTML = BUD.map(function(b){ return '<span>' + esc(b) + '</span>'; }).join('');
+    // budget: "not sure yet" overrides the slider (people still scouting what to spend); moving the slider turns it off
+    var UNSURE = 'Not sure yet · still scouting', unsureBtn = $('.ab_planner_chip.is-unsure', form);
+    if (!unsureBtn && ticks){ unsureBtn = document.createElement('button'); unsureBtn.type = 'button'; unsureBtn.className = 'ab_planner_chip is-unsure'; unsureBtn.setAttribute('aria-pressed', 'false'); unsureBtn.textContent = UNSURE; ticks.parentNode.insertBefore(unsureBtn, ticks.nextSibling); }
+    // add-ons ride along with any mission type; the Knowledge System add-on is added here if the embed lacks it
+    var typesRow = $('#plTypes');
+    if (typesRow && !$('[data-addon]', form)){
+      var ad = document.createElement('div'); ad.className = 'ab_planner_addons';
+      ad.innerHTML = '<span class="ab_planner_addon-label">Add-on</span><button type="button" class="ab_planner_chip is-addon" data-addon="Complete knowledge system" data-c="#FFD29A" aria-pressed="false">+ Complete knowledge system</button>';
+      typesRow.parentNode.insertBefore(ad, typesRow.nextSibling);
+    }
+    if (!$('#plAddonsField', form) && typesRow){ var hf = document.createElement('input'); hf.type = 'hidden'; hf.name = 'Add-ons'; hf.id = 'plAddonsField'; hf.value = ''; typesRow.parentNode.appendChild(hf); }
+    var chips = $$('.ab_planner_chip:not([data-addon]):not(.is-unsure)', form), addons = $$('.ab_planner_chip[data-addon]', form);
+    var fType = $('#plTypesField'), fBud = $('#plBudField'), fBrief = $('#plBriefField'), fAdd = $('#plAddonsField');
+    chips.concat(addons).forEach(function(c){ c.setAttribute('aria-pressed', 'false'); });
     var sg = $('.pl-stars', form), s = '';
     if (sg){ for (var i = 0; i < 60; i++) s += '<circle cx="' + (Math.random() * 560).toFixed(1) + '" cy="' + (Math.random() * 190).toFixed(1) + '" r="' + (Math.random() < .1 ? 1 : .45) + '" fill="#fff" opacity="' + (.15 + Math.random() * .55).toFixed(2) + '"/>'; sg.innerHTML = s; }
     function radios(){ return $$('input[name="Launch window"]', form); }
@@ -726,12 +740,14 @@ window.Webflow.push(function(){
     function state(){
       var sel = chips.map(function(c, k){ return c.getAttribute('aria-pressed') === 'true' ? k : -1; }).filter(function(k){ return k > -1; });
       var chk = $('input[name="Launch window"]:checked', form), w = chk ? num(chk.getAttribute('data-i'), 1) : 1, b = Math.round(num(bud.value, 2));
-      return { sel: sel, types: sel.map(function(k){ return chips[k].textContent.trim(); }), cols: sel.map(function(k){ return chips[k].getAttribute('data-c'); }), w: w, b: b };
+      var add = addons.filter(function(c){ return c.getAttribute('aria-pressed') === 'true'; }).map(function(c){ return c.getAttribute('data-addon'); });
+      var un = !!(unsureBtn && unsureBtn.getAttribute('aria-pressed') === 'true'); b = Math.min(b, MAXB);
+      return { sel: sel, types: sel.map(function(k){ return chips[k].textContent.trim(); }), cols: sel.map(function(k){ return chips[k].getAttribute('data-c'); }), w: w, b: un ? 0 : b, bl: un ? UNSURE : BUD[b], unsure: un, add: add };
     }
     var cur = { x: 330, y: 70, r: 16 }, st0 = null;
     function arc(cx, cy, rx, ry, top){ return 'M' + (cx - rx).toFixed(1) + ' ' + cy.toFixed(1) + ' A' + rx.toFixed(1) + ' ' + ry.toFixed(1) + ' 0 0 ' + (top ? 1 : 0) + ' ' + (cx + rx).toFixed(1) + ' ' + cy.toFixed(1); }
-    function brief(){ var st = state(); return 'Mission brief\nName: ' + ($('#plName').value || '-') + '\nEmail: ' + ($('#plEmail').value || '-') + '\nMission type: ' + (st.types.join(', ') || '-') + '\nLaunch window: ' + WIN[st.w] + '\nBudget: ' + BUD[st.b] + '\nAbout: ' + ($('#plMsg').value || '-'); }
-    function fillHidden(){ var st = state(); if (fType) fType.value = st.types.join(', '); if (fBud) fBud.value = BUD[st.b]; if (fBrief) fBrief.value = brief(); }
+    function brief(){ var st = state(); return 'Mission brief\nName: ' + ($('#plName').value || '-') + '\nEmail: ' + ($('#plEmail').value || '-') + '\nMission type: ' + (st.types.join(', ') || '-') + '\nLaunch window: ' + WIN[st.w] + '\nBudget: ' + st.bl + '\nAdd-ons: ' + (st.add.join(', ') || '-') + '\nAbout: ' + ($('#plMsg').value || '-'); }
+    function fillHidden(){ var st = state(); if (fType) fType.value = st.types.join(', '); if (fBud) fBud.value = st.bl; if (fAdd) fAdd.value = st.add.join(', '); if (fBrief) fBrief.value = brief(); }
     function draw(anim){
       var st = state(), n = st.sel.length; st0 = st;
       // window = distance, types = planet (first pick) + moons (the rest), budget = rings
@@ -745,10 +761,11 @@ window.Webflow.push(function(){
       var to = { x: X, y: Y, r: R };
       if (anim && hasGsap && !reduce) gsap.to(cur, { x: to.x, y: to.y, r: to.r, duration: .8, ease: 'elastic.out(1,.65)', overwrite: true, onUpdate: place });
       else { cur = to; place(); }
-      budOut.textContent = BUD[st.b]; bud.setAttribute('aria-valuetext', BUD[st.b]); bud.style.setProperty('--p', (st.b / 3 * 100) + '%');
-      read.innerHTML = n ? 'Flight plan · <b>' + esc(st.types.join(' + ')) + '</b> · T−' + esc(WIN[st.w]) + ' · orbit ' + esc(BUD[st.b]) : 'Flight plan · choose a mission type';
+      budOut.textContent = st.unsure ? 'Not sure yet' : st.bl; bud.setAttribute('aria-valuetext', st.bl); bud.classList.toggle('is-unsure', st.unsure); if (!st.unsure) bud.style.setProperty('--p', (st.b / MAXB * 100) + '%');
+      read.innerHTML = n ? 'Flight plan · <b>' + esc(st.types.join(' + ')) + '</b> · T−' + esc(WIN[st.w]) + ' · orbit ' + esc(st.unsure ? 'TBD' : st.bl) + (st.add.length ? ' · <b>+ ' + esc(st.add.join(' + ').toLowerCase()) + '</b>' : '') : 'Flight plan · choose a mission type';
       fillHidden();
       if (!form.classList.contains('is-flying')) parkRocket();
+      if (reduce || !hasGsap) moonTick();
     }
     function place(){
       destEl.style.left = (cur.x / 560 * 100) + '%'; destEl.style.top = (cur.y / 190 * 100) + '%'; destEl.style.width = (cur.r * 2 / 560 * 100) + '%';
@@ -757,6 +774,7 @@ window.Webflow.push(function(){
         var rx = cur.r + 6 + k * 7, ry = rx * .26, c = col[(k - 1) % col.length], tr = ' transform="rotate(-14 ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1) + ')" stroke="' + c + '"';
         b += '<path d="' + arc(cur.x, cur.y, rx, ry, true) + '"' + tr + '/>'; f += '<path d="' + arc(cur.x, cur.y, rx, ry, false) + '"' + tr + ' opacity="' + (.9 - k * .15) + '"/>';
       }
+      if (st.unsure){ var grx = cur.r + 13, gtr = ' transform="rotate(-14 ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1) + ')" stroke="' + col[0] + '" stroke-dasharray="2 4"'; b += '<path d="' + arc(cur.x, cur.y, grx, grx * .26, true) + '"' + gtr + ' opacity=".6"/>'; f += '<path d="' + arc(cur.x, cur.y, grx, grx * .26, false) + '"' + gtr + ' opacity=".6"/>'; }
       ringsB.innerHTML = b; ringsF.innerHTML = f;
     }
     // extra mission types orbit as small moons
@@ -764,14 +782,21 @@ window.Webflow.push(function(){
     function moonTick(){
       var st = st0; if (!st) return; var extra = st.cols.slice(1), out = '';
       extra.forEach(function(c, i){ var a = mt * (0.6 + i * .15) + i * 2.1, rx = cur.r + 14 + i * 6, x = cur.x + Math.cos(a) * rx, y = cur.y + Math.sin(a) * rx * .3; var front = Math.sin(a) > 0; out += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (front ? 2.8 : 2.2) + '" fill="' + c + '" opacity="' + (front ? 1 : .35) + '"/>'; });
+      // the Knowledge System add-on: a small linked-node satellite on a wide orbit
+      if (st.add && st.add.length){
+        var a2 = mt * .45 + 1, R2 = cur.r + 34, sx = cur.x + Math.cos(a2) * R2, sy = cur.y + Math.sin(a2) * R2 * .32, op = Math.sin(a2) > 0 ? .95 : .45;
+        out += '<g opacity="' + op + '" stroke="#FFD29A" stroke-width=".8" fill="#FFD29A"><path d="M' + (sx - 4).toFixed(1) + ' ' + (sy + 2).toFixed(1) + 'L' + sx.toFixed(1) + ' ' + (sy - 3).toFixed(1) + 'L' + (sx + 4).toFixed(1) + ' ' + (sy + 2).toFixed(1) + 'Z" fill="none"/>' +
+          '<circle cx="' + (sx - 4).toFixed(1) + '" cy="' + (sy + 2).toFixed(1) + '" r="1.4"/><circle cx="' + sx.toFixed(1) + '" cy="' + (sy - 3).toFixed(1) + '" r="1.8"/><circle cx="' + (sx + 4).toFixed(1) + '" cy="' + (sy + 2).toFixed(1) + '" r="1.4"/></g>';
+      }
       moons.innerHTML = out;
     }
     if (hasGsap && !reduce){ var vis = false; onView(form, function(x){ vis = x; }); gsap.ticker.add(function(t, dt){ if (!vis) return; mt += dt * .0012; moonTick(); }); }
     else moonTick();
     function parkRocket(){ var L = path.getTotalLength(), p0 = path.getPointAtLength(0), p1 = path.getPointAtLength(6); rocket.setAttribute('transform', 'translate(' + p0.x.toFixed(1) + ' ' + p0.y.toFixed(1) + ') rotate(' + (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI).toFixed(1) + ')'); done.style.strokeDasharray = L + ' ' + (L + 20); done.style.strokeDashoffset = L; done.style.opacity = 0; }
-    chips.forEach(function(c){ c.style.setProperty('--c', c.getAttribute('data-c')); c.addEventListener('click', function(){ c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); draw(true); if (hasGsap && !reduce) gsap.fromTo(c, { scale: .95 }, { scale: 1, duration: .45, ease: 'elastic.out(1,.4)' }); }); });
+    chips.concat(addons).forEach(function(c){ c.style.setProperty('--c', c.getAttribute('data-c')); c.addEventListener('click', function(){ c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); draw(true); if (hasGsap && !reduce) gsap.fromTo(c, { scale: .95 }, { scale: 1, duration: .45, ease: 'elastic.out(1,.4)' }); }); });
     radios().forEach(function(r){ r.addEventListener('change', function(){ draw(true); }); });
-    bud.addEventListener('input', function(){ draw(true); });
+    bud.addEventListener('input', function(){ if (unsureBtn) unsureBtn.setAttribute('aria-pressed', 'false'); draw(true); });
+    if (unsureBtn) unsureBtn.addEventListener('click', function(){ unsureBtn.setAttribute('aria-pressed', unsureBtn.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); draw(true); });
     $$('#plName, #plEmail, #plMsg').forEach(function(inp){ inp.addEventListener('input', fillHidden); });
     var copyBtn = $('#plCopy');
     if (copyBtn) copyBtn.addEventListener('click', function(){ AB.copyText(brief(), 'Flight plan copied ✓', function(){ toast('Copy failed, select the text instead.'); }); });
@@ -786,7 +811,7 @@ window.Webflow.push(function(){
       if (!st.types.length){ var cc = $('#plTypes'); cc.classList.remove('is-shake'); void cc.offsetWidth; cc.classList.add('is-shake'); toast('Pick at least one mission type.'); chips[0].focus(); return; }
       var em = $('#plEmail'); if (em.value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.value)){ em.focus(); toast('That email address looks off.'); return; }
       fillHidden();
-      var sent = $('#plSentTxt'); if (sent) sent.textContent = 'Flight plan: ' + st.types.join(' + ') + ', ' + WIN[st.w].toLowerCase() + ', ' + BUD[st.b] + '. I’ll reply within one business day with next steps.';
+      var sent = $('#plSentTxt'); if (sent) sent.textContent = 'Flight plan: ' + st.types.join(' + ') + ', ' + WIN[st.w].toLowerCase() + ', ' + (st.unsure ? 'budget to be scouted together' : st.bl) + (st.add.length ? ', plus ' + st.add.join(' + ').toLowerCase() : '') + '. I’ll reply within one business day with next steps.';
       function release(){
         form.classList.remove('is-flying');
         var id = $('#plId'); if (id) id.textContent = 'MSN-07 · logged';
@@ -818,7 +843,7 @@ window.Webflow.push(function(){
     }
     var resetBtn = $('#plReset');
     if (resetBtn) resetBtn.addEventListener('click', function(){
-      form.reset(); chips.forEach(function(c){ c.setAttribute('aria-pressed', 'false'); }); ensureWindow();
+      form.reset(); chips.concat(addons).forEach(function(c){ c.setAttribute('aria-pressed', 'false'); }); ensureWindow(); bud.value = 1;
       if (doneEl){ doneEl.style.display = 'none'; doneEl.__shown = false; }
       form.style.display = '';
       var id = $('#plId'); if (id) id.textContent = 'MSN-07 · unassigned';
@@ -827,4 +852,11 @@ window.Webflow.push(function(){
     draw(false);
   })();
 
+  });
+  (function(){
+    var i = 0, ch = window.MessageChannel ? new MessageChannel() : null;
+    function next(){ if (i >= __steps.length){ if (window.ScrollTrigger) ScrollTrigger.refresh(); return; } __steps[i++](); if (ch) ch.port2.postMessage(0); else setTimeout(next, 0); }
+    if (ch) ch.port1.onmessage = next;
+    next();
+  })();
 });
