@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.33.83 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.84 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -1113,7 +1113,8 @@ window.Webflow.push(function(){
   function tipOpen(f){ if (f) tipShow(f.el, f.title, f.text, f.aside, f.topic); }
   if (!coarse){
     document.addEventListener('mouseover', function(e){
-      var f = tipFor(e.target); if (!f){ return; } if (f.el === tipCur) return;
+      // back on the open tip's element before its 80ms hide fired (a quick brush off a short link): keep it open
+      var f = tipFor(e.target); if (!f){ return; } if (f.el === tipCur){ clearTimeout(tipT); return; }
       clearTimeout(tipT); tipT = setTimeout(function(){ tipOpen(f); }, f.aside ? 180 : 0);
     });
     document.addEventListener('mouseout', function(e){
@@ -1166,7 +1167,12 @@ window.Webflow.push(function(){
     if (!f || (e.target.closest && e.target.closest('a,button,input,select,textarea,[data-drag],.is-drag'))) { tipHide(); return; }
     if (tipCur === f.el) tipHide(); else tipOpen(f);
   });
-  addEventListener('scroll', function(){ if (tipCur) tipHide(); }, { passive: true });
+  // scrolling closes the tip, except while the pointer still rests on its element (Lenis keeps easing after the wheel
+  // stops, and mouseover won't fire again on the same link): follow the element instead
+  addEventListener('scroll', function(){
+    if (!tipCur) return;
+    if (!coarse && tipCur.matches && tipCur.matches(':hover')) tipPlace(tipCur); else tipHide();
+  }, { passive: true });
 
   // auto-link: first mention of each term per section, at most one per paragraph, in body copy only (never headings, links, buttons, forms,
   // chips/tags, hidden CMS sources or text that scripts rewrite)
