@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-mission v0.33.67 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-mission v0.33.78 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abMissionInit) return;
@@ -383,6 +383,61 @@ window.Webflow.push(function(){
           props: { fill: '#BFE6FF' },
           html: '<img src="' + VENDOR + 'kip/hero-house.webp" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:20px;display:block">' }
       ]
+    };
+  })();
+  // Mission Control · Request desk (desk.barajasdsgn.com, repo ab-portfolio/request-desk): Angelino's own client request
+  // tracker. Figma frame = the tracker's request list, element by element: each layer is its own crop of one real
+  // screenshot (vendor/mission-control/tracker-list.webp, 1440 × 900, demo data with made-up clients), so the frame
+  // fills in piece by piece and ends as the real page. Phone = a client's status page (the full-length capture,
+  // phone-status.webp), scrolled. mc-plan is the coded site plan (26-mc-plan.js). The image channels are recordings and stills of
+  // the live desk (prototypes/img/mc-ch-*, 1600 × 1000, served at this bundle's tag): `img` maps channel id → [loop, still, mp4];
+  // the loops exist only as MP4 (15 fps), so the still stands in for the loop entry and is the video's poster; a still-only
+  // entry is [still] (not a loop).
+  (function(){
+    var SHOT = VENDOR + 'mission-control/tracker-list.webp', PHONE = VENDOR + 'mission-control/phone-status.webp';
+    var VOID = '#07080D', SIG = '#FF6A3D';
+    var REC = VENDOR.replace(/code\/vendor\/$/, 'prototypes/img/mc-ch-');
+    function rec(id, loop){ return loop ? [REC + id + '.webp', REC + id + '.webp', REC + id + '-anim.mp4'] : [REC + id + '.webp']; }
+    // a layer = the part of the screenshot under its own box (the frame is the shot at 1000 × 625)
+    function crop(x, y, cls){ return '<div' + (cls ? ' class="' + cls + '"' : '') + ' style="position:absolute;inset:0;background:' + VOID + ' url(' + SHOT + ') -' + x + 'px -' + y + 'px/1000px 625px no-repeat"></div>'; }
+    function el(id, name, icon, type, x, y, w, h, wire, props, cls){ return { id: id, name: name, icon: icon, type: type, x: x, y: y, w: w, h: h, wire: wire, props: props, html: crop(x, y, cls) }; }
+    // a scroll/tap target on the status page, as a share of the capture's height (1170 × 6810)
+    function at(cls, top, left){ return '<i class="' + cls + '" style="position:absolute;left:' + (left || 10) + '%;top:' + top + '%;width:1px;height:1px"></i>'; }
+    MOCKS['mission-control'] = {
+      accent: SIG, plan: true,
+      img: { 'mc-form': rec('form', 1), 'mc-status': rec('status', 1), 'mc-tracker': rec('tracker', 1), 'mc-stats': rec('stats'), 'mc-intake': rec('intake'), 'mc-emails': rec('emails'), 'mc-report': rec('report') },
+      fontCss: 'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,800&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap',
+      file: 'Mission Control — Request desk', page: 'Tracker', frame: 'Desktop · Requests', url: 'desk.barajasdsgn.com',
+      bg: VOID, hover: 'cta',
+      comment: { on: 'needs', by: 'Review', text: 'With 170 requests in here, what do I look at first in the morning?', reply: 'A “Needs you” box: urgent, new, client replied, waiting 3+ days, over plan. Each number is a filter.' },
+      els: [
+        el('nav', 'Nav / logo + sections', 'comp', 'Component', 70, 14, 860, 36, 'nav', { fill: VOID, font: 'JetBrains Mono', weight: 'Regular', size: '13', ls: '10%' }),
+        el('filters', 'Tabs / status filters', 'comp', 'Component', 70, 64, 404, 28, 'row:6', { fill: SIG, font: 'Geist', weight: 'Regular', size: '17' }),
+        el('list', 'List / requests', 'comp', 'Collection list', 70, 102, 646, 523, 'lines:8', { fill: '#161A2E', font: 'Geist', weight: 'Medium', size: '19', lh: '130%' }),
+        el('needs', 'Card / Needs you', 'comp', 'Component', 726, 102, 194, 204, 'lines:5', { fill: '#161A2E', font: 'Geist', weight: 'Regular', size: '17' }),
+        el('cta', 'Button / + New request', 'comp', 'Component', 726, 316, 194, 58, 'btn', { fill: SIG, font: 'Archivo', weight: 'ExtraBold', size: '14', ls: '4%' }, 'hv'),
+        el('clients', 'List / all clients + hours', 'comp', 'Collection list', 726, 384, 194, 241, 'lines:6', { fill: '#161A2E', font: 'Geist', weight: 'Medium', size: '17' })
+      ],
+      mobile: {
+        bg: VOID, statusFg: '#F2F0EA',
+        html: '<div style="padding-top:40px;background:' + VOID + '"><div style="position:relative">' +
+          '<img src="' + PHONE + '" alt="" style="display:block;width:100%;height:auto;aspect-ratio:1170/6810">' +
+          at('mc-p-reply', 27.6) + at('mc-p-send', 44.7, 22) + at('mc-p-hist', 47.6) + at('mc-p-plan', 71.1) + at('mc-p-recent', 78.9) + '</div></div>',
+        notes: [
+          { t: 'One link, no password', d: 'Every request gets a number and a private status link. The client taps it from any email and sees where things stand.' },
+          { t: 'Four steps, four colors', d: 'Received, In progress, Waiting on you, Done. The same colors on the client’s page, in the emails and in Angelino’s tracker.' },
+          { t: 'Answer right here', d: 'A question waits for the client’s reply, here or by email, and the clock doesn’t run on their hours while it waits.' },
+          { t: 'Hours in plain sight', d: 'The plan bar shows hours used and what rolled over from last month, with every recent request one tap away.' }
+        ],
+        steps: [
+          { note: 0, hold: 2.4 },
+          { note: 1, hold: 2.2 },
+          { note: 2, scroll: '.mc-p-reply', off: 60, hold: 1.2 }, { tap: '.mc-p-send', hold: 1.4 },
+          { scroll: '.mc-p-hist', off: 60, hold: 1.8 },
+          { note: 3, scroll: '.mc-p-plan', off: 60, hold: 2 }, { scroll: '.mc-p-recent', off: 60, hold: 2.2 },
+          { scroll: 0, hold: .3 }, { note: -1, hold: .3 }
+        ]
+      }
     };
   })();
   MOCKS['daniel-aguirre-law'].cms = {
@@ -3113,6 +3168,280 @@ window.Webflow.push(function(){
     });
   })();
 
+  /* ===== mission/26-mc-plan.js ===== */
+  /* =========================================================
+     MISSION CONTROL · SITE PLAN (channel mc-plan)
+     The plan behind the request desk (desk.barajasdsgn.com), drawn in the desk's own look: void black with stars,
+     square corners everywhere, Geist + JetBrains Mono labels, the signal orange and the four status colors
+     (request-desk css/desk.css). Three ways in on the left flow into the desk; one ticket walks Received → In progress →
+     Waiting on you → Done while the automatic emails go out and the client's status page follows along; then the
+     desk's own rules (hours, rollover, over-plan rate) type in, the monthly report and the private stats land below,
+     and the three promises close it. The cursor visits each piece; hover a card to trace its lines, click to hold it.
+     Ticket and clients are demo data (made-up businesses), like the desk's own screenshots.
+     Styles are injected from here, so the scene ships with the script alone (the Missions template head is Designer-only).
+     ========================================================= */
+  (function(){
+    var K = SCENE.kit; if (!K || !K.ks) return;
+    var X = K.ks, q = K.q, qa = K.qa, esc = K.esc;
+    var pth = X.path, hide = X.hide, draw = X.draw, type = X.type, move = X.move, run = X.run, end = X.end, cursor = X.cursor, curve = X.curve, pos = X.pos;
+    function tap(el, fn){ el.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); fn(e); }); }
+
+    var VOID = '#07080D', PANEL = 'rgba(22,26,46,.86)', STAR = '#F2F0EA', SOFT = '#C9C7C0', DUST = '#8A8FA3', SIG = '#FF6A3D';
+    var D = "'Archivo','Arial Black',system-ui,sans-serif", B = "'Geist',system-ui,-apple-system,'Segoe UI',sans-serif", MO = "'JetBrains Mono',ui-monospace,Menlo,monospace";
+    // the desk's four statuses (--s-received / --s-in_progress / --s-waiting / --s-done)
+    var ST = [['Received', '#4C8DFF'], ['In progress', '#FFB547'], ['Waiting on you', '#7C5CFF'], ['Done', '#3BE38A']];
+    var WAYS = [
+      ['Request form', '/r/<private link>', 'One link per client: what, which page, how urgent, files.'],
+      ['Email', 'requests@', 'Write in like always. The email becomes a ticket.'],
+      ['Logged by Angelino', '+ New request', 'A call or a text gets typed in for them.']
+    ];
+    var NOTES = [
+      ['“Needs you” filters', 'Urgent, new, client replied, waiting 3+ days, over plan.'],
+      ['Hours in 15-minute steps', 'Logged on each request, in quarter hours.'],
+      ['Rollover: one month', 'Unused hours carry into next month, then reset.'],
+      ['$125/hr over plan', 'If a job would go over, the client hears before work starts.']
+    ];
+    var MAIL = [['Got it', ST[0][1]], ['A question', ST[2][1]], ['Reminder · after 3 business days', ST[2][1]], ['Done', ST[3][1]], ['URGENT → Angelino', SIG]];
+    var RULES = ['Clients never need a password', 'Every request gets a number and a status link', 'Free time is always shown'];
+    // every line: [from, to]; nodes are the three ways in, the desk, the emails, the status page, the report, the stats
+    var EDGES = [['in0', 'desk'], ['in1', 'desk'], ['in2', 'desk'], ['desk', 'em'], ['desk', 'stat'], ['desk', 'rep'], ['desk', 'tier']];
+
+    if (!document.getElementById('mp-css')){
+      var css = document.createElement('style'); css.id = 'mp-css';
+      var S = '.stg-mc-plan';
+      css.textContent =
+        S + '{background:' + VOID + ';font-family:' + B + ';color:' + STAR + ';overflow:hidden}' +
+        // a starfield like the desk's body::after, plus a faint nebula
+        S + ' .mp-sky{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 70% 20%,rgba(124,92,255,.10),transparent 70%),radial-gradient(ellipse 50% 40% at 15% 90%,rgba(255,106,61,.07),transparent 70%),' +
+          'radial-gradient(1px 1px at 20px 30px,rgba(242,240,234,.55),transparent),radial-gradient(1px 1px at 120px 80px,rgba(242,240,234,.4),transparent),radial-gradient(1.5px 1.5px at 170px 150px,rgba(242,240,234,.5),transparent),radial-gradient(1px 1px at 60px 190px,rgba(242,240,234,.35),transparent),radial-gradient(1px 1px at 200px 20px,rgba(242,240,234,.3),transparent);' +
+          'background-size:100% 100%,100% 100%,220px 220px,220px 220px,220px 220px,220px 220px,220px 220px}' +
+        S + ' .mp-file{position:absolute;left:24px;top:18px;display:flex;align-items:center;gap:10px;font:500 13px ' + B + '}' +
+        S + ' .mp-file i{width:22px;height:22px;background:' + SIG + ';display:grid;place-items:center;font:800 10px/1 ' + D + ';font-stretch:112%;color:' + VOID + ';font-style:normal}' +
+        S + ' .mp-file em,' + S + ' .mp-url{font:400 10px ' + MO + ';letter-spacing:.1em;text-transform:uppercase;color:' + DUST + ';font-style:normal;border:1px solid rgba(255,255,255,.22);padding:3px 8px}' +
+        S + ' .mp-url{position:absolute;right:24px;top:20px;border:0;padding:0}' +
+        S + ' .mp-h{position:absolute;font:400 11px ' + MO + ';letter-spacing:.14em;text-transform:uppercase;color:' + DUST + ';white-space:nowrap}' +
+        S + ' .mp-h b{color:' + SIG + ';font-weight:400;margin-right:8px}' +
+        S + ' svg.mp-svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}' +
+        S + ' .mp-ln{fill:none;stroke:rgba(255,255,255,.3);stroke-width:1.6;transition:stroke .25s,opacity .25s}' +
+        S + ' .mp-n{position:absolute;box-sizing:border-box;background:' + PANEL + ';border:1px solid rgba(255,255,255,.12);padding:12px 14px;transition:border-color .25s,opacity .25s,transform .25s;cursor:pointer}' +
+        S + ' .mp-n b{display:block;font:600 15px/1.2 ' + B + ';color:' + STAR + '}' +
+        S + ' .mp-n code{display:block;margin-top:4px;font:400 11px ' + MO + ';letter-spacing:.04em;color:' + SIG + '}' +
+        S + ' .mp-n p{margin:6px 0 0;font:400 12px/1.4 ' + B + ';color:' + SOFT + '}' +
+        S + ' .mp-k{font:400 10px ' + MO + ';letter-spacing:.12em;text-transform:uppercase;color:' + DUST + '}' +
+        S + ' .mp-desk{background:rgba(14,16,32,.72);border-color:rgba(255,255,255,.22)}' +
+        // the ticket: like a row of the tracker, its left edge in the current status color
+        S + ' .mp-tk{position:absolute;box-sizing:border-box;background:#161A2E;border:1px solid rgba(255,255,255,.12);border-left:3px solid var(--sc,rgba(255,255,255,.22));padding:12px 16px;transition:border-color .35s;pointer-events:none}' +
+        S + ' .mp-tk .rq{font:400 12px ' + MO + ';color:' + SOFT + '}' +
+        S + ' .mp-tk .ur{font:400 10px ' + MO + ';color:' + SIG + ';border:1px solid ' + SIG + ';padding:1px 5px;margin-left:8px}' +
+        S + ' .mp-tk .tt{display:block;margin-top:8px;font:500 19px/1.2 ' + B + ';color:' + STAR + ';min-height:23px}' +
+        S + ' .mp-tk .cl{display:block;margin-top:4px;font:400 12px ' + B + ';color:' + DUST + '}' +
+        S + ' .mp-pill{position:absolute;right:16px;top:13px;display:flex;align-items:center;gap:6px;font:400 11px ' + MO + ';letter-spacing:.04em;text-transform:uppercase;color:var(--sc,' + DUST + ');transition:color .3s}' +
+        S + ' .mp-pill:before{content:"";width:8px;height:8px;background:currentColor}' +
+        S + ' .mp-track{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:12px}' +
+        S + ' .mp-track span{display:block;font:400 9.5px ' + MO + ';letter-spacing:.02em;text-transform:uppercase;color:' + DUST + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+        S + ' .mp-track span:before{content:"";display:block;height:6px;margin-bottom:5px;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 0 var(--c);transition:box-shadow .5s}' +
+        S + ' .mp-track span.on{color:' + SOFT + '}' + S + ' .mp-track span.on:before{box-shadow:inset 400px 0 0 0 var(--c)}' +
+        S + ' .mp-note{position:absolute;box-sizing:border-box;border:1px dashed rgba(255,255,255,.22);padding:8px 10px;pointer-events:none}' +
+        S + ' .mp-note b{display:block;font:500 13px/1.2 ' + B + ';color:' + STAR + '}' +
+        S + ' .mp-note p{margin:3px 0 0;font:400 11px/1.35 ' + B + ';color:' + DUST + '}' +
+        S + ' .mp-mail{list-style:none;margin:10px 0 0;padding:0}' +
+        S + ' .mp-mail li{display:flex;align-items:center;gap:9px;height:28px;border-top:1px solid rgba(255,255,255,.08);font:400 12.5px ' + B + ';color:' + DUST + ';transition:color .3s,background-color .3s}' +
+        S + ' .mp-mail li i{width:8px;height:8px;flex:none;background:var(--c);opacity:.35;transition:opacity .3s}' +
+        S + ' .mp-mail li em{margin-left:auto;font:400 9.5px ' + MO + ';letter-spacing:.1em;color:var(--c);font-style:normal;opacity:0;transition:opacity .3s}' +
+        S + ' .mp-mail li.on{color:' + STAR + '}' + S + ' .mp-mail li.on i,' + S + ' .mp-mail li.on em{opacity:1}' +
+        S + ' .mp-mail li.new{background:rgba(255,255,255,.05)}' +
+        S + ' .mp-stat .mp-track{margin-top:10px}' + S + ' .mp-stat .mp-track span{font-size:0}' + S + ' .mp-stat .mp-track span:before{margin:0}' +
+        S + ' .mp-stat .sl{display:block;margin-top:8px;font:400 10.5px ' + MO + ';letter-spacing:.06em;text-transform:uppercase;color:var(--sc,' + DUST + ')}' +
+        // the monthly report: the client's own brand (a made-up bakery), its hours, and the time that wasn't counted
+        S + ' .mp-brand{display:flex;align-items:center;gap:8px;margin-top:10px;background:#F4EBDD;color:#5B3A22;padding:6px 10px;font:italic 600 14px Georgia,serif}' +
+        S + ' .mp-brand i{width:14px;height:14px;background:#8A4B2A;border-radius:50%}' +
+        S + ' .mp-rows{margin-top:6px}' +
+        S + ' .mp-rows div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08);font:400 12px ' + B + ';color:' + SOFT + '}' +
+        S + ' .mp-rows div span:last-child{font:400 11px ' + MO + '}' +
+        S + ' .mp-rows .free{color:' + ST[3][1] + '}' + S + ' .mp-rows .free span:first-child:after{content:"FREE";margin-left:8px;font:400 9px ' + MO + ';letter-spacing:.1em;border:1px solid currentColor;padding:0 4px}' +
+        S + ' .mp-lock{position:absolute;right:14px;top:13px;font:400 9.5px ' + MO + ';letter-spacing:.12em;color:' + DUST + ';border:1px solid rgba(255,255,255,.22);padding:2px 6px}' +
+        S + ' .mp-bars{position:relative;display:flex;align-items:flex-end;gap:8px;height:56px;margin-top:12px;border-bottom:1px solid rgba(255,255,255,.22)}' +
+        S + ' .mp-bars i{flex:1;background:' + ST[1][1] + ';opacity:.85}' + S + ' .mp-bars i.ov{background:' + SIG + '}' +
+        S + ' .mp-bars:after{content:"";position:absolute;left:0;right:0;bottom:40px;border-top:1px dashed ' + STAR + ';opacity:.5}' +
+        S + ' .mp-rule{position:absolute;display:flex;align-items:center;gap:8px;font:500 12px ' + B + ';color:' + STAR + ';border:1px solid rgba(255,255,255,.22);background:rgba(14,16,32,.72);padding:7px 12px 7px 10px;white-space:nowrap}' +
+        S + ' .mp-rule i{width:8px;height:8px;background:' + SIG + '}' +
+        // hover / click: the card, its lines and the cards at their other ends stay lit
+        S + '.mp-hl .mp-n:not(.hl){opacity:.35}' + S + '.mp-hl .mp-ln:not(.hl){opacity:.25}' + S + ' .mp-ln.hl{stroke:' + SIG + '}' +
+        S + ' .mp-n.hl{border-color:' + SIG + '}' +
+        // portrait: smaller type, the long descriptions folded away
+        S + '.is-p .mp-n{padding:9px 11px}' + S + '.is-p .mp-n b{font-size:13px}' + S + '.is-p .mp-n code{font-size:10px}' + S + '.is-p .mp-n p{display:none}' +
+        S + '.is-p .mp-tk .tt{font-size:16px;margin-top:6px;min-height:20px}' + S + '.is-p .mp-track{margin-top:9px}' +
+        S + '.is-p .mp-note{padding:5px 8px}' + S + '.is-p .mp-note b{font-size:11.5px}' + S + '.is-p .mp-note p{font-size:9.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+        S + '.is-p .mp-mail{margin-top:6px}' + S + '.is-p .mp-mail li{height:22px;font-size:11px}' +
+        S + '.is-p .mp-brand{margin-top:6px;padding:3px 8px;font-size:12px}' + S + '.is-p .mp-rows{display:flex;gap:14px}' + S + '.is-p .mp-rows div{flex:1;font-size:10.5px;border:0}' + S + '.is-p .mp-rows div:nth-child(2){display:none}' +
+        S + '.is-p .mp-bars{height:26px;margin-top:6px;gap:5px}' + S + '.is-p .mp-bars:after{bottom:18px}' + S + '.is-p .mp-tier p{display:none}' +
+        S + '.is-p .mp-rule{font-size:10.5px;padding:5px 9px 5px 8px;gap:6px}' + S + '.is-p .mp-h{font-size:10px}' +
+        S + ' .fg-fade{background:' + VOID + '}' +
+        S + ' .cur.a .nm{font-family:' + B + '}';
+      document.head.appendChild(css);
+    }
+
+    SCENE.add('mc-plan', function(sc){
+      var P = sc.portrait, st = sc.stg;
+      // boxes [x, y, w, h] on the stage; the monitor's own controls cover the bottom ~70px, so everything sits above that
+      var L = P ? {
+        hw: [22, 52], hd: [22, 148], ho: [22, 412],
+        in: [[22, 70, 192, 62], [224, 70, 192, 62], [426, 70, 192, 62]],
+        desk: [22, 164, 596, 236], tk: [34, 176, 572, 126], notes: [[34, 310, 280, 40], [326, 310, 280, 40], [34, 356, 280, 40], [326, 356, 280, 40]],
+        em: [22, 428, 300, 152], stat: [334, 428, 284, 72], tier: [334, 508, 284, 72], rep: [22, 592, 596, 78], rules: [22, 680, 618]
+      } : {
+        hw: [28, 70], hd: [350, 70], ho: [870, 70],
+        in: [[28, 96, 250, 94], [28, 198, 250, 94], [28, 300, 250, 94]],
+        desk: [350, 96, 440, 316], tk: [366, 112, 408, 152], notes: [[366, 274, 200, 62], [574, 274, 200, 62], [366, 342, 200, 62], [574, 342, 200, 62]],
+        em: [870, 96, 302, 200], stat: [870, 312, 302, 100], rep: [350, 440, 440, 174], tier: [870, 440, 302, 174], rules: [28, 424, 278]
+      };
+      function bx(b){ return 'left:' + b[0] + 'px;top:' + b[1] + 'px;width:' + b[2] + 'px;height:' + b[3] + 'px'; }
+      function hd(p, n, t){ return '<div class="mp-h" style="left:' + p[0] + 'px;top:' + p[1] + 'px"><b>' + n + '</b>' + esc(t) + '</div>'; }
+      function track(){ return '<div class="mp-track">' + ST.map(function(s){ return '<span style="--c:' + s[1] + '">' + esc(s[0]) + '</span>'; }).join('') + '</div>'; }
+
+      var html = '<div class="mp-sky"></div><div class="mp-file"><i>AB</i><b>Mission Control — Site plan</b><em>FigJam</em></div>' + (P ? '' : '<div class="mp-url">desk.barajasdsgn.com</div>') +
+        '<svg class="mp-svg" width="' + sc.SW + '" height="' + sc.SH + '" aria-hidden="true"></svg>' +
+        hd(L.hw, '01', 'Three ways in') + hd(L.hd, '02', 'The desk') + hd(L.ho, '03', 'Out to the client');
+      WAYS.forEach(function(w, i){ html += '<div class="mp-n mp-in" data-n="in' + i + '" style="' + bx(L.in[i]) + '"><b data-t="' + esc(w[0]) + '"></b><code data-t="' + esc(w[1]) + '"></code><p>' + esc(w[2]) + '</p></div>'; });
+      html += '<div class="mp-n mp-desk" data-n="desk" style="' + bx(L.desk) + '"></div>' +
+        '<div class="mp-tk" style="' + bx(L.tk) + '"><span class="rq"></span><span class="ur">URGENT</span><span class="mp-pill"></span>' +
+          '<span class="tt"></span><span class="cl">Delgado’s Auto &amp; Tire · /appointments</span>' + track() + '</div>';
+      NOTES.forEach(function(n, i){ html += '<div class="mp-note" style="' + bx(L.notes[i]) + '"><b data-t="' + esc(n[0]) + '"></b><p>' + esc(n[1]) + '</p></div>'; });
+      html += '<div class="mp-n mp-em" data-n="em" style="' + bx(L.em) + '"><b>Automatic emails</b><ul class="mp-mail">' +
+          MAIL.map(function(m){ return '<li style="--c:' + m[1] + '"><i></i>' + esc(m[0]) + '<em>SENT</em></li>'; }).join('') + '</ul></div>' +
+        '<div class="mp-n mp-stat" data-n="stat" style="' + bx(L.stat) + '"><b>Status page</b><code>/s/&lt;link&gt; · no login</code>' + (P ? '' : track() + '<span class="sl"></span>') + '</div>' +
+        '<div class="mp-n mp-rep" data-n="rep" style="' + bx(L.rep) + '"><b>Monthly report</b>' + (P ? '' : '<code>in the client’s own brand</code>') +
+          '<div class="mp-brand"><i></i>Juniper &amp; Rye Bakery · October</div>' +
+          '<div class="mp-rows"><div><span>Holiday pre-order page</span><span>1:30</span></div><div><span>Hours banner</span><span>0:15</span></div><div class="free"><span>Not counted · menu typo</span><span>0:15</span></div></div></div>' +
+        '<div class="mp-n mp-tier" data-n="tier" style="' + bx(L.tier) + '"><b>Stats · Tier fit</b><span class="mp-lock">PRIVATE</span>' +
+          '<div class="mp-bars">' + [52, 68, 40, 95, 60, 74].map(function(h){ return '<i' + (h > 71 ? ' class="ov"' : '') + ' style="height:' + h + '%"></i>'; }).join('') + '</div>' +
+          '<p>Hours per month against the plan line: which clients fit their tier.</p></div>';
+      RULES.forEach(function(t, i){ html += '<div class="mp-rule" data-k="' + i + '"><i></i>' + esc(t) + '</div>'; });
+      if (!P) html += hd([L.rules[0], L.rules[1]], '04', 'Rules');
+      html += cursor('a', 'Angelino') + '<div class="fg-fade"></div>';
+      st.innerHTML = html;
+
+      var svg = q(st, '.mp-svg'), cur = q(st, '.cur.a'), file = q(st, '.mp-file'), heads = qa(st, '.mp-h'), url = q(st, '.mp-url');
+      var nodes = {}; qa(st, '.mp-n').forEach(function(n){ nodes[n.getAttribute('data-n')] = n; });
+      var ins = [nodes.in0, nodes.in1, nodes.in2], tk = q(st, '.mp-tk'), notes = qa(st, '.mp-note'), rules = qa(st, '.mp-rule'), mails = qa(st, '.mp-mail li');
+      var pill = q(tk, '.mp-pill'), sl = q(st, '.mp-stat .sl'), bars = qa(st, '.mp-track span');
+      // rules: stacked under their heading (portrait: one wrapping row at the bottom)
+      var rx = L.rules[0], ry = L.rules[1];
+      rules.forEach(function(r, i){
+        if (P){ if (rx + r.offsetWidth > L.rules[2] && rx > L.rules[0]){ rx = L.rules[0]; ry += 30; } r.style.left = rx + 'px'; r.style.top = ry + 'px'; rx += r.offsetWidth + 6; }
+        else { r.style.left = L.rules[0] + 'px'; r.style.top = (L.rules[1] + 26 + i * 40) + 'px'; }
+      });
+
+      // the lines, drawn under the cards: from a card's edge to the desk's (portrait: down the page, the report and stats
+      // reached around the desk's sides)
+      function pt(b, fx, fy){ return { x: b[0] + b[2] * fx, y: b[1] + b[3] * fy }; }
+      var BOX = { in0: L.in[0], in1: L.in[1], in2: L.in[2], desk: L.desk, em: L.em, stat: L.stat, rep: L.rep, tier: L.tier };
+      var lines = EDGES.map(function(e){
+        var a = BOX[e[0]], b = BOX[e[1]], d;
+        if (P){
+          if (e[0] !== 'desk'){ var xx = a[0] + a[2] / 2; d = curve({ x: xx, y: a[1] + a[3] }, { x: xx, y: b[1] }, true); }
+          else if (e[1] === 'rep') d = 'M' + b[0] + ' ' + (L.desk[1] + L.desk[3] - 30) + 'C8 ' + (L.desk[1] + L.desk[3] - 30) + ' 8 ' + (b[1] + 39) + ' ' + b[0] + ' ' + (b[1] + 39);
+          else if (e[1] === 'tier'){ var rr = b[0] + b[2]; d = 'M' + rr + ' ' + (L.desk[1] + L.desk[3] - 30) + 'C' + (rr + 14) + ' ' + (L.desk[1] + L.desk[3] - 30) + ' ' + (rr + 14) + ' ' + (b[1] + 36) + ' ' + rr + ' ' + (b[1] + 36); }
+          else { var cx = b[0] + b[2] / 2; d = curve({ x: cx, y: a[1] + a[3] }, { x: cx, y: b[1] }, true); }
+        } else {
+          if (e[0] !== 'desk') d = curve(pt(a, 1, .5), { x: b[0], y: L.tk[1] + L.tk[3] / 2 }, false);
+          else if (e[1] === 'em') d = curve({ x: a[0] + a[2], y: L.tk[1] + 40 }, pt(b, 0, .5), false);
+          else if (e[1] === 'stat') d = curve({ x: a[0] + a[2], y: L.tk[1] + 110 }, pt(b, 0, .5), false);
+          else if (e[1] === 'rep') d = curve({ x: b[0] + b[2] / 2, y: a[1] + a[3] }, pt(b, .5, 0), true);
+          else d = curve({ x: a[0] + a[2] - 30, y: a[1] + a[3] }, pt(b, .5, 0), true);
+        }
+        var p = pth(svg, d, 'mp-ln'); p.setAttribute('data-a', e[0]); p.setAttribute('data-b', e[1]); return p;
+      });
+
+      // hover / click: a card lights with its lines and whatever sits at their other ends
+      function light(k){
+        st.classList.toggle('mp-hl', k != null);
+        var on = {}; if (k != null) on[k] = 1;
+        lines.forEach(function(p){ var a = p.getAttribute('data-a'), b = p.getAttribute('data-b'), hit = k != null && (a === k || b === k); p.classList.toggle('hl', hit); if (hit){ on[a] = 1; on[b] = 1; } });
+        Object.keys(nodes).forEach(function(n){ nodes[n].classList.toggle('hl', !!on[n]); });
+      }
+      Object.keys(nodes).forEach(function(n){
+        var el = nodes[n];
+        el.addEventListener('pointerenter', function(){ light(n); });
+        el.addEventListener('pointerleave', function(){ if (!sc.paused) light(null); });
+        tap(el, function(){ if (sc.hold) sc.hold(); light(n); });
+      });
+      // the ticket's status: its pill, its edge, both tracks (ticket + status page), -1 = not in yet
+      function status(k){
+        var s = ST[k];
+        tk.style.setProperty('--sc', s ? s[1] : ''); pill.textContent = s ? s[0] : '';
+        if (nodes.stat) nodes.stat.style.setProperty('--sc', s ? s[1] : '');
+        if (sl) sl.textContent = s ? s[0] + (k === 2 ? ' · reply here or by email' : '') : '';
+        bars.forEach(function(b, i){ b.classList.toggle('on', i % 4 <= k); });
+      }
+      function sent(i){ mails.forEach(function(m, j){ m.classList.toggle('new', j === i); }); if (i >= 0) mails[i].classList.add('on'); }
+      function reset(){ light(null); status(-1); mails.forEach(function(m){ m.classList.remove('on', 'new'); }); }
+
+      var R = run(sc, reset), tl = R.tl, all = ins.concat([nodes.desk, tk, nodes.em, nodes.stat, nodes.rep, nodes.tier], notes, rules, heads);
+      tl.set(q(st, '.fg-fade'), { autoAlpha: 0 }, 0).set(cur, { autoAlpha: 0, x: sc.SW * .5, y: sc.SH + 30 }, 0).set(all, { autoAlpha: 0 }, 0);
+      lines.forEach(function(p){ hide(R, p); });
+      function up(el, t, dx, dy){ tl.fromTo(el, { autoAlpha: 0, x: dx || 0, y: dy == null ? 10 : dy }, { autoAlpha: 1, x: 0, y: 0, duration: .4, ease: 'power3.out', immediateRender: false }, t); }
+      // 1 · three ways in: the cursor visits each, its card types in
+      tl.addLabel('ways', .2);
+      tl.fromTo([file].concat(url ? [url] : []), { autoAlpha: 0, y: -6 }, { autoAlpha: 1, y: 0, duration: .35, immediateRender: false }, .15);
+      up(heads[0], .3, 0, 6);
+      tl.to(cur, { autoAlpha: 1, duration: .2 }, .4);
+      var t = .5;
+      WAYS.forEach(function(w, i){
+        move(R, cur, pos(st, ins[i], .7, .6), t, .45);
+        up(ins[i], t + .3, P ? 0 : -16, P ? 10 : 0);
+        type(R, q(ins[i], 'b'), w[0], t + .4, .3); type(R, q(ins[i], 'code'), w[1], t + .6, .3);
+        t += .85;
+      });
+      // 2 · the desk: everything flows in, one ticket arrives (Received; the urgent one also emails Angelino)
+      t += .1; tl.addLabel('desk', t);
+      up(heads[1], t, 0, 6); up(nodes.desk, t + .05, 0, 0);
+      lines.slice(0, 3).forEach(function(p, i){ draw(R, p, t + .15 + i * .12, .6); });
+      move(R, cur, pos(st, tk, .35, .45), t + .3, .6);
+      up(tk, t + .7, 0, 8);
+      type(R, q(tk, '.rq'), 'REQ-1376', t + .8, .3);
+      type(R, q(tk, '.tt'), 'Online appointment form broken', t + 1, .7);
+      R.at(t + 1.6, function(){ status(0); });
+      t += 2.1;
+      // 3 · out to the client: the emails and the status page follow the ticket through its four steps
+      tl.addLabel('out', t);
+      up(heads[2], t, 0, 6);
+      draw(R, lines[3], t, .6); draw(R, lines[4], t + .1, .6);
+      up(nodes.em, t + .4, P ? 0 : 16, P ? 10 : 0); up(nodes.stat, t + .5, P ? 0 : 16, P ? 10 : 0);
+      R.at(t + .9, function(){ sent(0); }); R.at(t + 1.3, function(){ sent(4); });
+      t += 1.8;
+      var pp = pos(st, pill, .5, .6);
+      [[1, -1], [2, 1], [-1, 2], [3, 3]].forEach(function(s){
+        // [status to set, email that goes out]; the reminder goes out on its own, three business days later
+        if (s[0] >= 0){ move(R, cur, pp, t - .5, .45); X.click(R, pill, t - .05); }
+        else move(R, cur, pos(st, mails[2], .4, .5), t - .5, .45);
+        R.at(t, (function(k, m){ return function(){ if (k >= 0) status(k); if (m >= 0) sent(m); }; })(s[0], s[1]));
+        t += 1.25;
+      });
+      R.at(t - .3, function(){ sent(-1); });
+      // 4 · the desk's own rules, then the monthly report (free time shown) and the private stats
+      tl.addLabel('report', t);
+      notes.forEach(function(n, i){ up(n, t + i * .25, 0, 6); type(R, q(n, 'b'), NOTES[i][0], t + .1 + i * .25, .35); });
+      t += 1.4;
+      draw(R, lines[5], t, .6); draw(R, lines[6], t + .1, .6);
+      move(R, cur, pos(st, nodes.rep, .5, .75), t, .6);
+      up(nodes.rep, t + .45); up(nodes.tier, t + .6);
+      tl.fromTo(qa(st, '.mp-bars i'), { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: .45, stagger: .06, ease: 'power2.out', immediateRender: false }, t + .8);
+      t += 1.7;
+      tl.to(cur, { autoAlpha: 0, duration: .3 }, t);
+      // 5 · the three promises
+      tl.addLabel('rules', t);
+      if (heads[3]) up(heads[3], t, 0, 6);
+      rules.forEach(function(r, i){ up(r, t + .2 + i * .25, 0, 8); });
+      t += 1.4;
+      // 6 · each piece lights in turn with its lines
+      var rest = t - .3;
+      ['in0', 'in1', 'in2', 'desk', 'em', 'stat', 'rep', 'tier'].forEach(function(k, i){ R.at(t + i * .85, function(){ light(k); }); });
+      R.at(t + 8 * .85 + .2, function(){ light(null); });
+      end(sc, R, t + 8 * .85 + 1.2, rest, [{ t: 'Ways in', at: 'ways' }, { t: 'Desk', at: 'desk' }, { t: 'Out', at: 'out' }, { t: 'Report', at: 'report' }, { t: 'Rules', at: 'rules' }]);
+    });
+  })();
+
   /* ===== mission/30-mission.js ===== */
   /* =========================================================
      MISSION DEBRIEF · read the CMS item + its Collection Lists, then fill and animate the template
@@ -3168,8 +3497,9 @@ window.Webflow.push(function(){
     var it = $('[data-channel]', item) || item;
     var imgs = $$('img', it).filter(function(im){ return !im.classList.contains('w-dyn-bind-empty'); }).map(function(im){ return im.getAttribute('src') || ''; }).filter(function(s){ return s && !/placeholder/i.test(s); });
     var cid = it.getAttribute('data-id') || ('ch' + i);
-    // coded scenes are picked by channel id (the CMS Kind option can't gain values via the API); tw-* and kip-* ids are their own kind
-    return { id: cid, kind: (/^(tw|kip)-/.test(cid) ? cid : ({ sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable' })[cid]) || (it.getAttribute('data-kind') || 'img').toLowerCase(), mode: (it.getAttribute('data-mode') || '').toLowerCase(),
+    // coded scenes are picked by channel id (the CMS Kind option can't gain values via the API); tw-* and kip-* ids are their own kind,
+    // and so is mc-plan (Mission Control's other mc-* channels are image channels fed by MOCKS img, so only the coded one is matched)
+    return { id: cid, kind: (/^(tw|kip)-|^mc-plan$/.test(cid) ? cid : ({ sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable' })[cid]) || (it.getAttribute('data-kind') || 'img').toLowerCase(), mode: (it.getAttribute('data-mode') || '').toLowerCase(),
       label: it.getAttribute('data-label') || ('Channel ' + (i + 1)), caption: it.getAttribute('data-caption') || '', src: imgs[0] || '', before: imgs[0] || '', after: imgs[1] || imgs[0] || '' };
   });
   // image channels whose loops live in the repo ([still] alone = a screenshot, not a loop; a third entry = an MP4 of the loop, played instead of the WebP) (MOCKS[slug].img: id → [loop, still], on jsDelivr, so Webflow can't flatten
@@ -3483,7 +3813,9 @@ window.Webflow.push(function(){
       // Topicweave (was CKS; the old slug stays keyed until the item's slug change is published)
       'topicweave': ['woven', '#000000', '#FFFFFF', '#9B87F5', 'linear-gradient(135deg,#9B87F5,#4F7BFF)', '#3A3A3A'],
       'cks': ['woven', '#000000', '#FFFFFF', '#9B87F5', 'linear-gradient(135deg,#9B87F5,#4F7BFF)', '#3A3A3A'],
-      'kip': ['build', '#FFF4E6', '#1E1B2E', '#FF7A45', 'linear-gradient(135deg,#FFC94A,#5FD3A8)', '#E6D3BD']
+      'kip': ['build', '#FFF4E6', '#1E1B2E', '#FF7A45', 'linear-gradient(135deg,#FFC94A,#5FD3A8)', '#E6D3BD'],
+      // Mission Control (the request desk): its void black and signal orange, the in-progress amber as the image fill
+      'mission-control': ['build', '#07080D', '#F2F0EA', '#FF6A3D', 'linear-gradient(135deg,#FF6A3D,#FFB547)', '#2A2D3E']
     };
     var TS = TSTYLE[SLUG] || ['blueprint'], THREADS = ['#9B87F5', '#EF5B3F', '#139E8A', '#4F7BFF'];
     function g(c, l, t, w, h){ return '<i class="' + c + '" style="left:' + l + '%;top:' + t + '%;width:' + w + '%;height:' + h + '%"></i>'; }
@@ -3855,6 +4187,23 @@ window.Webflow.push(function(){
     // run exactly where the swoosh cuts the A's crossbar and the B's top loop. Logo units: AB.MARK, 490.16 × 241.75,
     // planet circle r 98 at (240, 121). The texture is the core planet's own (`.tex` --tex), built under this canvas.
     // The word "Identity" in the hero title turns to the site's starfield outline (.t-outline) so the logo can sit big behind it.
+    var titled = false;
+    function outlineTitle(){
+      // the hero title's last word in the starfield outline style (the CSS class already ships in ab-core.css):
+      // "AB Identity", "Mission Control". core's hero toys (39-herodrag) split the title into draggable .w word spans just
+      // after the page bundles run, so mark the last word once that split exists (or wrap it ourselves if the toys never run)
+      if (titled) return; titled = true;
+      var tries = 0;
+      (function mark(){
+        var h = document.getElementById('heroTitle'); if (!h) return;
+        var ws = h.querySelectorAll('.w');
+        if (ws.length > 1){ ws[ws.length - 1].classList.add('t-outline'); return; }
+        if (++tries < 20) return setTimeout(mark, 100);
+        if (h.children.length) return;
+        var t = h.textContent, i = t.lastIndexOf(' '); if (i < 0) return;
+        h.innerHTML = esc(t.slice(0, i + 1)) + '<span class="t-outline">' + esc(t.slice(i + 1)) + '</span>';
+      })();
+    }
     SIG['ab-identity'] = (function(){
       var CX = 240, CY = 121, PR = 95, TILT = -21.5 * Math.PI / 180, LTILT = -6 * Math.PI / 180;
       var COLS = ['#ffd29a', '#ff8a4c', '#6b2b16', '#ffb27a', '#a44a1f', '#ffe6cf', '#c2451a'];
@@ -3869,23 +4218,6 @@ window.Webflow.push(function(){
       function tint(src, col){
         var c = document.createElement('canvas'); c.width = src.width; c.height = src.height; var x = c.getContext('2d');
         x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); return c;
-      }
-      var titled = false;
-      function outlineTitle(){
-        // "AB Identity" → the last word in the starfield outline style (the CSS class already ships in ab-core.css)
-        // core's hero toys (39-herodrag) split the title into draggable .w word spans just after the page bundles run, so
-        // mark the last word once that split exists (or wrap it ourselves if the toys never run: no GSAP / Draggable)
-        if (titled) return; titled = true;
-        var tries = 0;
-        (function mark(){
-          var h = document.getElementById('heroTitle'); if (!h) return;
-          var ws = h.querySelectorAll('.w');
-          if (ws.length > 1){ ws[ws.length - 1].classList.add('t-outline'); return; }
-          if (++tries < 20) return setTimeout(mark, 100);
-          if (h.children.length) return;
-          var t = h.textContent, i = t.lastIndexOf(' '); if (i < 0) return;
-          h.innerHTML = esc(t.slice(0, i + 1)) + '<span class="t-outline">' + esc(t.slice(i + 1)) + '</span>';
-        })();
       }
       return function(R0, el){
         var hero = el && el.closest && el.closest('#hero'); if (hero) outlineTitle();
@@ -4035,6 +4367,107 @@ window.Webflow.push(function(){
       };
     })();
 
+    /* ---- Mission Control (the request desk): Angelino's own orange planet, with four tickets in orbit ---- */
+    // The planet from the AB logo (branding/logo ab_logo_final.svg: #f05822 → #f48968) with the logo's thin ring, and four
+    // small square "tickets" (the desk has square corners everywhere) on their own tilted rings, one per desk status:
+    // Received blue, In progress amber, Waiting on you violet, Done green (request-desk css/desk.css --s-*). The surface
+    // is the core gas texture built under this canvas (`.tex` --tex, like AB Identity), drawn as light and dark only
+    // (`luminosity` blend) over the logo gradient, so whatever the CMS planet colors are, it reads orange.
+    // Hover: the tickets speed up and glow in their status color.
+    SIG['mission-control'] = (function(){
+      var TAU = Math.PI * 2, O1 = '#f05822', O2 = '#f48968';
+      // [color, ring radius (× R), inclination, node, speed, phase]
+      var TK = [['#4C8DFF', 1.3, .5, .4, .5, 0], ['#FFB547', 1.46, -.42, 1.9, .38, 1.6], ['#7C5CFF', 1.62, .7, 3.3, .3, 3.4], ['#3BE38A', 1.78, -.62, 5.1, .24, 4.9]];
+      return function(R0, el){
+        if (el && el.closest && el.closest('#hero')) outlineTitle(); // "Control" in the starfield outline, like AB Identity
+        var F = el && el.closest && el.closest('#hero') ? heroFit(el, R0, 1.25, 1.25, 1.85) : { R: R0, dx: 0, dy: 0 }, R = F.R, DX = F.dx, DY = F.dy;
+        var small = R < 26, tl = .32, ct = Math.cos(tl), st = Math.sin(tl);
+        var texImg = null, texTry = 0, tex = el && el.querySelector('.tex');
+        function getTex(){
+          if (texImg || !tex || texTry++ % 30) return;
+          var v = tex.style.getPropertyValue('--tex'), m = v && v.match(/url\(["']?(.*?)["']?\)$/);
+          if (m){ var im = new Image(); im.onload = function(){ texImg = im; }; im.src = m[1]; texTry = 1e9; }
+        }
+        // a point on ticket ring k at angle u → [x, y, depth] in planet radii (screen y down)
+        function rp(k, u){
+          var g = TK[k], x = Math.cos(u) * g[1], z = Math.sin(u) * g[1], y = z * Math.sin(g[2]); z = z * Math.cos(g[2]);
+          var X = x * Math.cos(g[3]) - z * Math.sin(g[3]), Z = x * Math.sin(g[3]) + z * Math.cos(g[3]);
+          return [X, -(y * ct - Z * st), y * st + Z * ct];
+        }
+        function orbits(ctx, cx, cy, front, en){
+          // each orbit: a hairline in its ticket's color, the part behind the planet fainter (and hidden by it)
+          if (small) return;
+          ctx.lineWidth = Math.max(.6, R / 150);
+          TK.forEach(function(g, k){
+            var prev = null, n = 80;
+            ctx.strokeStyle = g[0];
+            for (var i = 0; i <= n; i++){
+              var p = rp(k, i / n * TAU);
+              if (prev && ((prev[2] + p[2]) >= 0) === front){ ctx.globalAlpha = (front ? .3 : .14) + .3 * en; ctx.beginPath(); ctx.moveTo(cx + prev[0] * R, cy + prev[1] * R); ctx.lineTo(cx + p[0] * R, cy + p[1] * R); ctx.stroke(); }
+              prev = p;
+            }
+          });
+          ctx.globalAlpha = 1;
+        }
+        function tickets(ctx, cx, cy, t, front, en){
+          TK.forEach(function(g, k){
+            if (small && k % 2) return;
+            var u = g[5] + t * g[4], p = rp(k, u);
+            if ((p[2] >= 0) !== front) return;
+            var X = cx + p[0] * R, Y = cy + p[1] * R, d = .78 + .22 * Math.max(-1, Math.min(1, p[2])), s = Math.max(2.4, R * .15) * d;
+            if (en > .02){
+              var rgb = parseInt(g[0].slice(1), 16), c = ((rgb >> 16) & 255) + ',' + ((rgb >> 8) & 255) + ',' + (rgb & 255), gl = ctx.createRadialGradient(X, Y, 0, X, Y, s * 3.2);
+              gl.addColorStop(0, 'rgba(' + c + ',' + (.55 * en) + ')'); gl.addColorStop(1, 'rgba(' + c + ',0)');
+              ctx.globalAlpha = 1; ctx.fillStyle = gl; ctx.fillRect(X - s * 3.2, Y - s * 3.2, s * 6.4, s * 6.4);
+            }
+            // the ticket: a square chip tipping a little as it flies, two dark lines of "text" on it when there's room
+            ctx.save(); ctx.translate(X, Y); ctx.rotate(Math.sin(u * 1.3 + k) * .35);
+            ctx.globalAlpha = front ? 1 : .55; ctx.fillStyle = g[0]; ctx.fillRect(-s / 2, -s / 2, s, s);
+            if (s > 7){ var lh = Math.max(1, s * .09); ctx.fillStyle = 'rgba(7,8,13,.55)'; ctx.fillRect(-s * .3, -s * .14, s * .6, lh); ctx.fillRect(-s * .3, s * .08, s * .38, lh); }
+            ctx.restore();
+          });
+          ctx.globalAlpha = 1;
+        }
+        function band(ctx, cx, cy, front, en){
+          // the logo's ring: a wide, flat ellipse tilted like the mark's swoosh, with a fainter twin outside it
+          if (small) return;
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(-.36);
+          var g = ctx.createLinearGradient(-R * 1.5, 0, R * 1.5, 0); g.addColorStop(0, O1); g.addColorStop(.5, '#ffd2b8'); g.addColorStop(1, O2);
+          ctx.strokeStyle = g;
+          [[1.45, .3, Math.max(1, R / 36) * (1 + .3 * en), front ? .9 : .4], [1.56, .33, Math.max(.6, R / 90), (front ? .45 : .2) + .2 * en]].forEach(function(e){
+            ctx.lineWidth = e[2]; ctx.globalAlpha = e[3]; ctx.beginPath();
+            if (front) ctx.ellipse(0, 0, R * e[0], R * e[1], 0, 0, Math.PI); else ctx.ellipse(0, 0, R * e[0], R * e[1], 0, Math.PI, TAU);
+            ctx.stroke();
+          });
+          ctx.restore(); ctx.globalAlpha = 1;
+        }
+        return { pad: Math.max(small ? 1.5 : 1.95, (Math.max(Math.abs(DX), Math.abs(DY)) + 1.9 * R) / R0), boost: 1.2, pulse: '255,106,61', draw: function(ctx, cx, cy, t, en){
+          en = en || 0; getTex(); cx += DX; cy += DY;
+          orbits(ctx, cx, cy, false, en); band(ctx, cx, cy, false, en); tickets(ctx, cx, cy, t, false, en);
+          // the planet: the logo gradient, the gas texture's light and dark over it, lit from the top left
+          ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
+          var lg = ctx.createLinearGradient(cx - R, cy - R * .3, cx + R, cy + R * .3); lg.addColorStop(0, O1); lg.addColorStop(1, O2);
+          ctx.fillStyle = lg; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+          if (texImg){
+            ctx.save(); ctx.translate(cx, cy); ctx.rotate(-16 * Math.PI / 180);
+            var th = R * 2.3, tw = th * texImg.width / texImg.height, off = (t * R * .07) % tw;
+            ctx.globalAlpha = .6; ctx.globalCompositeOperation = 'luminosity';
+            for (var x = -tw * 2 + off; x < R * 1.6; x += tw) ctx.drawImage(texImg, x, -th / 2, tw, th);
+            ctx.restore();
+          } else {
+            // no texture (yet): soft bands, so it's never a flat disc
+            for (var b = 0; b < 6; b++){ ctx.globalAlpha = .14; ctx.fillStyle = b % 2 ? '#ffd2b8' : '#a33a12'; ctx.fillRect(cx - R, cy - R + (b * .36 + .1) * R + Math.sin(t * .4 + b) * R * .03, R * 2, R * .14); }
+            ctx.globalAlpha = 1;
+          }
+          var sh = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .05, cx, cy, R * 1.02);
+          sh.addColorStop(0, 'rgba(255,236,220,' + (.35 + .2 * en) + ')'); sh.addColorStop(.45, 'rgba(255,200,160,0)'); sh.addColorStop(.8, 'rgba(30,6,0,.25)'); sh.addColorStop(1, 'rgba(20,4,0,.7)');
+          ctx.fillStyle = sh; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+          ctx.restore();
+          band(ctx, cx, cy, true, en); orbits(ctx, cx, cy, true, en); tickets(ctx, cx, cy, t, true, en);
+        } };
+      };
+    })();
+
     // styles injected from here, so they ship with the script alone (no stylesheet release)
     var css = document.createElement('style'); css.id = 'sig-planets';
     css.textContent = '.ab_planet.is-sig .sphere,.ab_planet.is-sig .pring,.ab_planet.is-sig .tex{opacity:0!important}' +
@@ -4043,11 +4476,15 @@ window.Webflow.push(function(){
       // `all:unset` on `.scn-ctl button`. Also in ab-mission.css for its next release; injected here so it ships now.
       '.scn-ctl button{min-width:24px;min-height:24px;box-sizing:border-box}.scn-ctl .scn-pp{width:24px;height:24px}';
     document.head.appendChild(css);
+    // where each planet starts its spin (seconds into its own clock), picked by Angelino 2026-10-09 from screenshots:
+    // 510 with the Americas facing us, June's mobile with a star at each front corner and the mint ball under her chin
+    // (mission-control: a first pick, the four tickets spread around the planet, none hidden behind it)
+    var T0 = { '510-visuals': 21, kip: 2.46, 'mission-control': 3.2 };
     function mount(el, slug){
       var make = SIG[slug]; if (!make || el.__sig) return; el.__sig = true;
       el.classList.add('is-sig', 'is-sig-' + slug);
       var cv = document.createElement('canvas'); cv.className = 'sig-cv'; cv.setAttribute('aria-hidden', 'true'); el.appendChild(cv);
-      var ctx = cv.getContext('2d'), P = null, W = 0, H = 0, raf = 0, on = false, last = 0, T = 6, EN = 0, until = 0, pulseT = -9, ptr = null;
+      var ctx = cv.getContext('2d'), P = null, W = 0, H = 0, raf = 0, on = false, last = 0, T = T0[slug] != null ? T0[slug] : 6, EN = 0, until = 0, pulseT = -9, ptr = null;
       function size(){
         var r = el.getBoundingClientRect(), R = r.width / 2; if (!R) return false;
         P = make(R, el); var s = R * 2 * P.pad, dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -4098,6 +4535,16 @@ window.Webflow.push(function(){
     // this page's own planet: the hero + the manifest status card
     if (SIG[SLUG]){
       var hp = $('#hero .ab_planet[data-slug]'); if (hp) mount(hp, SLUG);
+      // where each hero planet rests on desktop, as a share of its own width (Angelino 2026-10-09, from where he dragged them):
+      // a CSS `translate`, so GSAP's drag/spring-back transform still returns to this spot. Phones and tablets keep heroFit.
+      var REST = { '510-visuals': [.03, .45], topicweave: [-.08, .76], kip: [-.2, .38], 'knowledge-system': [-.05, 1.08], 'mission-control': [-.08, .5] };
+      if (hp && REST[SLUG]){
+        var place = function(){
+          if (innerWidth < 992){ hp.style.translate = ''; return; }
+          var w = hp.offsetWidth; hp.style.translate = (REST[SLUG][0] * w).toFixed(1) + 'px ' + (REST[SLUG][1] * w).toFixed(1) + 'px';
+        };
+        place(); addEventListener('resize', place);
+      }
       $$('.ab_planet.is-mf, .ab_planet.is-orbit').forEach(function(p){ mount(p, SLUG); });
     }
     // the next-mission card, when the next mission has a signature planet
@@ -4131,9 +4578,9 @@ window.Webflow.push(function(){
       return v + '</div>';
     }
     var TYPE = { 'live-globe': 'Live', 'live-map': 'Live', 'wipe': 'Compare', 'mobile': 'Phone', 'img': 'Still', 'logo': 'Vector', 'apps': 'Mockups', 'figma': 'Build', 'phone': 'Phone', 'flow': 'Plan', 'exploded': 'Layers', 'cms': 'CMS', 'sketch': 'Sketch', 'vector': 'Vector', 'graph': 'Graph', 'library': 'Library', 'voice': 'AI + you', 'setup': 'CMS', 'video': 'Video', 'schema': 'Schema', 'portable': 'Model',
-      'tw-loom': 'Play', 'tw-plan': 'Plan', 'tw-app': 'Explore', 'tw-capture': 'Phone', 'tw-cms': 'Try it', 'tw-roadmap': 'Phases', 'kip-plan': 'Plan' };
+      'tw-loom': 'Play', 'tw-plan': 'Plan', 'tw-app': 'Explore', 'tw-capture': 'Phone', 'tw-cms': 'Try it', 'tw-roadmap': 'Phases', 'kip-plan': 'Plan', 'mc-plan': 'Plan' };
     var KIND = { 'live-globe': 'LIVE · three.js r128', 'live-map': 'LIVE · d3 v7', 'wipe': 'COMPARE · figma ↔ webflow', 'figma': 'MOCKUP · figma → webflow', 'phone': 'MOCKUP · mobile', 'flow': 'MOCKUP · figjam → build', 'exploded': 'BREAKDOWN · layers', 'cms': 'MOCKUP · cms → site', 'mobile': 'STILL · mobile', 'img': 'STILL', 'logo': 'VECTOR · svg', 'apps': 'MOCKUPS', 'sketch': 'SKETCH · pen + paper', 'vector': 'MOCKUP · illustrator', 'graph': 'MOCKUP · knowledge graph', 'library': 'MOCKUP · insights library', 'voice': 'MOCKUP · voice kit → review', 'setup': 'MOCKUP · cms → site', 'video': 'MOCKUP · video + chapters', 'schema': 'MOCKUP · json-ld → search + ai', 'portable': 'MOCKUP · content model',
-      'tw-loom': 'DEMO · the loom, canvas', 'tw-plan': 'FIGJAM · ideation → wireframes → build', 'tw-app': 'DEMO · dashboard prototype', 'tw-capture': 'DEMO · voice kit, phone app', 'tw-cms': 'DEMO · cms → site + json-ld', 'tw-roadmap': 'ROADMAP · five phases', 'kip-plan': 'FIGJAM · wireframe → rooms → build' };
+      'tw-loom': 'DEMO · the loom, canvas', 'tw-plan': 'FIGJAM · ideation → wireframes → build', 'tw-app': 'DEMO · dashboard prototype', 'tw-capture': 'DEMO · voice kit, phone app', 'tw-cms': 'DEMO · cms → site + json-ld', 'tw-roadmap': 'ROADMAP · five phases', 'kip-plan': 'FIGJAM · wireframe → rooms → build', 'mc-plan': 'FIGJAM · ways in → desk → out' };
     screen.innerHTML = CH.map(channelView).join('') + '<div class="scan"></div><div class="roll"></div><div class="vig"></div><canvas class="noise" id="noise" width="160" height="100"></canvas>' +
       '<i class="brk tl"></i><i class="brk tr"></i><i class="brk bl"></i><i class="brk br"></i><div class="osd" id="osd">CH 1</div>';
     // a recorded loop of the real site (MOCKS[slug].img) is labeled as a recording, not a still
@@ -4144,7 +4591,7 @@ window.Webflow.push(function(){
     var views = $$('.view', screen), chBtns = $$('button', chans), osd = $('#osd'), monLabel = $('#monLabel'), monCap = $('#monCap'), monKind = $('#monKind');
     // coded scenes need this mission's mockup spec for that kind; one broken scene never stops the monitor
     var NEED = { figma: 'els', phone: 'mobile', flow: 'flow', exploded: 'explode', cms: 'cms', sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable',
-      'tw-loom': 'tw', 'tw-plan': 'tw', 'tw-app': 'tw', 'tw-capture': 'tw', 'tw-cms': 'tw', 'tw-roadmap': 'tw', 'kip-plan': 'plan' };
+      'tw-loom': 'tw', 'tw-plan': 'tw', 'tw-app': 'tw', 'tw-capture': 'tw', 'tw-cms': 'tw', 'tw-roadmap': 'tw', 'kip-plan': 'plan', 'mc-plan': 'plan' };
     views.forEach(function(v, k){
       var c = CH[k], key = NEED[c.kind]; if (!key) return;
       if (!(M.mock && M.mock[key])){ v.innerHTML = '<div class="boot">Mockup coming soon</div>'; return; }
@@ -4174,7 +4621,7 @@ window.Webflow.push(function(){
       chBtns.forEach(function(b, k){ b.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
       monLabel.textContent = c.label; monCap.textContent = c.caption; monKind.textContent = KIND[tk(c)] || '';
       $('#tCh').textContent = (i + 1) + ' / ' + CH.length;
-      $('#tSrc').textContent = c.kind.indexOf('live') === 0 ? 'Live code' : liveOn(c) ? 'Live site' : c.loop ? 'Recording' : /^(tw|kip)-/.test(c.kind) ? 'Coded demo' : c.kind === 'wipe' ? 'Figma + site' : /^(figma|phone|flow|exploded|cms|sketch|vector|graph|library|voice|setup|video|schema|portable)$/.test(c.kind) ? 'Mockup' : c.kind === 'logo' || c.kind === 'apps' ? 'Vector' : 'Screenshot';
+      $('#tSrc').textContent = c.kind.indexOf('live') === 0 ? 'Live code' : liveOn(c) ? 'Live site' : c.loop ? 'Recording' : /^(tw|kip|mc)-/.test(c.kind) ? 'Coded demo' : c.kind === 'wipe' ? 'Figma + site' : /^(figma|phone|flow|exploded|cms|sketch|vector|graph|library|voice|setup|video|schema|portable)$/.test(c.kind) ? 'Mockup' : c.kind === 'logo' || c.kind === 'apps' ? 'Vector' : 'Screenshot';
       if (liveOn(c)){ monKind.textContent = 'LIVE · ' + LIVE.host; chBtns[i].querySelector('.t').textContent = 'Live'; }
       osd.textContent = 'CH ' + (i + 1) + ' · ' + c.label;
       if (!silent){ if (!woven) staticBurst(); if (!reduce && hasGsap) gsap.fromTo(osd, { opacity: 0 }, { opacity: 1, duration: .1, repeat: 3, yoyo: true }); }
