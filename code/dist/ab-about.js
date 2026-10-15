@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-about v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-about v0.33.25 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abAboutInit) return;
@@ -74,13 +74,16 @@ window.Webflow.push(function(){
     });
     // moons: kept in the planet's body so they follow a drag; they pass behind the planet on the far side
     var MOONS = [
-      { cls: 'is-wife', tag: 'Moon · wife', rx: 1.55, ry: .5, rot: 30, size: .22, period: 14, phase: .2 },
-      { cls: 'is-son', tag: 'Moon · son', rx: 1.12, ry: .36, rot: -8, size: .15, period: 8.5, phase: 2.4 }
+      // textured by the site's planet generator like every other planet (green = her favorite, purple = his)
+      { cls: 'is-wife', tag: 'Moon · wife', rx: 1.55, ry: .5, rot: 30, size: .22, period: 14, phase: .2, type: 'ocean', seed: 42, colors: '#0b3326,#15694a,#3fe08e,#c8f7df,#0e4a34' },
+      { cls: 'is-son', tag: 'Moon · son', rx: 1.12, ry: .36, rot: -8, size: .15, period: 8.5, phase: 2.4, type: 'crystal', seed: 27, colors: '#1f1650,#4a33b8,#9b7dff,#e6ddff,#2e2378' }
     ].map(function(m){
       var el = document.createElement('div'); el.className = 'ab_moon ' + m.cls; el.setAttribute('aria-hidden', 'true');
-      el.innerHTML = '<span class="ab_moon_body"></span><span class="ab_moon_tag">' + m.tag + '</span>';
+      el.innerHTML = '<span class="ab_moon_body"><span class="ab_planet" data-planet="' + m.type + '" data-seed="' + m.seed + '" data-colors="' + m.colors + '" data-spin="50" aria-hidden="true"></span></span><span class="ab_moon_tag">' + m.tag + '</span>';
       el.style.width = el.style.height = (m.size * 100) + '%';
-      body.appendChild(el); m.el = el; return m;
+      body.appendChild(el); m.el = el;
+      if (AB.buildPlanet) AB.buildPlanet($('.ab_planet', el));
+      return m;
     });
     var t0 = Date.now();
     function place(t){
@@ -101,6 +104,11 @@ window.Webflow.push(function(){
     if (hasGsap) gsap.ticker.add(function(){ if (visible) place((Date.now() - t0) / 1000); });
     else (function loop(){ if (visible) place((Date.now() - t0) / 1000); requestAnimationFrame(loop); })();
   })();
+
+  /* ---------- badge + meta field: "Training · Self-taught" became "Flight hours · 10,000+" (Angelino, 2026-09-30). The
+     text lives in Div Blocks the API can't edit; this only acts while the old words are still there. ---------- */
+  $$('.ab_badge_dt, .ab_meta_label').forEach(function(e){ if (e.textContent.trim() === 'Training') e.textContent = 'Flight hours'; });
+  $$('.ab_badge_dd, .ab_meta_value').forEach(function(e){ if (e.textContent.trim() === 'Self-taught') e.textContent = '10,000+'; });
 
   /* ---------- crew badge: hangs on its lanyard; drag it and it swoops back to hanging; tap to flip ---------- */
   (function(){
@@ -214,6 +222,116 @@ window.Webflow.push(function(){
     addEventListener('resize', function(){ if (!S.running && !S.held){ measure(); rest(); } });
     // arrives swinging in from above
     if (!reduce && hasGsap) gsap.from(wrap, { y: -120, rotation: -6, opacity: 0, duration: 1.6, ease: 'elastic.out(1,.55)', delay: .4, clearProps: 'transform,opacity' });
+    /* ---------- badge upgrades (Angelino, 2026-09-30): the lanyard ends in a metal clasp that hooks through the slot,
+       both faces look worn (scratches, scuffed corners, a laminate crease, a torn slot), and the back carries mission
+       patches for what's launched or in orbit. ---------- */
+    // the strap ends inside the clasp's crimp, 44px above the slot (it used to run on behind the card, unattached)
+    var CLASP = '<svg viewBox="0 0 40 62" aria-hidden="true"><defs>' +
+      '<linearGradient id="abcl-m" x1="0" x2="1"><stop offset="0" stop-color="#6c707c"/><stop offset=".35" stop-color="#eef0f4"/><stop offset=".6" stop-color="#a6aab5"/><stop offset="1" stop-color="#4c505b"/></linearGradient>' +
+      '<linearGradient id="abcl-r" x1="0" x2="1"><stop offset="0" stop-color="#8b8f9a"/><stop offset=".5" stop-color="#f4f5f8"/><stop offset="1" stop-color="#5b5f6b"/></linearGradient></defs>' +
+      '<rect x="9" y="0" width="22" height="11" rx="2" fill="url(#abcl-m)"/><rect x="9" y="4.6" width="22" height="1.2" fill="rgba(0,0,0,.28)"/>' +
+      '<circle cx="14" cy="8" r="1.1" fill="#3d404a"/><circle cx="26" cy="8" r="1.1" fill="#3d404a"/>' +
+      '<rect x="16.5" y="10.5" width="7" height="8" rx="1.6" fill="url(#abcl-m)"/><rect x="16.5" y="13.6" width="7" height=".9" fill="rgba(0,0,0,.3)"/>' +
+      '<path d="M20 18.5c-5.2 0-7.6 4.4-7.6 11.4v14.6" fill="none" stroke="url(#abcl-r)" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path d="M20 18.5c5.2 0 7.6 4.4 7.6 11.4v10" fill="none" stroke="url(#abcl-r)" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<rect x="25.4" y="30" width="4.4" height="7" rx="1" fill="#c9ccd4" stroke="#5b5f6b" stroke-width=".5"/>' +
+      '<path d="M12.4 44.5v5.5" stroke="#2a2c33" stroke-width="2.6" stroke-linecap="round" opacity=".9"/></svg>';
+    // it lives in the wrap, above the whole rig, and is placed every frame on the strap's end at the strap's angle:
+    // inside the badge, the 3D hover tilt and the flip carried it off the strap, and Chrome painted the tilted card over it
+    var clasp = document.createElement('div'); clasp.className = 'ab_badge_clasp'; clasp.innerHTML = CLASP; wrap.appendChild(clasp);
+
+    // barcode: hover (tap on touch) runs a laser across it and the clearance line answers; a tap here scans instead of flipping
+    var bc = $('.ab_badge_barcode', front), clr = $('.ab_badge_clear', front);
+    if (bc){
+      var laser = document.createElement('i'); laser.className = 'ab_bc_laser'; laser.setAttribute('aria-hidden', 'true'); bc.appendChild(laser);
+      var clr0 = clr ? clr.innerHTML : '', bt, bt2;
+      var scan = function(){
+        if (bc.classList.contains('is-scan')) return;
+        bc.classList.add('is-scan');
+        bt2 = setTimeout(function(){ if (clr){ clr.innerHTML = 'Scan OK · AB-001<br>Access granted'; clr.classList.add('is-ok'); } }, reduce ? 0 : 750);
+        clearTimeout(bt); bt = setTimeout(function(){ bc.classList.remove('is-scan'); if (clr){ clr.innerHTML = clr0; clr.classList.remove('is-ok'); } }, 2800);
+      };
+      bc.addEventListener('pointerenter', function(e){ if (e.pointerType === 'mouse') scan(); });
+      bc.addEventListener('pointerdown', function(e){ e.stopPropagation(); scan(); });
+      bc.addEventListener('click', function(e){ e.stopPropagation(); });
+    }
+    wrap.classList.add('has-clasp');
+    var SHORT = 44;
+    var render0 = render;
+    // clasp pivot (20, 44) in its own box = the clip point, where the strap ends at full length (the slot)
+    function claspAt(x, y, phi){ clasp.style.left = (x - 20).toFixed(2) + 'px'; clasp.style.top = (y - 44).toFixed(2) + 'px'; clasp.style.transform = 'rotate(' + (-phi * 180 / Math.PI).toFixed(3) + 'deg)'; }
+    render = function(){
+      render0(); strap.style.height = Math.max(0, S.r - SHORT).toFixed(2) + 'px';
+      claspAt(A.x + S.r * Math.sin(S.phi), A.y + S.r * Math.cos(S.phi), S.phi);
+    };
+    var rest0 = rest;
+    rest = function(){ rest0(); strap.style.height = Math.max(0, L - SHORT) + 'px'; claspAt(CX, TOP + CLIP, 0); };
+    rest();
+
+    // wear: seeded, so every visit shows the same scuffs
+    function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    function wear(face, seed){
+      if (!face) return;
+      var r = rng(seed), W = 380, H = 578, s = '', i;
+      for (i = 0; i < 46; i++){       // fine scratches: short, mostly diagonal, a few long ones
+        var x = r() * W, y = r() * H, long = r() < .06, len = long ? 50 + r() * 90 : 6 + r() * 24, a = (r() < .7 ? -.7 : .5) + (r() - .5) * .5;
+        var x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len, bend = (r() - .5) * len * .12;
+        s += '<path d="M' + x.toFixed(1) + ' ' + y.toFixed(1) + 'Q' + ((x + x2) / 2 + bend).toFixed(1) + ' ' + ((y + y2) / 2 - bend).toFixed(1) + ' ' + x2.toFixed(1) + ' ' + y2.toFixed(1) + '" stroke="rgba(255,255,255,' + ((long ? .03 : .05) + r() * (long ? .05 : .11)).toFixed(3) + ')" stroke-width="' + (.4 + r() * .6).toFixed(2) + '" fill="none"/>';
+      }
+      for (i = 0; i < 14; i++){         // scuffs
+        s += '<ellipse cx="' + (r() * W).toFixed(1) + '" cy="' + (r() * H).toFixed(1) + '" rx="' + (6 + r() * 22).toFixed(1) + '" ry="' + (2 + r() * 7).toFixed(1) + '" transform="rotate(' + (r() * 180 - 90).toFixed(0) + ')" fill="url(#abw-scuff' + seed + ')"/>';
+      }
+      // corner wear (the laminate lifts and whitens at the corners) + nicks along the edges
+      s += '<path d="M0 22Q2 3 22 0L0 0Z" fill="rgba(255,255,255,.1)"/><path d="M' + W + ' 16Q' + (W - 1) + ' 1 ' + (W - 17) + ' 0H' + W + 'Z" fill="rgba(255,255,255,.08)"/>' +
+        '<path d="M0 ' + (H - 26) + 'Q2 ' + (H - 2) + ' 28 ' + H + 'H0Z" fill="rgba(255,255,255,.12)"/><path d="M' + W + ' ' + (H - 20) + 'Q' + (W - 3) + ' ' + (H - 2) + ' ' + (W - 22) + ' ' + H + 'H' + W + 'Z" fill="rgba(255,255,255,.09)"/>';
+      for (i = 0; i < 10; i++){ var e = r(), side = Math.floor(r() * 4), p = r() * (side % 2 ? H : W), n = 2 + r() * 5;
+        s += side === 0 ? '<rect x="' + p.toFixed(0) + '" y="0" width="' + n.toFixed(1) + '" height="1.4"' : side === 2 ? '<rect x="' + p.toFixed(0) + '" y="' + (H - 1.4) + '" width="' + n.toFixed(1) + '" height="1.4"' : side === 1 ? '<rect x="' + (W - 1.4) + '" y="' + p.toFixed(0) + '" width="1.4" height="' + n.toFixed(1) + '"' : '<rect x="0" y="' + p.toFixed(0) + '" width="1.4" height="' + n.toFixed(1) + '"';
+        s += ' fill="rgba(255,255,255,' + (.14 + e * .16).toFixed(2) + ')"/>'; }
+      // a crease where it got bent in a pocket once, and small tears at the slot's ends
+      s += '<path d="M-4 ' + (H * .74).toFixed(0) + 'L' + (W * .46).toFixed(0) + ' ' + H + '" stroke="rgba(255,255,255,.1)" stroke-width="1.1"/><path d="M-4 ' + (H * .74 + 2).toFixed(0) + 'L' + (W * .46 - 2).toFixed(0) + ' ' + (H + 2) + '" stroke="rgba(0,0,0,.35)" stroke-width="1"/>' +
+        '<path d="M' + (W / 2 - 27) + ' 26l-5 5M' + (W / 2 - 27) + ' 20l-4-3M' + (W / 2 + 27) + ' 27l4 6" stroke="rgba(255,255,255,.22)" stroke-width=".7"/>';
+      var el = document.createElement('i'); el.className = 'ab_badge_wear'; el.setAttribute('aria-hidden', 'true');
+      el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><defs><radialGradient id="abw-scuff' + seed + '"><stop offset="0" stop-color="rgba(255,255,255,.07)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></radialGradient></defs>' + s + '</svg>';
+      face.appendChild(el);
+    }
+    wear(front, 7); wear(back, 19);
+
+    // mission patches on the back: what's launched or in orbit (Work page statuses, 2026-09-30); planets are the site's own
+    var PATCHES = [
+      { n: '510 Visuals', s: 'Live', k: 'live', shape: 'circle', c: '#0f1a1d,#1c2227,#37535a,#5a8a94,#b8c9cc', bg: '#1c2a2e', x: 0, y: 20, w: 74, h: 74, r: -8 },
+      { n: 'CKS', s: 'In orbit', k: 'orbit', shape: 'rect', c: '#0B1B2B,#2F5BEA,#139E8A,#F2A93B,#EF5B3F', bg: '#10223a', x: 25, y: 0, w: 84, h: 60, r: 6, peel: 1 },
+      { n: 'kip', s: 'In orbit', k: 'orbit', shape: 'circle', c: '#14204F,#FF7A45,#FFC94A,#FFF4E6,#5FD3A8', bg: '#14204F', x: 51, y: 34, w: 66, h: 66, r: -5 },
+      { n: 'Knowledge System', s: 'In orbit', k: 'orbit', shape: 'shield', c: '#1d2350,#3f4fa8,#7c5cff,#c9bcff,#2a1d6b', bg: '#241d56', x: 74, y: 4, w: 70, h: 78, r: 9 },
+      { n: 'AB Identity', s: 'Shipped', k: 'shipped', shape: 'mark', x: 60, y: 116, w: 86, h: 58, r: -7 }
+    ];
+    if (back){
+      var box = document.createElement('div'); box.className = 'ab_badge_stk';
+      box.setAttribute('role', 'img');
+      box.setAttribute('aria-label', 'Mission patches: ' + PATCHES.map(function(p){ return p.n + ', ' + p.s.toLowerCase(); }).join('; '));
+      var html = '<div class="abst-h">Mission patches · 1 live · 1 shipped · 3 in orbit</div>';
+      PATCHES.forEach(function(p, i){
+        var st = 'left:' + p.x + '%;top:' + p.y + 'px;width:' + p.w + 'px;height:' + p.h + 'px;--r:' + p.r + 'deg';
+        if (p.shape === 'mark'){
+          html += '<div class="abst is-mark is-' + p.k + '" style="' + st + '" title="' + p.n + ' · ' + p.s + '"><span class="abst-logo">' + (AB.markSVG ? AB.markSVG({ cls: 'abst-mk' }) : '') + '</span><em>' + p.s + '</em></div>';
+          return;
+        }
+        html += '<div class="abst is-' + p.shape + ' is-' + p.k + (p.peel ? ' is-peel' : '') + '" style="' + st + ';--bg:' + p.bg + '" title="' + p.n + ' · ' + p.s + '">' +
+          '<span class="abst-pl"><span class="ab_planet" data-planet="gas" data-seed="' + (31 + i * 7) + '" data-colors="' + p.c + '" data-spin="80" aria-hidden="true"></span></span>' +
+          '<b>' + p.n + '</b><em>' + p.s + '</em></div>';
+      });
+      box.innerHTML = html;
+      var bk = $('.ab_badge_back', back) || back; bk.appendChild(box);
+      if (AB.buildPlanet) $$('.ab_planet', box).forEach(function(pl){ AB.buildPlanet(pl); });
+      // the cluster is drawn at 336 x 218 and sits right under the list; on a narrow badge the back's title wraps and the
+      // list runs longer, so it scales down to the room that's left (it may tuck behind the signature's right side)
+      var list = $('.ab_badge_list', back);
+      var fit = function(){
+        var top = list ? list.offsetTop + list.offsetHeight + 6 : 330, room = back.clientHeight - top - 8;
+        var sc = Math.max(.5, Math.min(1, (back.clientWidth - 36) / 336, room / 218));
+        box.style.top = top + 'px'; box.style.transform = 'scale(' + sc.toFixed(3) + ')';
+      };
+      fit(); addEventListener('resize', fit); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    }
   })();
 
   /* ---------- signatures: the name writes itself, then a shooting star arcs under it and leaves the underline ---------- */
@@ -406,8 +524,8 @@ window.Webflow.push(function(){
     var box = sys.parentNode, card = sys.closest('.ab_bento-card') || box, NS = 'http://www.w3.org/2000/svg';
     var P = [
       { k: 'me', c: ['#bcd6ff', '#4a7fd6', '#1c2f5c'], r: .5, s: 20, T: 7, a0: .6 },
-      { k: 'spouse', c: ['#e2d6ff', '#8b5cff', '#3a2381'], r: .86, s: 28, T: 12, a0: 3.6 },
-      { k: 'kid', c: ['#d8ffe9', '#3fe08e', '#137a48'], moon: 1, r: 26, s: 11, T: 3, a0: 0 }
+      { k: 'spouse', c: ['#d8ffe9', '#3fe08e', '#137a48'], r: .86, s: 28, T: 12, a0: 3.6 },
+      { k: 'kid', c: ['#e2d6ff', '#8b5cff', '#3a2381'], moon: 1, r: 26, s: 11, T: 3, a0: 0 }
     ];
     var c3 = document.createElement('div'); c3.className = 'ab_crew3d'; c3.setAttribute('aria-hidden', 'true');
     c3.innerHTML = '<svg class="ab_c3_svg"><g></g><g></g></svg><div class="ab_c3_sun"></div><svg class="ab_c3_svg is-front"><g></g></svg>';
@@ -519,7 +637,10 @@ window.Webflow.push(function(){
     box.classList.add('is-astro');
     // deep space behind him (the badge's sky: nebula + two drifting star layers + the odd shooting star) and a far planet
     box.insertAdjacentHTML('afterbegin', '<div class="ab_badge_sky abpa-sky" aria-hidden="true"><i class="neb"></i><i class="st is-a"></i><i class="st is-b"></i><i class="shoot"></i><span class="abpa-far"><span class="ab_planet" data-planet="gas" data-seed="17" data-colors="#2a1d6b,#5b3fd1,#9d85ff,#e6ddff,#3a2a8a" data-ring="#ffd9b3,#ff9e6a,#8a4a2a" data-tilt="-16" data-spin="60" data-glow="rgba(124,92,255,.4)"></span></span></div>');
-    var far = $('.abpa-far', box); if (AB.buildPlanet) AB.buildPlanet($('.ab_planet', far));
+    var far = $('.abpa-far', box), farP = $('.ab_planet', far);
+    // a different far planet every visit (core AB.planetLook), always ringed so it reads at that size
+    if (AB.planetLook && farP){ var FL = AB.planetLook(); if (!FL.ring){ FL.ring = '#ffd9b3,#ff9e6a,#8a4a2a'; FL.tilt = -16; FL.open = .24; } AB.applyPlanetLook(farP, FL); }
+    if (AB.buildPlanet) AB.buildPlanet(farP);
     box.insertAdjacentHTML('beforeend',
       '<div class="abpa-cordw" aria-hidden="true"><svg class="abpa-cord"><path class="c0"/><path class="c1"/><path class="c4"/><path class="c2"/><path class="c3"/></svg></div>' +
       '<div class="abpa" aria-hidden="true"><svg viewBox="0 0 701 833">' +
@@ -611,10 +732,28 @@ window.Webflow.push(function(){
       })(lt);
       if (AB.quest) AB.quest('untethered');
       start();
+      // with him gone, the far planet drifts over and grows into the empty lower right of the window (the sky clips it)
+      var W0 = box.clientWidth, H0 = box.clientHeight, big = Math.round(Math.min(W0 * .62, H0 * .66));
+      gsap.to(far, { left: (W0 * .74 - big / 2) + 'px', bottom: (H0 * .2 - big / 2) + 'px', width: big + 'px', duration: 2.4, delay: .5, ease: 'power2.inOut',
+        onComplete: probe });
     }
     function drop(){ if (!S.drag) return; S.drag = false; S.lx = S.ly = null; S.vx = S.vy = 0; S.vr = 0; fig.classList.remove('is-held'); if (AB.quest && S.moved) AB.quest('spin'); if (reduce){ S.x = S.y = S.r = 0; draw(); } }
     fig.addEventListener('pointerup', drop); fig.addEventListener('pointercancel', drop);
     fig.addEventListener('click', function(e){ if (S.moved) e.stopPropagation(); }, true);
+    // epilogue: a probe drifts into the window, beams a short (funny) readout about the lost pilot, and leaves
+    var LOST = ['Pilot adrift. Gargantua has him now.', 'Crew of three is a crew of two. Gargantua says thanks.', 'Signal lost. Last seen waving at Gargantua.', 'Tether snapped. Filing it under "why before how".'];
+    function probe(){
+      var sky = $('.abpa-sky', box); if (!sky) return;
+      var W1 = box.clientWidth, H1 = box.clientHeight;
+      sky.insertAdjacentHTML('beforeend', '<div class="abpa-probe"><svg class="sat-ico" viewBox="0 0 24 12"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg><i></i>' +
+        '<span class="abpa-rx"><span><b>RX</b> · probe AB-02</span><em>' + esc(LOST[Math.floor(Math.random() * LOST.length)]) + '</em></span></div>');
+      var pr = sky.lastChild, rx = $('.abpa-rx', pr), sm = H1 < 260, y0 = sm ? H1 * .5 : H1 * .46;
+      gsap.timeline({ onComplete: function(){ pr.parentNode && pr.parentNode.removeChild(pr); } })
+        .fromTo(pr, { x: -60, y: y0 + 30, rotation: 8 }, { x: W1 * (sm ? .06 : .16), y: y0, rotation: 0, duration: 1.8, ease: 'power2.out' })
+        .fromTo(rx, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }, '-=.2')
+        .to(rx, { opacity: 0, duration: .35 }, '+=3.4')
+        .to(pr, { x: W1 + 60, y: y0 - 40, rotation: -6, duration: 2, ease: 'power2.in' }, '-=.1');
+    }
     function think(k){
       var v = VIS[k % VIS.length];
       if (reduce || !hasGsap){ stops.forEach(function(s, i){ s.setAttribute('stop-color', v[i]); }); return; }
@@ -766,13 +905,262 @@ window.Webflow.push(function(){
     }
     if (!coarse && !reduce){
       shelf.addEventListener('pointermove', function(e){
-        if (e.pointerType !== 'mouse') return;
+        if (e.pointerType !== 'mouse' || !room) return;
         var pick = null, op = books[0] && books[0].offsetParent, x = op ? e.clientX - op.getBoundingClientRect().left : 0;
         for (var i = 0; op && i < books.length; i++){ var b = books[i]; if (x >= b.offsetLeft - 2 && x <= b.offsetLeft + b.offsetWidth + 2){ pick = b; break; } }
         setHot(pick);
       });
       shelf.addEventListener('pointerleave', function(){ setHot(null); });
     }
+
+    /* ---------- the other side: Cooper's tesseract (Angelino, 2026-09-29). At rest the stage shows the shelf from behind,
+       inside the tesseract: the same books mirrored (fore-edges, room light in the gaps) in an endless lattice of copies,
+       strands running to the vanishing point, light drifting in along them. Hover (tap on touch, keyboard focus) steps
+       through to the room: the real books plus Murph's watch, whose second hand twitches STAY in Morse; from the tesseract
+       side the strand tied to the watch answers. Canvas: the lattice is drawn once per size, each frame only adds motes +
+       the strand, and only while it's on screen and showing. ---------- */
+    var WATCH = '<svg viewBox="0 0 34 66" aria-hidden="true"><defs>' +
+      '<radialGradient id="abw-c" cx="34%" cy="28%" r="80%"><stop offset="0" stop-color="#f4f5f8"/><stop offset=".5" stop-color="#a9adb8"/><stop offset="1" stop-color="#565a66"/></radialGradient>' +
+      '<linearGradient id="abw-s" x1="0" x2="1"><stop offset="0" stop-color="#3a2416"/><stop offset=".5" stop-color="#6e472b"/><stop offset="1" stop-color="#3a2416"/></linearGradient></defs>' +
+      '<rect x="11" y="0" width="12" height="17" rx="2" fill="url(#abw-s)"/><rect x="11" y="43" width="12" height="23" rx="1.5" fill="url(#abw-s)"/>' +
+      '<path d="M12.6 2v13M21.4 2v13M12.6 46v18M21.4 46v18" stroke="rgba(255,220,180,.35)" stroke-width=".6" stroke-dasharray="1.4 1.2"/>' +
+      '<rect x="10" y="12.5" width="14" height="5" rx="1" fill="#8b8f9a"/><rect x="10" y="42.5" width="14" height="5" rx="1" fill="#8b8f9a"/>' +
+      '<rect x="31" y="27.5" width="3" height="5" rx="1" fill="#9a9ea9"/><circle cx="17" cy="30" r="15" fill="url(#abw-c)"/>' +
+      '<circle cx="17" cy="30" r="12.6" fill="#0d0e13" stroke="#2a2c35" stroke-width=".6"/><g class="abw-t"></g>' +
+      '<g class="abw-h"><path d="M17 30v-6.4" stroke="#e8dcc0" stroke-width="1.6" stroke-linecap="round"/></g>' +
+      '<g class="abw-m"><path d="M17 30v-10.2" stroke="#e8dcc0" stroke-width="1.1" stroke-linecap="round"/></g>' +
+      '<g class="abw-s"><path d="M17 32.6V19.2" stroke="#FF6A3D" stroke-width=".6"/><circle cx="17" cy="30" r="1.1" fill="#FF6A3D"/></g>' +
+      '<path d="M8.6 24.4a9.6 9.6 0 0 1 8.4-6.6" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.2" stroke-linecap="round"/></svg>';
+    var watch = document.createElement('div');
+    watch.className = 'ab_watch'; watch.setAttribute('role', 'button'); watch.tabIndex = 0;
+    watch.setAttribute('aria-label', 'Murph’s watch. Listen to the second hand.');
+    watch.innerHTML = WATCH;
+    var ticks = '';
+    for (var q = 0; q < 12; q++){
+      var qa = q * Math.PI / 6, r2 = q % 3 ? 10.3 : 8.9;
+      ticks += '<line x1="' + (17 + Math.sin(qa) * 11.5).toFixed(2) + '" y1="' + (30 - Math.cos(qa) * 11.5).toFixed(2) + '" x2="' + (17 + Math.sin(qa) * r2).toFixed(2) + '" y2="' + (30 - Math.cos(qa) * r2).toFixed(2) + '" stroke="#e8dcc0" stroke-width="' + (q % 3 ? .5 : 1.1) + '"/>';
+    }
+    watch.querySelector('.abw-t').innerHTML = ticks;
+    // right after the current read, so phones (middle ~11 spines) see it too
+    if (cur && cur.parentNode === shelf) shelf.insertBefore(watch, cur.nextSibling);
+    else shelf.insertBefore(watch, books[Math.floor(books.length / 2)] || null);
+
+    var hH = watch.querySelector('.abw-h'), hM = watch.querySelector('.abw-m'), hS = watch.querySelector('.abw-s'), twitch = 0, signal = 0;
+    function rot(g, a){ g.setAttribute('transform', 'rotate(' + a.toFixed(2) + ' 17 30)'); }
+    function hands(){
+      var d = new Date(), s = d.getSeconds(), m = d.getMinutes() + s / 60;
+      rot(hH, (d.getHours() % 12 + m / 60) * 30); rot(hM, m * 6); rot(hS, s * 6 + twitch);
+    }
+    hands();
+    // STAY in Morse: the watch's second hand jumps ahead on each dot/dash, the tesseract strand shakes on the same beat
+    var CODE = { S: '...', T: '-', A: '.-', Y: '-.--' }, sending = null;
+    function morse(done){
+      var ids = [], t = 0, word = 'STAY';
+      function on(){ signal = 1; twitch = 6; hands(); }
+      function off(){ signal = 0; twitch = 0; hands(); }
+      for (var i = 0; i < word.length; i++){
+        var mc = CODE[word.charAt(i)];
+        for (var j = 0; j < mc.length; j++){
+          ids.push(setTimeout(on, t)); t += mc.charAt(j) === '.' ? 150 : 450;
+          ids.push(setTimeout(off, t)); t += 160;
+        }
+        t += 320;
+      }
+      ids.push(setTimeout(function(){ sending = null; if (done) done(); }, t));
+      return function(){ ids.forEach(clearTimeout); off(); sending = null; };
+    }
+    function play(){ if (sending) sending(); sending = morse(); }
+    function watchNote(){
+      if (AB.quest) AB.quest('murph');
+      if (note){ note.innerHTML = '<b>Murph’s watch</b>The second hand twitches in Morse. It keeps spelling STAY.'; note.classList.add('show'); clearTimeout(nt); nt = setTimeout(function(){ note.classList.remove('show'); }, 3400); }
+      if (!reduce) play();
+    }
+    watch.addEventListener('click', watchNote); keyAct(watch, watchNote);
+
+    var tess = document.createElement('div'); tess.className = 'ab_tess'; tess.setAttribute('aria-hidden', 'true');
+    var cv = document.createElement('canvas'); tess.appendChild(cv); shelf.appendChild(tess);
+    var ctx = cv.getContext('2d'), still = document.createElement('canvas'), sctx = still.getContext('2d');
+    var W = 0, H = 0, DPR = 1, VX = 0, VY = 0, WX = 0, WY = 0, B6 = 6, WR = 15, ZF = 6.2, motes = [];
+    function proj(x, y, z){ return [VX + (x - VX) / z, VY + (y - VY) / z]; }
+    function build(){
+      W = shelf.clientWidth; H = shelf.clientHeight; if (!W || !H) return;
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      cv.width = still.width = Math.round(W * DPR); cv.height = still.height = Math.round(H * DPR);
+      VX = W / 2; VY = H * .38;
+      // the room side, mirrored: x flips, bottoms stay (offsets ignore transforms, so lifted/leaning books read at rest)
+      var sl = [], rowL = W, rowR = 0, rowH = 0, rowB = H - 12;
+      $$('[data-book]', shelf).forEach(function(b){
+        var w = b.offsetWidth, h = b.offsetHeight, x = W - b.offsetLeft - w;
+        sl.push({ x: x, w: w, h: h, b: b.offsetTop + h, c: b.getAttribute('data-c') || '#333', cur: !!b.__cur });
+        rowL = Math.min(rowL, x); rowR = Math.max(rowR, x + w); rowH = Math.max(rowH, h); rowB = b.offsetTop + h;
+      });
+      sl.sort(function(a, b){ return a.x - b.x; });
+      WX = W - watch.offsetLeft - 17; WY = watch.offsetTop + 30;
+      var c = sctx; c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0b0c16'); g.addColorStop(1, '#05060a');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      // copies of the unit, far to near; a fog pass after each layer pushes the far ones into the blue
+      var K = 9, k, i, j, z, s, a, x0, y0;
+      for (k = K; k >= 1; k--){
+        z = 1 + k * .62; s = 1 / z; a = Math.min(1, 1.25 * s);
+        for (i = -5; i <= 5; i++) for (j = -3; j <= 3; j++){
+          x0 = VX + (i * W - VX) * s; y0 = VY + (j * H - VY) * s;
+          if (x0 > W || y0 > H || x0 + W * s < 0 || y0 + H * s < 0) continue;
+          c.fillStyle = 'rgba(255,170,92,' + (a * .5).toFixed(3) + ')';
+          c.fillRect(x0 + rowL * s, y0 + (rowB - rowH) * s, (rowR - rowL) * s, rowH * s);
+          c.fillStyle = 'rgba(206,178,132,' + a.toFixed(3) + ')';
+          for (var n = 0; n < sl.length; n++) c.fillRect(x0 + sl[n].x * s, y0 + (sl[n].b - sl[n].h) * s, Math.max(.6, sl[n].w * s - .4), sl[n].h * s);
+          c.fillStyle = 'rgba(28,21,16,' + a.toFixed(3) + ')'; c.fillRect(x0, y0 + (H - 12) * s, W * s, 12 * s);
+          c.strokeStyle = 'rgba(255,190,125,' + (a * .55).toFixed(3) + ')'; c.lineWidth = Math.max(.5, 1.2 * s);
+          c.strokeRect(x0, y0, W * s, H * s);
+        }
+        c.fillStyle = 'rgba(7,9,20,.24)'; c.fillRect(0, 0, W, H);
+      }
+      // strands: every lattice corner runs back to the vanishing point
+      c.lineWidth = .7;
+      for (i = -5; i <= 6; i++) for (j = -3; j <= 4; j++){
+        var p1 = proj(i * W, j * H, 1), p2 = proj(i * W, j * H, 1 + K * .62), sg = c.createLinearGradient(p1[0], p1[1], p2[0], p2[1]);
+        sg.addColorStop(0, 'rgba(255,220,170,.4)'); sg.addColorStop(1, 'rgba(255,220,170,0)');
+        c.strokeStyle = sg; c.beginPath(); c.moveTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]); c.stroke();
+      }
+      // the film's smeared lines (slit-scan): a zoom blur toward the vanishing point, then 1px slices of the lattice
+      // stretched into full-width / full-height lines at low alpha, brighter and darker at random
+      var tmp = document.createElement('canvas'), tc = tmp.getContext('2d'), sx;
+      tmp.width = still.width; tmp.height = still.height;
+      function snap(){ tc.clearRect(0, 0, tmp.width, tmp.height); tc.drawImage(still, 0, 0); }
+      snap();
+      for (n = 1; n <= 16; n++){ s = 1 + n * .022; c.globalAlpha = .16; c.drawImage(tmp, VX - VX * s, VY - VY * s, W * s, H * s); }
+      snap();
+      for (var ly = 0; ly < H; ly += 2){
+        sx = Math.random() * W; c.globalAlpha = .08 + Math.random() * .22;
+        c.drawImage(tmp, Math.floor(sx * DPR), Math.floor(ly * DPR), 1, Math.max(1, Math.floor(2 * DPR)), 0, ly, W, 2);
+      }
+      for (var lx = 0; lx < W; lx += 2){
+        sx = Math.random() * H; c.globalAlpha = .06 + Math.random() * .18;
+        c.drawImage(tmp, Math.floor(lx * DPR), Math.floor(sx * DPR), Math.max(1, Math.floor(2 * DPR)), 1, lx, 0, 2, H);
+      }
+      // the film's highlights: a few pale and blue-white lines running full length, brighter than the rest
+      c.globalAlpha = 1; c.globalCompositeOperation = 'lighter';
+      for (n = 0; n < 60; n++){
+        var hz = Math.random() < .55, lw = Math.random() < .8 ? .6 : 1.4, la = .05 + Math.random() * .16;
+        c.fillStyle = Math.random() < .3 ? 'rgba(160,200,240,' + la.toFixed(3) + ')' : 'rgba(255,230,190,' + la.toFixed(3) + ')';
+        if (hz) c.fillRect(0, Math.random() * H, W, lw); else c.fillRect(Math.random() * W, 0, lw, H);
+      }
+      g = c.createRadialGradient(VX, VY, 0, VX, VY, Math.max(W, H) * .45);
+      g.addColorStop(0, 'rgba(255,168,90,.22)'); g.addColorStop(1, 'rgba(255,168,90,0)');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      c.globalCompositeOperation = 'source-over';
+      // the near shelf, pulled back a touch (z 1.14) so the lattice wraps it: frame, room light through the gaps, then the
+      // books' fore-edges as backlit silhouettes with their cover boards
+      var NZ = 1 / 1.14; B6 = 0; c.save(); c.translate(VX, VY); c.scale(NZ, NZ); c.translate(-VX, -VY);
+      c.fillStyle = 'rgba(6,7,12,.55)'; c.fillRect(0, 0, W, H);
+      c.strokeStyle = 'rgba(255,196,130,.7)'; c.lineWidth = 1.4; c.strokeRect(0, 0, W, H);
+      c.fillStyle = '#0a0907'; c.fillRect(0, 0, W, 6);
+      c.fillStyle = 'rgba(255,190,125,.35)'; c.fillRect(0, 6, W, 1);
+      c.shadowColor = 'rgba(255,160,80,.95)'; c.shadowBlur = 10; c.fillStyle = 'rgba(255,214,160,.95)';
+      for (n = 0; n < sl.length - 1; n++){
+        var gx = sl[n].x + sl[n].w, gw = sl[n + 1].x - gx, gh = Math.min(sl[n].h, sl[n + 1].h);
+        if (gw > 0 && gw < 14) c.fillRect(gx, rowB - gh + 4, gw, gh - 4);
+      }
+      c.shadowBlur = 0;
+      for (n = 0; n < sl.length; n++){
+        var b = sl[n], top = b.b - b.h, bg = c.createLinearGradient(0, top, 0, b.b);
+        bg.addColorStop(0, '#5e4a31'); bg.addColorStop(.35, '#3a2c1e'); bg.addColorStop(1, '#17110c');
+        c.fillStyle = bg; c.fillRect(b.x, top, b.w, b.h);
+        c.fillStyle = 'rgba(255,200,140,.13)';
+        for (var qx = 5; qx < b.w - 4; qx += 3) c.fillRect(b.x + qx, top + 4, .6, b.h - 8);
+        c.fillStyle = b.c; c.fillRect(b.x, top, 2.2, b.h); c.fillRect(b.x + b.w - 2.2, top, 2.2, b.h); c.fillRect(b.x, top, b.w, 2);
+        c.fillStyle = 'rgba(255,214,160,.8)'; c.fillRect(b.x, top, .8, b.h); c.fillRect(b.x + b.w - .8, top, .8, b.h);
+        if (b.cur){ c.fillStyle = '#FF6A3D'; c.fillRect(b.x + b.w * .44 - 3, top - 11, 6, 12); }
+      }
+      c.fillStyle = '#140f0b'; c.fillRect(0, rowB, W, H - rowB);
+      c.fillStyle = 'rgba(255,196,130,.6)'; c.fillRect(0, rowB, W, 1);
+      // the watch from behind: steel case back on its strap
+      c.fillStyle = '#4a3020'; c.fillRect(WX - 6, WY - 30, 12, 17); c.fillRect(WX - 6, WY + 13, 12, 23);
+      g = c.createRadialGradient(WX - 5, WY - 6, 1, WX, WY, 15);
+      g.addColorStop(0, '#c9ccd4'); g.addColorStop(.6, '#7d818c'); g.addColorStop(1, '#3d404a');
+      c.fillStyle = g; c.beginPath(); c.arc(WX, WY, 15, 0, 6.2832); c.fill();
+      c.strokeStyle = 'rgba(20,22,28,.5)'; c.lineWidth = .7;
+      c.beginPath(); c.arc(WX, WY, 11, 0, 6.2832); c.stroke(); c.beginPath(); c.arc(WX, WY, 6, 0, 6.2832); c.stroke();
+      c.restore(); WX = VX + (WX - VX) * NZ; WY = VY + (WY - VY) * NZ; B6 = VY + (6 - VY) * NZ; WR = 15 * NZ;
+      // a light vertical smear over the near books too, so their tops and edges streak like the lattice
+      snap();
+      for (n = 1; n <= 7; n++){ c.globalAlpha = .075; c.drawImage(tmp, 0, -n * 4, W, H); c.drawImage(tmp, n * 2, 0, W, H); }
+      c.globalAlpha = 1;
+      // vignette
+      g = c.createRadialGradient(VX, VY, Math.min(W, H) * .3, VX, VY, Math.max(W, H) * .75);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.5)');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      tess.style.transformOrigin = WX + 'px ' + WY + 'px';
+      if (!motes.length) for (n = 0; n < 34; n++) motes.push(mote({}, true));
+      draw(0);
+    }
+    function mote(m, any){
+      m.x = (Math.floor(Math.random() * 6) - 2) * W + (Math.random() - .5) * W * .5;
+      m.y = (Math.floor(Math.random() * 4) - 1) * H + (Math.random() - .5) * H * .3;
+      m.z = any ? 1.2 + Math.random() * (ZF - 1.2) : ZF; m.sp = .35 + Math.random() * .5;
+      return m;
+    }
+    var last = 0, swing = 0;
+    function draw(t){
+      if (!W) return;
+      var c = ctx, dt = last && t ? Math.min(50, t - last) / 1000 : 0; last = t;
+      c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(still, 0, 0);
+      c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      if (reduce) return;
+      c.globalCompositeOperation = 'lighter';
+      for (var n = 0; n < motes.length; n++){
+        var m = motes[n]; m.z -= m.sp * dt * m.z * .5; if (m.z < 1.2) mote(m);
+        var p = proj(m.x, m.y, m.z), al = Math.min(1, (ZF - m.z) / 1.2, (m.z - 1.2) / .5) * .55;
+        // a streak, not a dot: from where it is to where it was a moment ago (further back)
+        var p0 = proj(m.x, m.y, m.z * 1.07);
+        c.strokeStyle = 'rgba(255,214,160,' + Math.max(0, al).toFixed(3) + ')'; c.lineWidth = 1.6 / m.z + .3;
+        c.beginPath(); c.moveTo(p0[0], p0[1]); c.lineTo(p[0], p[1]); c.stroke();
+      }
+      // the watch's strand: from the beam down to the case back and away to the vanishing point; shakes on the Morse beat
+      var amp = .5 + signal * 3.2, ts = t / 1000;
+      c.strokeStyle = 'rgba(255,226,180,' + (.55 + signal * .4) + ')'; c.lineWidth = 1 + signal * .8;
+      c.shadowColor = 'rgba(255,170,90,.9)'; c.shadowBlur = 5 + signal * 9;
+      c.beginPath(); c.moveTo(WX, B6);
+      for (var y = B6 + 6; y <= WY - WR; y += 6) c.lineTo(WX + Math.sin(y * .09 + ts * 7) * amp * Math.sin(Math.PI * (y - B6) / (WY - WR - B6)), y);
+      c.lineTo(WX, WY - WR); c.stroke();
+      // the slanted strand is the second hand seen from behind: it pivots on the watch, ticks back and forth each second
+      // and swings hard on every Morse dot/dash (Cooper pushing it from this side), easing toward its target
+      var tx = VX + (WX - VX) * .2 - WX, ty = VY + (WY - VY) * .2 - WY, len = Math.sqrt(tx * tx + ty * ty), base = Math.atan2(ty, tx);
+      var ms = Date.now() % 1000, tick = ms < 120 ? -.07 * (1 - ms / 120) : 0, goal = signal ? -.42 : tick;
+      swing += (goal - swing) * Math.min(1, dt * (signal ? 28 : 14)); var an = base + swing;
+      c.lineWidth = .9 + signal * .6; c.beginPath(); c.moveTo(WX, WY); c.lineTo(WX + Math.cos(an) * len, WY + Math.sin(an) * len); c.stroke();
+      c.shadowBlur = 0; c.globalCompositeOperation = 'source-over';
+    }
+
+    var room = false, over = false, vis = false, raf = 0;
+    var card = shelf.closest('.ab_bento-card') || shelf, hint = $('.ab_off_hint.is-shelf', card), hint0 = hint ? hint.textContent : '';
+    // the clock (last) resets only when the loop starts again, not every frame, or dt would always be 0
+    function frame(t){ raf = 0; draw(t); loop(true); }
+    function loop(cont){ if (!raf && vis && !room && !reduce) { if (!cont) last = 0; raf = requestAnimationFrame(frame); } }
+    function setRoom(on){
+      if (on === room) return; room = on; shelf.classList.toggle('is-room', on);
+      if (hint) hint.textContent = on ? hint0 : (coarse ? 'Tap to step through the shelf' : 'Hover to step through the shelf');
+      if (!on) setHot(null);
+      loop();
+    }
+    if (hint) hint.textContent = coarse ? 'Tap to step through the shelf' : 'Hover to step through the shelf';
+    card.addEventListener('pointerenter', function(e){ if (e.pointerType === 'mouse'){ over = true; setRoom(true); } });
+    card.addEventListener('pointerleave', function(e){ if (e.pointerType === 'mouse'){ over = false; if (!shelf.contains(document.activeElement)) setRoom(false); } });
+    tess.addEventListener('click', function(){ setRoom(true); });
+    shelf.addEventListener('focusin', function(){ setRoom(true); });
+    shelf.addEventListener('focusout', function(){ setTimeout(function(){ if (!over && !shelf.contains(document.activeElement)) setRoom(false); }, 0); });
+    if ('IntersectionObserver' in window) new IntersectionObserver(function(es){
+      vis = es[0].isIntersecting; if (!vis && !over) setRoom(false); loop();
+    }).observe(shelf);
+    else vis = true;
+    // clock ticks while on screen; every ~11 s the shown side sends STAY (watch in the room, strand in the tesseract)
+    setInterval(function(){ if (vis && !sending) hands(); }, 1000);
+    if (!reduce) setInterval(function(){ if (vis && !sending && !document.hidden) sending = morse(); }, 11000);
+    var rz;
+    function rebuild(){ clearTimeout(rz); rz = setTimeout(build, 120); }
+    if (window.ResizeObserver) new ResizeObserver(rebuild).observe(shelf); else window.addEventListener('resize', rebuild);
+    requestAnimationFrame(build);
   })();
 
   /* ===== about/10-boss.js ===== */
@@ -780,8 +1168,9 @@ window.Webflow.push(function(){
      PLAYER ONE · secret: reach LV 20 (or enter the cheat) and the card opens a boss fight. Letterbox + a VS title card,
      then you fly it: arrows or WASD to move, Space to fire (phones: drag to fly, hold to fire). THE SCOPE CREEP drifts,
      fires aimed shots, telegraphs a beam you have to dodge, and enrages at half health (spread shots). Three shields;
-     lose them and you retry. The last hit plays an anime-style finisher (cut-in, move name, mega beam, impact frames),
-     then "You won" and a credits crawl. Optional sound: all of it synthesized live (Web Audio), off until the visitor
+     lose them and you retry. It all plays over a hyperspeed starfield (canvas). The last hit: the stars slow, the ship
+     charges, mega beam, impact frames; then "You won", a short credits crawl, and the name finale (the two halves streak
+     in from the sides and meet in the middle; the only place the name appears). Optional sound: all of it synthesized live (Web Audio), off until the visitor
      turns it on (remembered). Esc, the × button, or a tap at the end closes it.
      ========================================================= */
   (function(){
@@ -817,18 +1206,15 @@ window.Webflow.push(function(){
       rows.forEach(function(row, y){ for (var x = 0; x < w; x++){ var c = row.charAt(x); if (col[c]) r += '<rect x="' + x + '" y="' + y + '" width="1.02" height="1.02" fill="' + col[c] + '"/>'; } });
       return '<svg class="' + cls + '" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges" aria-hidden="true">' + r + '</svg>';
     }
+    // the crawl never names anyone: the name appears once, in the finale (ROLES above it)
     var CREDITS = [
-      ['A game by', 'Angelino Barajas'],
-      ['Pilot · designer · developer', 'Angelino Barajas'],
-      ['Crew', 'Two moons: wife + son'],
-      ['Fuel', 'Coffee. A lot of coffee.'],
-      ['Currently reading', 'Thus Spoke Zarathustra'],
-      ['Favorite film', 'Interstellar'],
+      ['Starring', 'You, Player One'],
       ['Final boss', 'The Scope Creep'],
+      ['Soundtrack', 'Synthesized live in your browser'],
       ['Built with', 'Figma · Webflow · GSAP · Lenis'],
-      ['Special thanks', 'You, Player One'],
       ['', 'No scope was harmed in the making of this website.']
     ];
+    var ROLES = 'Game idea · Story · Pixel art · Code · Sound', NAME = ['Angelino', 'Barajas'];
 
     /* ---------- sound: a tiny synth (original chiptune loop + effects), silent until switched on ---------- */
     var SFX = (function(){
@@ -895,31 +1281,39 @@ window.Webflow.push(function(){
       };
     })();
 
-    // anime cut-in art: the pilot's helmet up close, one sharp eye behind the visor, the AB mark on the shell
-    function pilotArt(){
-      var mark = AB.markSVG ? AB.markSVG({ cls: 'ab_boss_pilot-mark' }).replace('<svg ', '<svg x="160" y="262" width="80" height="40" ') : '';
-      return '<svg class="ab_boss_pilot" viewBox="0 0 420 320" aria-hidden="true">' +
-        '<defs><linearGradient id="abxVisor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a2f55"/><stop offset=".55" stop-color="#0b0c14"/><stop offset="1" stop-color="#1d2350"/></linearGradient></defs>' +
-        // shell + ink outline, hard cel shadow on the right
-        '<circle cx="200" cy="176" r="150" fill="#F2F0EA" stroke="#07080d" stroke-width="9"/>' +
-        '<path d="M318 86a150 150 0 0 1-40 226a172 172 0 0 0 40-226z" fill="#c9c7c0"/>' +
-        '<path d="M60 124c40-70 150-92 238-44" fill="none" stroke="#FF6A3D" stroke-width="16" stroke-linecap="round"/>' +
-        // visor
-        '<path d="M70 150c10-44 60-66 138-66s132 22 142 62c8 34-10 78-54 92c-40 13-130 14-176 0c-40-12-58-50-50-88z" fill="url(#abxVisor)" stroke="#07080d" stroke-width="8"/>' +
-        // the eye: angled brow, heavy upper lid, orange iris, two highlights
-        '<path d="M150 132l84 18" stroke="#F2F0EA" stroke-width="7" stroke-linecap="round"/>' +
-        '<path d="M146 170c22-20 64-24 94-4" fill="none" stroke="#F2F0EA" stroke-width="7" stroke-linecap="round"/>' +
-        '<path d="M156 170c10 22 58 26 76 2" fill="#07080d"/>' +
-        '<circle cx="196" cy="176" r="17" fill="#FF6A3D"/><circle cx="196" cy="178" r="8" fill="#07080d"/>' +
-        '<circle cx="190" cy="170" r="5" fill="#fff"/><circle cx="203" cy="184" r="2.4" fill="#fff"/>' +
-        // visor reflections: two glass streaks and a ringed planet
-        '<path d="M98 132l40-34M112 150l52-46" stroke="rgba(255,255,255,.35)" stroke-width="7" stroke-linecap="round"/>' +
-        '<circle cx="296" cy="200" r="15" fill="#FF6A3D" opacity=".85"/><ellipse cx="296" cy="200" rx="30" ry="7" fill="none" stroke="#ffd166" stroke-width="3" opacity=".8" transform="rotate(-18 296 200)"/>' +
-        // speed hatching on the shadow side
-        '<path d="M330 120l40-12M338 150l48-8M340 182l52 0M336 214l46 10" stroke="#07080d" stroke-width="5" stroke-linecap="round"/>' +
-        mark +
-        '<g class="ab_boss_glint"><path d="M190 146l4 20 20 4-20 4-4 20-4-20-20-4 20-4z" fill="#fff"/></g>' +
-        '</svg>';
+    // hyperspeed backdrop: stars rush out of a vanishing point behind the boss and streak longer the faster we go.
+    // speed(v, dur) eases between cruise (~.5), full warp (3+) and a near stop (.1); one canvas on gsap's ticker.
+    function warpField(o){
+      var cv = document.createElement('canvas'), g = cv.getContext && cv.getContext('2d');
+      if (!g) return { speed: function(){}, kill: function(){} };
+      cv.className = 'ab_boss_warp'; cv.setAttribute('aria-hidden', 'true'); o.insertBefore(cv, o.firstChild); o.classList.add('is-warp');
+      var TINT = ['242,240,234', '242,240,234', '242,240,234', '255,106,61', '155,125,255', '76,141,255'];
+      var st = { v: .5 }, dpr = Math.min(2, window.devicePixelRatio || 1), w = 0, h = 0, f = 0, stars = [];
+      function seed(s, far){ s.x = Math.random() * 2 - 1; s.y = Math.random() * 2 - 1; s.z = far ? 1 : .05 + Math.random() * .95; s.c = TINT[Math.random() * TINT.length | 0]; return s; }
+      function size(){
+        w = o.clientWidth; h = o.clientHeight; f = Math.max(w, h) * .5; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+        var n = Math.round(Math.min(460, Math.max(160, w * h / 3200)));
+        while (stars.length < n) stars.push(seed({}, false));
+        stars.length = n;
+      }
+      function tick(t, dms){
+        var dt = Math.min(.05, (dms || 16) / 1000), vx = w * .5, vy = h * .34, trail = .012 + st.v * .05;
+        g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h); g.lineCap = 'round';
+        for (var i = 0; i < stars.length; i++){
+          var s = stars[i]; s.z -= st.v * dt;
+          if (s.z <= .02){ seed(s, true); continue; }
+          var x1 = vx + s.x / s.z * f, y1 = vy + s.y / s.z * f;
+          if (x1 < -30 || x1 > w + 30 || y1 < -30 || y1 > h + 30){ seed(s, true); continue; }
+          var z0 = Math.min(1, s.z + trail), k = 1 - s.z;
+          g.strokeStyle = 'rgba(' + s.c + ',' + (k * .9 + .1).toFixed(2) + ')'; g.lineWidth = .4 + k * 2.2;
+          g.beginPath(); g.moveTo(vx + s.x / z0 * f, vy + s.y / z0 * f); g.lineTo(x1, y1); g.stroke();
+        }
+      }
+      size(); addEventListener('resize', size); gsap.ticker.add(tick);
+      return {
+        speed: function(v, dur){ gsap.to(st, { v: v, duration: dur == null ? .8 : dur, ease: 'power2.inOut', overwrite: true }); },
+        kill: function(){ gsap.ticker.remove(tick); removeEventListener('resize', size); gsap.killTweensOf(st); }
+      };
     }
 
     var open = false;
@@ -938,19 +1332,19 @@ window.Webflow.push(function(){
         '<div class="ab_boss_warn">Warning · boss approaching</div>' +
         '<div class="ab_boss_help" aria-live="polite">' + HELP + '</div>' +
         '<div class="ab_boss_over"><b>Mission failed</b><p>The Scope Creep got through your shields.</p><span>' + (coarse ? 'Tap' : 'Press Enter or tap') + ' to try again</span></div>' +
-        '<div class="ab_boss_cut" aria-hidden="true"><div class="ab_boss_lines"></div>' +
-          '<div class="ab_boss_panel"><div class="ab_boss_panel-in">' + pilotArt() + '<div class="ab_boss_panel-tx"><small>パイロット</small><b>Angelino</b></div></div></div>' +
-          '<div class="ab_boss_move"><small>必殺技</small><b>Final deploy</b></div></div>' +
         '<div class="ab_boss_win"><b>You won</b><p>LV ' + LV.BOSS + ' · The Scope Creep is defeated. The project shipped on time, on budget, and nobody asked for “just one more thing.”</p></div>' +
         '<div class="ab_boss_crawl" aria-hidden="true"><div class="ab_boss_tilt"><div class="ab_boss_crawl-in">' +
           CREDITS.map(function(c){ return '<div class="ab_boss_cr">' + (c[0] ? '<small>' + esc(c[0]) + '</small>' : '') + '<span>' + esc(c[1]) + '</span></div>'; }).join('') +
-          '<div class="ab_boss_cr is-end"><span>The end</span><small>Tap anywhere to return</small></div></div></div></div>' +
+          '</div></div></div>' +
+        '<div class="ab_boss_fin" aria-hidden="true"><small>' + ROLES + '</small>' +
+          '<div class="ab_boss_fin-name"><span class="is-l"><i></i><i></i><i></i>' + NAME[0] + '</span><span class="is-r"><i></i><i></i><i></i>' + NAME[1] + '</span></div>' +
+          '<small class="ab_boss_fin-tap">Thanks for playing · tap anywhere to return</small></div>' +
         '<div class="ab_boss_bar is-t" aria-hidden="true"></div><div class="ab_boss_bar is-b" aria-hidden="true"></div>' +
         '<div class="ab_boss_flash" aria-hidden="true"></div>' +
-        '<ul class="ab_sr">' + CREDITS.map(function(c){ return '<li>' + esc((c[0] ? c[0] + ': ' : '') + c[1]) + '</li>'; }).join('') + '</ul>';
+        '<ul class="ab_sr">' + CREDITS.map(function(c){ return '<li>' + esc((c[0] ? c[0] + ': ' : '') + c[1]) + '</li>'; }).join('') + '<li>' + esc(ROLES + ': ' + NAME.join(' ')) + '</li></ul>';
       document.body.appendChild(o);
       if (lenis) lenis.stop(); root.style.overflow = 'hidden';
-      var closeBtn = $('.ab_boss_x', o), sndBtn = $('.ab_boss_snd', o), prevFocus = document.activeElement, tl = null, ended = false;
+      var closeBtn = $('.ab_boss_x', o), sndBtn = $('.ab_boss_snd', o), prevFocus = document.activeElement, tl = null, ended = false, warp = null;
       function paintSnd(){ var on = SFX.isOn(); sndBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); sndBtn.innerHTML = (on ? '♪ Sound on' : '♪ Sound off'); sndBtn.setAttribute('aria-label', on ? 'Turn the sound off' : 'Turn the sound on'); }
       paintSnd();
       sndBtn.addEventListener('click', function(e){ e.stopPropagation(); SFX.set(!SFX.isOn()); paintSnd(); if (SFX.isOn() && tl && tl.__loop) SFX.loopStart(); o.focus({ preventScroll: true }); });
@@ -1070,14 +1464,14 @@ window.Webflow.push(function(){
       }
       function stopGame(){ running = false; gsap.ticker.remove(tick); touch = null; keys = {}; }
       function gameOver(){
-        stopGame(); isOver = true; clearBullets(); if (beamSt) hideBeam(); SFX.loopStop(); SFX.boom();
+        stopGame(); isOver = true; clearBullets(); if (beamSt) hideBeam(); SFX.loopStop(); SFX.boom(); warp.speed(.12, 1.2);
         gsap.to(ship, { opacity: 0, scale: 1.8, duration: .5, ease: 'power2.out' });
         gsap.set(over, { visibility: 'visible' }); gsap.fromTo(over, { opacity: 0 }, { opacity: 1, duration: .4, delay: .5 });
       }
       function retry(){
         if (!isOver) return; isOver = false;
         gsap.to(over, { opacity: 0, duration: .25, onComplete: function(){ gsap.set(over, { visibility: 'hidden' }); } });
-        SFX.loopStart(); startGame();
+        SFX.loopStart(); warp.speed(.55, 1); startGame();
       }
 
       /* ---------- input: arrows / WASD + Space, or drag (touch and mouse) ---------- */
@@ -1111,7 +1505,7 @@ window.Webflow.push(function(){
 
       function close(){
         if (!open) return; open = false; LV.beaten = true;
-        stopGame(); clearBullets();
+        stopGame(); clearBullets(); if (warp) warp.kill();
         if (tl) tl.kill(); document.removeEventListener('keydown', onKey); document.removeEventListener('keyup', onKeyUp);
         removeEventListener('blur', onBlur); removeEventListener('resize', onResize);
         SFX.close(); if (hasGsap) gsap.globalTimeline.timeScale(1);
@@ -1127,8 +1521,10 @@ window.Webflow.push(function(){
 
       if (reduce || !hasGsap){
         // no fight: straight to the result, credits as a still list
-        o.classList.add('is-still'); win.style.opacity = 1; crawl.style.opacity = 1; hp.style.width = '0%'; ended = true; if (AB.quest) AB.quest('boss'); return;
+        o.classList.add('is-still'); crawlIn.appendChild($('.ab_boss_fin', o)); win.style.opacity = 1; crawl.style.opacity = 1; hp.style.width = '0%'; ended = true; if (AB.quest) AB.quest('boss'); return;
       }
+      // we arrive at hyperspeed and drop to cruise when the boss shows up
+      warp = warpField(o); warp.speed(3.4, 0);
       function shake(n){ gsap.fromTo(arena, { x: (Math.random() - .5) * n, y: (Math.random() - .5) * n }, { x: 0, y: 0, duration: .45, ease: 'elastic.out(1,.25)' }); }
       function hit(pc, big){
         SFX.hit();
@@ -1156,37 +1552,24 @@ window.Webflow.push(function(){
         }
       }
 
-      /* ---------- the finisher: an anime cut-in, the move name, a mega beam and impact frames ---------- */
+      /* ---------- the finisher: the stars slow, the ship charges and drags the boss into line, a mega beam, impact frames ---------- */
       function finish(){
         stopGame(); clearBullets(); if (beamSt) hideBeam(); hp.style.width = '2%'; hideHelp();
         SFX.loopStop(); SFX.hit();
-        var cut = $('.ab_boss_cut', o), lines = $('.ab_boss_lines', o), panel = $('.ab_boss_panel', o), move = $('.ab_boss_move', o);
         var c = shipC(), shipTop = SB.y + sy;
         gsap.set(ship, { rotation: 0 });
         tl = gsap.timeline();
-        tl.add(function(){ o.classList.add('is-freeze'); })
-          .fromTo(flash, { opacity: .85 }, { opacity: 0, duration: .25 })
-          .set(cut, { visibility: 'visible' })
-          .fromTo(lines, { opacity: 0, scale: 1.4 }, { opacity: 1, scale: 1, duration: .25, ease: 'power2.out' }, '<')
-          .add(function(){ SFX.shing(); }, '<')
-          .fromTo(panel, { xPercent: -115 }, { xPercent: 0, duration: .38, ease: 'power4.out' }, '<')
-          .fromTo($('.ab_boss_panel-tx', o), { scale: 2.2, opacity: 0 }, { scale: 1, opacity: 1, duration: .3, ease: 'back.out(2.5)' }, '-=.08')
-          .fromTo($('.ab_boss_glint', o), { scale: 0, opacity: 0, rotation: -60, transformOrigin: '190px 166px' }, { scale: 1.4, opacity: 1, rotation: 30, duration: .22, yoyo: true, repeat: 1, ease: 'power2.out' }, '+=.15')
-          .to(panel, { xPercent: 115, duration: .26, ease: 'power4.in' }, '+=.5')
-          .to(lines, { opacity: 0, duration: .2 }, '<')
-          .add(function(){ o.classList.remove('is-freeze'); SFX.charge(); gsap.set(arena, { transformOrigin: c.x + 'px ' + c.y + 'px' }); gather(c); })
+        tl.fromTo(flash, { opacity: .85 }, { opacity: 0, duration: .25 })
+          .add(function(){ warp.speed(.08, .6); SFX.charge(); gsap.set(arena, { transformOrigin: c.x + 'px ' + c.y + 'px' }); gather(c); })
           .to(arena, { scale: 1.55, duration: 1.1, ease: 'power2.inOut' })
           .to(ship, { filter: 'brightness(2.2) drop-shadow(0 0 22px #FF6A3D)', duration: 1.1 }, '<')
           // the ship's lock drags the boss into its line of fire
           .to(mon, { x: c.x - MB.x - MB.w / 2, duration: 1.1, ease: 'power2.inOut' }, '<')
-          .fromTo(move, { opacity: 0, scale: 2.4 }, { opacity: 1, scale: 1, duration: .32, ease: 'back.out(2)' }, '-=.35')
-          .add(function(){ SFX.blip(); shake(8); }, '<')
-          .to(move, { opacity: 0, scale: .92, duration: .2 }, '+=.8')
-          .to(arena, { scale: 1, duration: .16, ease: 'power3.in' }, '<')
+          .to(arena, { scale: 1, duration: .16, ease: 'power3.in' }, '+=.25')
           // fire: the beam runs from the ship to the top of the screen, straight through the boss
           .add(function(){
             mega.style.left = c.x + 'px'; mega.style.height = Math.max(0, shipTop + 6) + 'px';
-            SFX.mega(); shake(34);
+            SFX.mega(); shake(34); warp.speed(3.6, .15);
           })
           .fromTo(mega, { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: .1, ease: 'power2.out' })
           // impact frames: silhouette, invert, silhouette
@@ -1196,6 +1579,7 @@ window.Webflow.push(function(){
           .add(function(){ o.classList.remove('is-impact'); hp.style.width = '0%'; }, '+=.09')
           .to(mega, { scaleX: .7, duration: .06, yoyo: true, repeat: 5, ease: 'steps(1)' })
           .add(explode, '+=.05')
+          .add(function(){ warp.speed(.5, 1.6); }, '<')
           .to(mega, { scaleX: 0, opacity: 0, duration: .5, ease: 'power2.in' }, '<.2')
           .to(ship, { filter: 'brightness(1) drop-shadow(0 0 10px rgba(255,106,61,.6))', duration: .6 }, '<');
         outro(tl);
@@ -1209,7 +1593,20 @@ window.Webflow.push(function(){
           .to(bars, { scaleY: 0, duration: .6, ease: 'power2.in' }, '<')
           .to(ship, { y: -innerHeight, duration: 1.4, ease: 'power2.in' }, '<')
           .to(crawl, { opacity: 1, duration: .5 }, '<')
-          .fromTo(crawlIn, { yPercent: 0, y: function(){ return crawl.offsetHeight; } }, { yPercent: -100, y: function(){ return crawl.offsetHeight * .35; }, duration: 22, ease: 'none', onComplete: function(){ ended = true; } });
+          .fromTo(crawlIn, { yPercent: 0, y: function(){ return crawl.offsetHeight; } }, { yPercent: -100, y: function(){ return crawl.offsetHeight * .3; }, duration: 13, ease: 'none' })
+          .to(crawl, { opacity: 0, duration: .6 }, '-=1.2');
+        // finale: back to hyperspeed, the two halves of the name streak in from the sides and meet in the middle
+        var fin = $('.ab_boss_fin', o), L = $('.is-l', fin), R = $('.is-r', fin), trails = $$('.ab_boss_fin-name i', fin), fsm = $$('small', fin);
+        t.add(function(){ warp.speed(3.4, .7); SFX.whoosh(); })
+          .set(fin, { visibility: 'visible' })
+          .fromTo(fsm[0], { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .5 }, '+=.3')
+          // each half starts just past its screen edge (layout offsets: transforms don't move them), so the whole flight shows
+          .fromTo(L, { x: function(){ return -(L.offsetLeft + L.offsetWidth) - 60; }, skewX: -28 }, { x: 0, skewX: 0, duration: .75, ease: 'power3.in' }, '+=.15')
+          .fromTo(R, { x: function(){ return innerWidth - R.offsetLeft + 60; }, skewX: 28 }, { x: 0, skewX: 0, duration: .75, ease: 'power3.in' }, '<')
+          .add(function(){ SFX.boom(); SFX.fanfare(); gsap.fromTo(flash, { opacity: .7 }, { opacity: 0, duration: .9, ease: 'power2.out' }); warp.speed(.3, 2); })
+          .to(trails, { scaleX: 0, opacity: 0, duration: .5, ease: 'power3.out' })
+          .fromTo([L, R], { scaleX: 1.14, scaleY: .88 }, { scaleX: 1, scaleY: 1, duration: .7, ease: 'elastic.out(1,.35)' }, '<')
+          .fromTo(fsm[1], { opacity: 0 }, { opacity: 1, duration: .6 }, '+=.4');
       }
 
       tl = gsap.timeline();
@@ -1222,7 +1619,8 @@ window.Webflow.push(function(){
         .fromTo($('b', vs), { scale: 3, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'back.out(2)' }, '<.25')
         .to(vs, { opacity: 0, scale: 1.08, duration: .35 }, '+=1.1')
         // entrance: warning, the ship rises, the boss drops in as the camera pulls back
-        .fromTo(warn, { opacity: 0 }, { opacity: 1, duration: .12, repeat: 5, yoyo: true, ease: 'steps(1)' })
+        .add(function(){ warp.speed(.55, 1.8); })
+        .fromTo(warn, { opacity: 0 }, { opacity: 1, duration: .12, repeat: 5, yoyo: true, ease: 'steps(1)' }, '<')
         .to(warn, { opacity: 0, duration: .2 })
         .fromTo(arena, { scale: 1.25 }, { scale: 1, duration: 1.3, ease: 'power2.out' }, '<')
         .from(ship, { y: 160, opacity: 0, duration: .7, ease: 'power3.out' }, '<')

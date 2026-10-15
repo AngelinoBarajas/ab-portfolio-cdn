@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.20 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -7,7 +7,12 @@ window.Webflow.push(function(){
   /* ---------- base: helpers shared with the page bundles through window.AB ---------- */
   var AB = window.AB = window.AB || {};
   var hasGsap = !!window.gsap;
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // reduced motion = the system setting OR Calm mode (the visitor's own switch: footer bar / Shift+M, localStorage ab:calm).
+  // Every bundle reads AB.reduce; html.ab-calm (set in the head by abwarpin, again here) mirrors the CSS reduced-motion rules (build.mjs)
+  var sysReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches, calm = false;
+  try { calm = localStorage.getItem('ab:calm') === '1'; } catch (e){}
+  if (calm) document.documentElement.classList.add('ab-calm');
+  var reduce = sysReduce || calm;
   var coarse = window.matchMedia('(pointer: coarse)').matches;
   var $ = function(s, r){ return (r || document).querySelector(s); };
   var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -64,8 +69,14 @@ window.Webflow.push(function(){
   if (hasGloss) cache.g = GLOSS; else if (siteCache && siteCache.g) GLOSS = siteCache.g;
   if (hasSiteData || hasGloss){ try { localStorage.setItem(SITE_KEY, JSON.stringify(cache)); } catch (e){} }
   function bind(key, val){ if (!val) return; $$('[data-bind="' + key + '"]').forEach(function(e){ e.textContent = val; }); }
+  // the nav status line gets a condensed availability ("Available Q4 2026" → "Booking Q4 ’26") so it fits beside the
+  // clock, crew and Engines switch; the footer and mobile menu keep the full CMS wording
+  function navAvail(t){ return t.replace(/^Available\b/i, 'Booking').replace(/\b20(\d\d)\b/, '’$1'); }
+  var navAv = $('.ab_nav_status [data-bind="availability"]');
+  if (navAv){ navAv.setAttribute('data-bind', 'availability-nav'); navAv.classList.add('ab_nav_avail'); navAv.textContent = navAvail(navAv.textContent.trim()); }
   function applySettings(){
     bind('availability', S0.availability);
+    if (S0.availability) bind('availability-nav', navAvail(S0.availability));
     if (S0.availability) bind('availability-short', S0.availability.replace(/^Available\s*/i, ''));
     bind('tz-label', S0['tz-label']);
     bind('email', S0.email);
@@ -89,7 +100,7 @@ window.Webflow.push(function(){
     })['catch'](function(){});
   }
 
-  Object.assign(AB, { hasGsap: hasGsap, reduce: reduce, coarse: coarse, $: $, $$: $$, num: num, esc: esc, pad2: pad2, hex: hex, rgbToHex: rgbToHex, onView: onView, settings: S0, quotes: QUOTES, gloss: GLOSS });
+  Object.assign(AB, { hasGsap: hasGsap, reduce: reduce, sysReduce: sysReduce, calm: calm, coarse: coarse, $: $, $$: $$, num: num, esc: esc, pad2: pad2, hex: hex, rgbToHex: rgbToHex, onView: onView, settings: S0, quotes: QUOTES, gloss: GLOSS });
 
   /* ===== core/10-space.js ===== */
 
@@ -135,7 +146,7 @@ window.Webflow.push(function(){
 
   /* =========================================================
      PLANETS — procedural textures from data attributes on .ab_planet
-     data-planet: gas | rocky | ice | lava | terra | blackhole
+     data-planet: gas | storm | rocky | ice | lava | terra | desert | ocean | toxic | crystal | blackhole | wormhole
      data-colors, data-ring, data-tilt, data-open, data-spin, data-glow, data-seed, data-drag, data-parallax
      ========================================================= */
   function mix(a, b, t){ return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
@@ -179,6 +190,38 @@ window.Webflow.push(function(){
           var r = 1 - Math.abs(fbm(u * 1.5, v * 2.8, 12, seed, 5) * 2 - 1);
           c = ramp(cols.slice(0, 2), fbm(u, v * 2, P, seed + 5, 3));
           if (r > .86){ var g = Math.min(1, (r - .86) * 8); c = mix(c, ramp(cols.slice(2), g), g); }
+        } else if (type === 'storm'){ // banded giant with three swirling storms (the swirl rotates the sample point)
+          var su = x / W, sv = v, k2;
+          for (k2 = 0; k2 < 3; k2++){
+            var sx0 = hash(k2, 11, seed), sy0 = .28 + hash(k2, 12, seed) * .44, rad = .05 + hash(k2, 13, seed) * .06;
+            var ddx = su - sx0; ddx -= Math.round(ddx); var ddy = (sv - sy0) * .5, dd = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (dd < rad){ var sw2 = Math.pow(1 - dd / rad, 2) * 4 * (k2 % 2 ? -1 : 1), ca = Math.cos(sw2), sa = Math.sin(sw2); su = sx0 + ddx * ca - ddy * sa; sv = sy0 + (ddx * sa + ddy * ca) * 2; }
+          }
+          var wq = fbm(su * P, sv * 5, P, seed, 3);
+          c = ramp(cols, (fbm(su * 2, sv * 12 + wq * 2.2, 2, seed + 9, 4) - .5) * 2.8 + .5);
+        } else if (type === 'desert'){ // wind-combed dunes, dark rock fields, thin frost caps
+          var dn = fbm(u * 1.5, v * 3, 12, seed, 4), dune = Math.sin((u * 2 + v * 3 + dn * 3.2) * Math.PI * 2);
+          c = ramp(cols.slice(0, 3), Math.max(0, Math.min(1, .5 + dune * .18 + (dn - .5) * 1.1)));
+          var rk = fbm(u * 2, v * 4, 16, seed + 4, 4); if (rk > .6) c = mix(c, cols[3] || cols[0], Math.min(.8, (rk - .6) * 4));
+          if (lat > .86) c = mix(c, [245, 240, 232], Math.min(.7, (lat - .86) * 5));
+        } else if (type === 'ocean'){ // a water world: island chains, shallows, heavy swirling cloud
+          var ld = fbm(u * 1.5, v * 3, 12, seed, 5), q0 = fbm(u, v * 3, P, seed + 2, 2);
+          c = ld > .6 ? mix(cols[2], cols[3] || cols[2], Math.min(1, (ld - .6) * 5)) : ld > .55 ? mix(cols[1], cols[2], .35) : mix(cols[0], cols[1], Math.min(1, ld * 1.7));
+          var cw = fbm(u * 2 + q0 * 1.4, v * 6, 16, seed + 7, 4); if (cw > .54) c = mix(c, [255, 255, 255], Math.min(.85, (cw - .54) * 3.5));
+          if (lat > .88) c = mix(c, [240, 248, 255], Math.min(.8, (lat - .88) * 6));
+        } else if (type === 'toxic'){ // domain-warped marbling, like a poisoned atmosphere
+          var q1 = fbm(u, v * 2, P, seed, 3), q2 = fbm(u + 1.7, v * 2 + 3.1, P, seed + 1, 3);
+          c = ramp(cols, Math.max(0, Math.min(1, (fbm(u + q1 * 3, v * 2 + q2 * 3, P, seed + 2, 4) - .3) * 2.2)));
+        } else if (type === 'crystal'){ // faceted cells with lit edges (wrapped Voronoi, 12 x 6 cells)
+          var gx = x / W * 12, gy = v * 6, ix = Math.floor(gx), iy = Math.floor(gy), d1 = 9, d2 = 9, cid = 0, a2, b2;
+          for (a2 = -1; a2 <= 1; a2++) for (b2 = -1; b2 <= 1; b2++){
+            var cxi = ix + a2, cyi = iy + b2, wx = ((cxi % 12) + 12) % 12;
+            var ex = gx - (cxi + hash(wx, cyi, seed)), ey = gy - (cyi + hash(wx, cyi, seed + 3)), dq = ex * ex + ey * ey;
+            if (dq < d1){ d2 = d1; d1 = dq; cid = hash(wx, cyi, seed + 5); } else if (dq < d2) d2 = dq;
+          }
+          var eg = Math.sqrt(d2) - Math.sqrt(d1);
+          c = ramp(cols.slice(0, Math.max(2, cols.length - 1)), cid); c = mix(c, [0, 0, 0], .18 * (1 - Math.min(1, eg * 3)));
+          if (eg < .06) c = mix(c, cols[cols.length - 1], 1 - eg / .06);
         } else { // terra
           var land = fbm(u * 1.25, v * 2.4, 10, seed, 5), cloud = fbm(u * 2, v * 5, P * 2, seed + 7, 4);
           c = land > .52 ? mix(cols[2], cols[3], Math.min(1, (land - .52) * 4)) : mix(cols[0], cols[1], land * 1.6);
@@ -200,9 +243,198 @@ window.Webflow.push(function(){
     }
     return cv.toDataURL('image/jpeg', .9);
   }
+  /* ---------- random planets: a type + a color harmony (analogous / complementary / triad) per call ----------
+     AB.planetLook(rnd?) -> { type, colors, ring, tilt, open, glow, seed }; AB.applyPlanetLook(el, look) writes the data
+     attributes (call before buildPlanet, or clear __built to rebuild). Designer planets and service colors keep theirs. */
+  var TYPES = ['gas', 'gas', 'storm', 'storm', 'rocky', 'ice', 'lava', 'terra', 'desert', 'ocean', 'toxic', 'crystal'];
+  // ring styles (data-ring-style, CSS .is-ring-*): classic bands, one thin bright band, a wide dusty sheet, two rings with a gap, many fine bands
+  var RINGS = ['classic', 'classic', 'thin', 'wide', 'double', 'banded'];
+  function hsl(h, s, l){
+    h = ((h % 360) + 360) % 360 / 360; s = Math.max(0, Math.min(1, s)); l = Math.max(0, Math.min(1, l));
+    var q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    function f(t){ t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; }
+    return '#' + [f(h + 1 / 3), f(h), f(h - 1 / 3)].map(function(v){ var x = Math.round(v * 255).toString(16); return x.length < 2 ? '0' + x : x; }).join('');
+  }
+  function planetLook(rnd){
+    rnd = rnd || Math.random;
+    function R(a, b){ return a + rnd() * (b - a); }
+    var t = TYPES[rnd() * TYPES.length | 0], h = rnd() * 360, sc = rnd(), h2 = sc < .33 ? h + R(20, 45) : sc < .66 ? h + 180 + R(-20, 20) : h + 120, c;
+    if (t === 'gas' || t === 'storm') c = [hsl(h, R(.35, .7), R(.12, .2)), hsl(h, R(.4, .7), R(.35, .45)), hsl(h2, R(.4, .8), R(.6, .72)), hsl(h, R(.2, .5), R(.85, .93)), hsl(h2, R(.3, .6), R(.25, .35))];
+    else if (t === 'rocky') c = [hsl(h, R(.05, .28), R(.3, .4)), hsl(h, R(.05, .28), R(.52, .64)), hsl(h, R(.05, .2), R(.13, .2))];
+    else if (t === 'ice') c = [hsl(h, R(.3, .6), R(.9, .95)), hsl(h, R(.4, .7), R(.66, .76)), hsl(h2, R(.4, .6), R(.38, .48))];
+    else if (t === 'lava') c = [hsl(h, R(.2, .4), R(.04, .08)), hsl(h, R(.3, .5), R(.12, .18)), hsl(h2, .95, R(.5, .58)), hsl(h2 + 25, .95, R(.72, .8))];
+    else if (t === 'terra') c = [hsl(h, R(.5, .7), R(.14, .22)), hsl(h, R(.5, .7), R(.3, .4)), hsl(h2, R(.3, .55), R(.28, .38)), hsl(h2 + 30, R(.2, .4), R(.45, .55)), '#f2f0ea'];
+    else if (t === 'desert') c = [hsl(h, R(.3, .6), R(.3, .38)), hsl(h, R(.4, .65), R(.5, .6)), hsl(h + 15, R(.4, .7), R(.72, .82)), hsl(h2, R(.1, .3), R(.16, .24))];
+    else if (t === 'ocean') c = [hsl(h, R(.5, .8), R(.1, .18)), hsl(h, R(.5, .8), R(.32, .42)), hsl(h2, R(.3, .6), R(.32, .42)), hsl(h2 + 20, R(.2, .5), R(.55, .65))];
+    else if (t === 'toxic') c = [hsl(h, R(.5, .8), R(.07, .13)), hsl(h, R(.6, .9), R(.3, .4)), hsl(h2, R(.7, 1), R(.55, .65)), hsl(h2 + 30, R(.6, .9), R(.8, .9))];
+    else c = [hsl(h, R(.4, .7), R(.18, .28)), hsl(h, R(.5, .8), R(.42, .52)), hsl(h2, R(.5, .8), R(.6, .7)), hsl(h, R(.2, .5), R(.92, .97))];
+    var ring = (t === 'gas' || t === 'storm') ? rnd() < .7 : rnd() < .28, gl = hex(c[Math.min(2, c.length - 1)]);
+    return { type: t, colors: c.join(','), seed: 1 + (rnd() * 998 | 0), tilt: Math.round((6 + rnd() * 26) * (rnd() < .2 ? 1 : -1)), open: +(.16 + rnd() * .14).toFixed(2),
+      ringStyle: RINGS[rnd() * RINGS.length | 0],
+      ring: ring ? [hsl(h2, R(.2, .5), R(.8, .9)), hsl(h, R(.3, .6), R(.55, .65)), hsl(h, R(.3, .5), R(.25, .35))].join(',') : '', glow: 'rgba(' + gl.join(',') + ',.4)' };
+  }
+  function applyPlanetLook(el, L){
+    el.setAttribute('data-planet', L.type); el.setAttribute('data-colors', L.colors); el.setAttribute('data-seed', L.seed); el.setAttribute('data-glow', L.glow);
+    if (L.ring){ el.setAttribute('data-ring', L.ring); el.setAttribute('data-tilt', L.tilt); el.setAttribute('data-open', L.open); el.setAttribute('data-ring-style', L.ringStyle || 'classic'); }
+    else { el.removeAttribute('data-ring'); el.removeAttribute('data-ring-style'); }
+  }
+
+  /* ---------- wormhole (data-planet="wormhole"): a glass sphere showing another galaxy through it. It lenses the real
+     starfield (sf reads LENSES: stars bend around it into an Einstein ring), wobbles like jelly and sends ripples out on
+     hover with a note ("They put it there."), and a click falls through to a random page of the site. ---------- */
+  var LENSES = [];
+  // the far side, drawn from a fixed seed so every size is the same picture: the ball uses 320–512px, the fall a 1536–2048px
+  // canvas (crisp at 5x zoom). Star and dust sizes scale with W so the two read alike when they swap.
+  function farCanvas(W){
+    var cv = document.createElement('canvas'); cv.width = cv.height = W; var x = cv.getContext('2d'), i, r, k = W / 512, sd = 7;
+    function rnd(){ sd = (sd + 0x6D2B79F5) | 0; var t = Math.imul(sd ^ (sd >>> 15), 1 | sd); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+    var g = x.createRadialGradient(W * .5, W * .5, 0, W * .5, W * .5, W * .72);
+    g.addColorStop(0, '#1c2a52'); g.addColorStop(.45, '#0d1330'); g.addColorStop(1, '#03040a'); x.fillStyle = g; x.fillRect(0, 0, W, W);
+    // nebula veils: a warm, a cold and a violet one
+    [['255,176,110', .32, .3, .34], ['110,190,255', .7, .66, .4], ['190,140,255', .22, .78, .26]].forEach(function(n){
+      var ng = x.createRadialGradient(W * n[1], W * n[2], 0, W * n[1], W * n[2], W * n[3]); ng.addColorStop(0, 'rgba(' + n[0] + ',.34)'); ng.addColorStop(1, 'rgba(' + n[0] + ',0)');
+      x.fillStyle = ng; x.fillRect(0, 0, W, W);
+    });
+    // a spiral galaxy on the far side (two log-spiral arms)
+    var gs = W * .2, dot = 1.2 * Math.max(1, k * .75);
+    x.save(); x.translate(W * .6, W * .42); x.rotate(-.5); x.scale(1, .55);
+    var core = x.createRadialGradient(0, 0, 0, 0, 0, gs * .5); core.addColorStop(0, 'rgba(255,240,215,.95)'); core.addColorStop(1, 'rgba(255,200,150,0)'); x.fillStyle = core; x.beginPath(); x.arc(0, 0, gs * .5, 0, 7); x.fill();
+    for (i = 0; i < 900; i++){ var tt = rnd() * 3.2, rr = gs * .12 * Math.exp(tt * .55), an = tt * 2 + (i % 2) * Math.PI + (rnd() - .5) * .5;
+      x.fillStyle = 'rgba(' + (rnd() < .5 ? '200,220,255' : '255,225,190') + ',' + (.25 + rnd() * .6) + ')'; x.fillRect(Math.cos(an) * rr, Math.sin(an) * rr, dot, dot); }
+    x.restore();
+    for (i = 0; i < 700; i++){ r = (rnd() < .9 ? .6 + rnd() * .7 : 1.4 + rnd() * 1.2) * Math.max(1, k * .75);
+      x.fillStyle = 'rgba(' + (rnd() < .2 ? '255,214,180' : rnd() < .3 ? '190,215,255' : '255,255,255') + ',' + (.35 + rnd() * .65) + ')'; x.beginPath(); x.arc(rnd() * W, rnd() * W, r, 0, 7); x.fill(); }
+    return cv;
+  }
+  function farSide(W){ return farCanvas(W).toDataURL('image/jpeg', .88); }
+
+  function wormLinks(){
+    var here = location.pathname.replace(/\/$/, '') || '/', seen = {}, out = [];
+    $$('a[href]').forEach(function(a){
+      var u; try { u = new URL(a.getAttribute('href'), location.href); } catch (e){ return; }
+      if (u.origin !== location.origin || /\.[a-z0-9]{2,4}$/i.test(u.pathname)) return;
+      var pth = u.pathname.replace(/\/$/, '') || '/'; if (pth === here || seen[pth]) return; seen[pth] = 1; out.push(pth);
+    });
+    return out.length ? out : ['/', '/work', '/services', '/process', '/about', '/observatory', '/contact'].filter(function(x){ return x !== here; });
+  }
+  function buildWormhole(el){
+    el.classList.add('is-wormhole');
+    var sz = el.getBoundingClientRect().width || 200, armed = 0;
+    el.style.setProperty('--sz', sz + 'px');
+    var body = document.createElement('div'); body.className = 'pbody'; el.appendChild(body); el.__body = body;
+    body.innerHTML = '<div class="wh-halo"></div><div class="wh-rip"><i></i><i></i><i></i></div>' +
+      '<div class="wh-ball"><div class="wh-far"><i class="is-a"></i><i class="is-b"></i></div><div class="wh-lens"></div><div class="wh-glass"></div></div>';
+    var tip = document.createElement('span'); tip.className = 'wh-tip'; tip.setAttribute('aria-hidden', 'true');
+    tip.innerHTML = '<b>Looks like a wormhole.</b><span>They put it there.</span><em>' + (coarse ? 'Tap again to fall through' : 'Click to fall through') + ' &rarr;</em>';
+    el.appendChild(tip);
+    el.removeAttribute('aria-hidden'); el.setAttribute('role', 'link'); el.tabIndex = 0; el.setAttribute('aria-label', 'Wormhole: fall through to a random page of this site');
+    var farTx = '';
+    var paint = function(){ farTx = farSide(sz > 240 ? 512 : 320); $$('.wh-far i', body).forEach(function(i){ i.style.backgroundImage = 'url(' + farTx + ')'; }); body.classList.add('on'); };
+    if ('requestIdleCallback' in window) requestIdleCallback(paint, { timeout: 800 }); else setTimeout(paint, 30);
+    var lens = { el: $('.wh-ball', body), b: 0, to: 0 }; LENSES.push(lens);
+    // probes: now and then one drifts past, gets caught, spirals in (faster, stretching) and is gone: "signal lost".
+    // Only while the wormhole is on screen, never under reduced motion or during the fall.
+    if (hasGsap && !reduce){
+      var PROBE = '<svg viewBox="0 0 32 20" aria-hidden="true"><path d="M0 7h9v6H0zM23 7h9v6h-9z" fill="#4C8DFF"/><path d="M3 7v6M6 7v6M26 7v6M29 7v6" stroke="#07080d" stroke-width=".8"/>' +
+        '<rect x="9" y="5" width="14" height="10" rx="2" fill="#F2F0EA"/><circle cx="16" cy="10" r="2.4" fill="#FF6A3D"/><path d="M16 5V1" stroke="#F2F0EA" stroke-width="1.2"/></svg>';
+      var plog = document.createElement('span'), pvis = false, pn = 3 + (Math.random() * 5 | 0), ptimer = 0;
+      plog.className = 'wh-log'; plog.setAttribute('aria-hidden', 'true'); el.appendChild(plog);
+      onView(el, function(v){ pvis = v; if (v && !ptimer) pqueue(); });
+      var pqueue = function(){ ptimer = setTimeout(function(){ ptimer = 0; if (!pvis) return; if (!document.hidden && !el.classList.contains('is-go')) probe(); pqueue(); }, 6000 + Math.random() * 8000); };
+      var probe = function(){
+        var C = body.offsetWidth / 2, Rr = C, p = document.createElement('i'); p.className = 'wh-probe'; p.innerHTML = PROBE; body.appendChild(p);
+        var dir = Math.random() < .5 ? 1 : -1, s = { a: Math.random() * Math.PI * 2, r: Rr * (2.4 + Math.random() * .5), f: 0 }, a1 = s.a + dir * Math.PI * (2.6 + Math.random()), id = 'AB-' + pad2(pn++ % 100);
+        var put = function(){
+          var k = Math.max(0, Math.min(1, (s.r - Rr * .35) / (Rr * .8)));
+          gsap.set(p, { x: C + Math.cos(s.a) * s.r, y: C + Math.sin(s.a) * s.r * .62, rotation: s.a * 57.2958 + dir * 90, scaleX: 1 + (1 - k) * 1.4, scaleY: .3 + k * .7, opacity: Math.min(1, k * 1.5) * s.f });
+        };
+        put();
+        gsap.timeline({ onComplete: function(){ if (p.parentNode) p.parentNode.removeChild(p); gulp(id); } })
+          .to(s, { f: 1, duration: .6, ease: 'power1.out' }, 0)
+          .to(s, { a: a1, duration: 3.4, ease: 'power2.in', onUpdate: put }, 0)
+          .to(s, { r: Rr * .3, duration: 3.4, ease: 'power3.in' }, 0);
+      };
+      var gulp = function(id){
+        lens.b += .6;
+        var g = document.createElement('i'); g.className = 'wh-gulp'; body.appendChild(g); setTimeout(function(){ if (g.parentNode) g.parentNode.removeChild(g); }, 2100);
+        plog.innerHTML = 'Probe ' + id + ' &middot; <b>signal lost</b>'; plog.classList.add('show');
+        setTimeout(function(){ plog.classList.remove('show'); }, 2400);
+      };
+    }
+    // pop-in: the wormhole waits tiny and invisible until a third of it is in view, then springs in with one ripple.
+    // It scales .pbody (the ball's own water-drop CSS animation owns the ball's transform, a script scale there is ignored).
+    function pop(delay){
+      if (!hasGsap || reduce) return;
+      gsap.fromTo(body, { scale: .2, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'elastic.out(1,.45)', delay: delay || 0 });
+      setTimeout(function(){ lens.b += .8; var g = document.createElement('i'); g.className = 'wh-gulp'; body.appendChild(g); setTimeout(function(){ if (g.parentNode) g.parentNode.removeChild(g); }, 2100); }, ((delay || 0) + .15) * 1000);
+    }
+    if (hasGsap && !reduce){
+      gsap.set(body, { scale: .2, opacity: 0 });
+      var popIO = onView(el, function(v){ if (!v) return; popIO.disconnect(); pop(.05); }, { threshold: .35 });
+    }
+    function hot(on){ el.classList.toggle('is-hot', on); if (!el.classList.contains('is-go')) lens.to = on ? 1 : 0; }
+    function fall(){
+      if (el.classList.contains('is-go')) return;
+      var list = wormLinks(), url = list[Math.random() * list.length | 0];
+      el.classList.add('is-go'); lens.to = 3;
+      var fresh = AB.quest ? AB.quest('wormhole') : false;
+      try { sessionStorage.setItem('ab:wormhole', fresh ? 'new' : '1'); } catch (e){}
+      if (reduce || !hasGsap || !AB.go){ location.href = url; return; }
+      tunnel(url);
+    }
+    // falling in: the wormhole pulls in and flares out while the starfield goes to hyperspeed around it (warp centered on the
+    // hole), then AB.go fades the page to black and loads the next one. No image hand-off and no CSS filter on the ball
+    // (a filter re-rasterizes its layers and flashed it black for a frame or two), so nothing can redraw.
+    function tunnel(url){
+      var ball = $('.wh-ball', body), r = ball.getBoundingClientRect();
+      if (sf && sf.state){ sf.state.cx = r.left + r.width / 2; sf.state.cy = r.top + r.height / 2; }
+      gsap.timeline()
+        .to(ball, { scale: .86, duration: .16, ease: 'power2.out' })
+        .to(ball, { scale: 1.12, opacity: 0, duration: .45, ease: 'power2.in' })
+        .to(el.querySelector('.wh-halo'), { scale: 2.2, opacity: 0, duration: .45, ease: 'power2.in' }, '<')
+        .to(sf && sf.state ? sf.state : {}, { warp: .6, duration: .6, ease: 'power2.in' }, '<-.1')
+        .add(function(){ AB.go(url); }, '-=.15');
+    }
+    // magnetic: while hovered the whole wormhole leans toward the cursor (18% of the offset, capped at 8% of its size),
+    // springs home on leave; mouse only, off under reduced motion and during the fall
+    if (hasGsap && !reduce && !coarse){
+      var mgx = gsap.quickTo(body, 'x', { duration: .7, ease: 'power3.out' }), mgy = gsap.quickTo(body, 'y', { duration: .7, ease: 'power3.out' });
+      el.addEventListener('pointermove', function(e){
+        if (e.pointerType === 'touch' || el.classList.contains('is-go')) return;
+        var q = el.getBoundingClientRect(), lim = q.width * .08;
+        mgx(Math.max(-lim, Math.min(lim, (e.clientX - q.left - q.width / 2) * .18)));
+        mgy(Math.max(-lim, Math.min(lim, (e.clientY - q.top - q.height / 2) * .18)));
+      });
+      el.addEventListener('pointerleave', function(e){ if (e.pointerType !== 'touch') gsap.to(body, { x: 0, y: 0, duration: 1.1, ease: 'elastic.out(1,.4)', overwrite: true }); });
+    }
+    el.addEventListener('pointerenter', function(e){ if (e.pointerType !== 'touch') hot(true); });
+    el.addEventListener('pointerleave', function(e){ if (e.pointerType !== 'touch') hot(false); });
+    el.addEventListener('focus', function(){ hot(true); }); el.addEventListener('blur', function(){ hot(false); });
+    el.addEventListener('click', function(e){
+      e.preventDefault();
+      // touch: the first tap wakes it (wobble + note), a second tap within 4 s falls through
+      if (coarse && Date.now() - armed > 4000){ armed = Date.now(); hot(true); setTimeout(function(){ if (Date.now() - armed >= 3900) hot(false); }, 4000); return; }
+      fall();
+    });
+    el.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fall(); } });
+    // back button: the browser restores this page as it was mid-fall (ball faded out, warp aimed at the hole), so reset it
+    // and let the wormhole pop back in
+    addEventListener('pageshow', function(e){
+      if (!e.persisted || !el.classList.contains('is-go')) return;
+      el.classList.remove('is-go', 'is-hot'); lens.to = 0; lens.b = 0; armed = 0;
+      if (sf && sf.state){ sf.state.cx = null; sf.state.cy = null; sf.state.warp = 0; }
+      var ball = $('.wh-ball', body), halo = $('.wh-halo', body);
+      if (!hasGsap){ ball.style.opacity = ''; ball.style.transform = ''; return; }
+      gsap.set(body, { x: 0, y: 0 }); if (halo) gsap.set(halo, { clearProps: 'transform,opacity' });
+      if (reduce){ gsap.set(ball, { clearProps: 'transform,opacity' }); return; }
+      gsap.set(ball, { clearProps: 'transform,opacity' }); pop(.15);
+    });
+  }
+
   function buildPlanet(el){
     if (el.__built) return; el.__built = true;
     var type = el.getAttribute('data-planet') || 'gas';
+    if (type === 'wormhole'){ buildWormhole(el); return; }
     if (type === 'blackhole'){
       var bh = document.createElement('div'); bh.className = 'pbody'; el.appendChild(bh); el.__body = bh;
       bh.innerHTML = '<div class="bh-flash"></div><div class="bh-glow"></div><div class="bh-disk back"><i></i></div><div class="bh-lens"><i></i></div><div class="bh-core"></div><div class="bh-disk front"><i></i></div>';
@@ -227,6 +459,8 @@ window.Webflow.push(function(){
       var rc = ds.ring.split(',').map(function(h){ return 'rgba(' + hex(h).join(',') + ','; });
       el.style.setProperty('--r1', rc[0] + '.75)'); el.style.setProperty('--r2', (rc[1] || rc[0]) + '.45)'); el.style.setProperty('--r3', (rc[2] || rc[0]) + '.6)');
       el.style.setProperty('--tilt', num(ds.tilt, -14) + 'deg'); el.style.setProperty('--open', num(ds.open, .24));
+      el.className = el.className.replace(/\s*is-ring-\w+/g, '');
+      if (ds.ringStyle && ds.ringStyle !== 'classic') el.classList.add('is-ring-' + ds.ringStyle);
       ['back', 'front'].forEach(function(side){ var r = document.createElement('div'); r.className = 'pring pring-' + side; r.appendChild(document.createElement('i')); pbody.appendChild(r); });
     }
     if (!el.hasAttribute('aria-hidden') && !el.hasAttribute('role')){
@@ -336,7 +570,14 @@ window.Webflow.push(function(){
     function draw(time, dt){
       ctx.clearRect(0, 0, w, h);
       mx += (tmx - mx) * 0.05; my += (tmy - my) * 0.05;
-      var sy = window.scrollY, cx = w / 2, cy = h / 2, wp = state.warp;
+      var sy = window.scrollY, cx = state.cx != null ? state.cx : w / 2, cy = state.cy != null ? state.cy : h / 2, wp = state.warp, LS = [];
+      // wormholes on screen: point-lens each star (r' = (r + sqrt(r^2 + 4 th^2)) / 2) with a smooth falloff; hover swells th and makes it ring
+      LENSES.forEach(function(o){
+        o.b += (o.to - o.b) * (dt ? Math.min(1, dt * 4) : 1);
+        var r = o.el.getBoundingClientRect(); if (!r.width || r.bottom < -200 || r.top > h + 200) return;
+        var R = r.width / 2, th = R * (1.06 + o.b * .34 + (o.b > .05 ? Math.sin(time * .0021) * .1 * Math.min(1, o.b) : 0));
+        LS.push({ x: r.left + R, y: r.top + R, t: th, a: th * 3, z: th * 7 });
+      });
       for (var i = 0; i < stars.length; i++){
         var s = stars[i], dp = depth[s.l];
         if (wp > 0.01){
@@ -346,6 +587,13 @@ window.Webflow.push(function(){
         }
         var px = s.x + mx * dp * 60, py = ((s.y - sy * dp) % h + h) % h + my * dp * 40;
         var al = reduce ? s.a : s.a * (0.72 + 0.28 * Math.sin(time * 0.0018 + s.t));
+        for (var li = 0; li < LS.length; li++){
+          var Lq = LS[li], ldx = px - Lq.x, ldy = py - Lq.y, ld2 = ldx * ldx + ldy * ldy;
+          if (ld2 > Lq.z * Lq.z) continue;
+          var ldd = Math.sqrt(ld2) || .001, nd = (ldd + Math.sqrt(ld2 + 4 * Lq.t * Lq.t)) / 2, ff = ldd < Lq.a ? 1 : 1 - (ldd - Lq.a) / (Lq.z - Lq.a);
+          nd = ldd + (nd - ldd) * ff * ff * (3 - 2 * ff); px = Lq.x + ldx / ldd * nd; py = Lq.y + ldy / ldd * nd;
+          var ring = (nd - Lq.t * 1.04) / (Lq.t * .22); al = Math.min(1, al * (1 + 1.1 * Math.exp(-ring * ring)));
+        }
         if (wp > 0.01){
           var dx = px - cx, dy = py - cy, k = wp * 0.12 * (s.l + 1);
           ctx.strokeStyle = 'rgba(' + s.c + ',' + al + ')'; ctx.lineWidth = s.r;
@@ -413,6 +661,7 @@ window.Webflow.push(function(){
     addEventListener('pageshow', function(e){ if (e.persisted && flash){ if (hasGsap) gsap.set(flash, { opacity: 0 }); else flash.style.opacity = 0; flash.style.pointerEvents = ''; sf.state.warp = 0; } });
   })();
 
+  Object.assign(AB, { planetLook: planetLook, applyPlanetLook: applyPlanetLook });
   Object.assign(AB, { toast: toast, copyText: copyText, fmt: fmt, buildPlanet: buildPlanet, planets: planets, sf: sf, warp: warp, go: go, inject: inject });
 
   /* ===== core/20-ui.js ===== */
@@ -484,6 +733,47 @@ window.Webflow.push(function(){
   }
   document.addEventListener('keydown', function(e){ if (e.shiftKey && (e.key === 'G' || e.key === 'g') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); toggleGrid(); } });
 
+  /* ---------- Engines (Calm mode): the visitor's own reduced-motion switch ----------
+     "Engines on / off" in the nav status line, the footer bar and the mobile menu, plus Shift+M. Stored in
+     localStorage ab:calm and applied on reload (00-base reads it into AB.reduce, abwarpin sets html.ab-calm before
+     first paint), so every animation takes the same path as the system setting. A device that already asks for
+     less motion shows "Engines off (device)", locked. */
+  (function(){
+    var off = reduce, dev = AB.sysReduce;
+    var state = 'Engines ' + (off ? 'off' : 'on'), hint = dev ? 'your device asks for reduced motion' : 'press to turn the site’s motion ' + (off ? 'back on' : 'off');
+    function flip(){
+      if (dev){ toast('Your device asks for reduced motion, so the engines stay off.'); return; }
+      try { if (AB.calm) localStorage.removeItem('ab:calm'); else localStorage.setItem('ab:calm', '1'); }
+      catch (er){ toast('The engine switch needs site storage, which this browser is blocking.'); return; }
+      toast(AB.calm ? 'Engines on · motion back online' : 'Engines off · everything holds still');
+      setTimeout(function(){ location.reload(); }, 450);
+    }
+    // every switch is a real <button>: its name starts with the visible text (label-in-name), aria-pressed = motion off
+    function make(cls, text){
+      var b = document.createElement('button'); b.type = 'button'; b.className = cls + (off ? ' is-off' : '');
+      b.setAttribute('data-engines', ''); b.setAttribute('aria-pressed', off ? 'true' : 'false');
+      b.setAttribute('aria-label', state + (dev ? ' (device setting)' : '') + ': ' + hint);
+      b.title = state + ' · ' + hint + (dev ? '' : ' (Shift+M)');
+      if (dev) b.setAttribute('aria-disabled', 'true');
+      b.innerHTML = text; b.addEventListener('click', flip); return b;
+    }
+    var ico = '<svg class="ab_eng-ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1v4.2M3.2 2.8a4 4 0 1 0 5.6 0"/></svg>';
+    var status = $('.ab_nav_status');
+    // "2 cursors online" (Designer text) reads as a mission readout: "Crew: 2"
+    $$('.ab_nav_clock-wrap', status || document).forEach(function(cw){
+      Array.prototype.forEach.call(cw.childNodes, function(n){ if (n.nodeType === 3) n.nodeValue = n.nodeValue.replace(/(\d+)\s+cursors?\s+online/i, 'Crew: $1'); });
+    });
+    if (status){
+      var sep = document.createElement('span'); sep.className = 'ab_nav_eng-sep'; sep.setAttribute('aria-hidden', 'true'); sep.textContent = '·';
+      status.appendChild(sep); status.appendChild(make('ab_nav_engines', ico + '<span>' + state + '</span>'));
+    }
+    var bar = $('.ab_footer_bar');
+    if (bar){ var fb = make('ab_footer_grid-toggle is-calm', state + (dev ? ' (device)' : '')); fb.id = 'calmToggle'; if (gbtn && gbtn.parentNode === bar) bar.insertBefore(fb, gbtn); else bar.appendChild(fb); }
+    var mfoot = $('#mmenu .ab_menu_foot');
+    if (mfoot) mfoot.parentNode.insertBefore(make('ab_menu_hq ab_menu_engines', ico + '<b>' + state + '</b><span>' + (off ? 'Motion held' : 'Tap to still') + '</span>'), mfoot);
+    document.addEventListener('keydown', function(e){ if (e.shiftKey && (e.key === 'M' || e.key === 'm') && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.activeElement.isContentEditable){ e.preventDefault(); flip(); } });
+  })();
+
   /* ---------- copy the email ([data-copy-email]) ---------- */
   $$('[data-copy-email]').forEach(function(b){
     b.addEventListener('click', function(e){
@@ -517,13 +807,13 @@ window.Webflow.push(function(){
   Object.assign(AB, { addSel: addSel, decorate: decorate });
 
   /* ===== core/21-mark.js ===== */
-  /* ---------- the AB planet monogram (logo/ab-logo.svg): one source for every surface ----------
+  /* ---------- the AB planet monogram (logo/AB Logo v2.svg): one source for every surface ----------
      AB.markSVG({ cls, grid, dims }) → nav/footer logo, Work card "Mark" cover, Home board preview, the AB Identity
      monitor channels (build / grid / light) and the Applications mockups. Paths: lg-a (the A's stroke),
-     lg-planet (planet + ring, also the A's right leg), lg-b. Construction (logo units, 490.16 × 241.75): planet
+     lg-leg (the A's right leg under the planet), lg-b, lg-planet (planet + ring, standalone, drawn last, signal orange). Construction (logo units, 490.16 × 241.75): planet
      centered at 240,121 on the cap-height midline, r 98 with a 68 core, ring on a 21.5° axis. */
-  var MARK = { a: "M75.02,202.12c-.23-.51-.42-1.03-.55-1.55-1.4-5.03,1.1-10.58,4.69-15.7,1.61-2.32,3.46-4.55,5.26-6.61,5.43-6.24,12.69-13.56,20.36-21.34l.75-2.51,11.82-39.51c1.65-5.15,3.28-10.61,4.92-16.33,1.65-5.75,3.22-11.29,4.75-16.7,1.51-5.37,2.74-10.18,3.69-14.41h2.81c.93,3.29,1.99,7.09,3.16,11.44,1.17,4.29,2.32,8.67,3.5,13.08.01.02.01.05.02.07.25.96.5,1.9.75,2.84,0,0,0-.01,0-.02.31-1.23.64-2.45,1-3.66,5.47-18.49,15.98-35.18,30.56-48.19,4.24-3.79,8.74-7.19,13.45-10.2.68-.43,1.37-.86,2.05-1.27.2-.12.39-.23.59-.35.35-.21.7-.41,1.05-.61,0,0,0,0,0,0L178.49,0h-90.3L0,241.75h79.41l9.76-32.61c-7.32-.11-12.07-2.47-14.15-7.02Z", b: "M483.84,145.81c-4.21-8.18-9.79-14.58-16.7-19.13-6.9-4.58-14.58-7.81-23-9.67v-1.4c7.25-2.11,13.93-5.34,20.02-9.66,6.09-4.35,11.01-10.27,14.77-17.76,3.74-7.49,5.61-17.1,5.61-28.79s-3.04-22.02-9.13-30.95c-6.09-8.89-14.18-15.87-24.25-20.9-10.07-5.03-21.2-7.55-33.39-7.55h-230.76l9.78,26.79s.03-.01.04-.02c1.18-.56,2.37-1.1,3.57-1.62,13-5.68,27.11-8.67,41.53-8.67,3.76,0,7.56.2,11.32.61,23.01,2.48,44,12.2,60.73,28.13,7.39,5.78,12.49,9.09,19.56,11.17.11.04.74.19,2.29.19,5.1,0,13.7-1.64,23.47-3.78,3.33-.73,6.8-1.51,10.31-2.3,17.46-3.95,35.49-8.04,48.18-8.04,8.29,0,13.67,1.76,16.94,5.5,1.55,1.77,2.24,4.06,1.94,6.46-.88,7.19-10.49,14.5-37.61,33.36-.2.15-.42.29-.65.45-17.81,12.37-37.93,26.35-52.23,39.84-.08,1.32-.2,2.68-.35,4-.44,4.06-1.11,8.06-2.01,12h49.72c3.5,0,6.61.82,9.31,2.45,2.69,1.63,4.8,3.92,6.32,6.87,1.53,2.91,2.29,6.15,2.29,9.63,0,7.52-1.65,13.13-4.92,16.88-3.29,3.74-7.62,5.63-13,5.63h-59.03v-16.16c-5.76,10.99-13.49,20.95-22.93,29.36-11.58,10.34-25.16,17.88-39.75,22.22-1.25.37-2.52.72-3.78,1.05-.01,0-.03.01-.04.01l7.2,19.74h144.68c13.11,0,24.95-2.69,35.49-8.1,10.54-5.37,18.97-12.86,25.3-22.47,6.32-9.61,9.48-20.85,9.48-33.74s-2.1-23.42-6.32-31.63Z", planet: "M430.06,52.02c-2.11-2.4-6.48-3.35-12.27-3.35-14.89,0-39.14,6.29-58.49,10.47-9.63,2.08-18.03,3.64-23.47,3.64-1.62,0-2.99-.14-4.02-.45-8.15-2.37-13.95-6.19-21.9-12.42-15.1-14.47-34.93-24.24-57.33-26.67-3.59-.38-7.15-.56-10.65-.56-13.9,0-27.26,2.94-39.41,8.3-1.2.52-2.39,1.07-3.56,1.65-.01.01-.03.01-.04.02-1.28.62-2.56,1.29-3.81,1.98-.44.24-.88.47-1.32.73-.66.37-1.33.75-1.98,1.14-.42.24-.84.5-1.25.75-.13.08-.26.16-.39.24-.75.48-1.5.95-2.23,1.44-21.79,14.41-37.72,37.37-42.56,64.71-.26,1.45-.49,2.92-.68,4.4-.11.77-.2,1.54-.28,2.31-.49,4.53-.66,9.04-.54,13.48-.22.27-.45.56-.68.84-.43.53-.86,1.06-1.3,1.58-2.69,3.25-5.54,6.5-8.46,9.73-2.57,2.84-5.19,5.66-7.84,8.44-3.56,3.76-7.16,7.46-10.7,11.06-.64.65-1.28,1.3-1.92,1.95-3.59,3.65-7.09,7.18-10.4,10.55-.54.55-1.06,1.1-1.59,1.64h-.01c-4.48,4.6-8.54,8.87-11.9,12.72-13.24,15.16-10.32,20.62.66,20.62.42,0,.84-.01,1.28-.02.37-.02.74-.04,1.13-.06,2.26-.13,4.78-.46,7.51-.93.46-.08.93-.16,1.41-.25,10.79-2.02,24.56-6.24,38.23-11.07,3.13-1.12,6.26-2.24,9.34-3.4,3.45-1.29,6.86-2.59,10.17-3.9.53-.2,1.06-.41,1.59-.62,2.01-.78,3.97-1.57,5.88-2.34.6-.25,1.19-.49,1.78-.73,12.27-5.01,22.12-9.43,26.23-11.55,1.59-.82,3.19-1.65,4.79-2.5.02,0,.04-.02.06-.03,8.45-4.41,16.94-9.01,25.43-13.68.9-.49,1.79-.99,2.68-1.48,1.09-.6,2.17-1.21,3.26-1.81.05-.03.12-.06.17-.09.55-.3,1.1-.61,1.66-.92,1.1-.61,2.2-1.22,3.3-1.83,1.26-.7,2.52-1.4,3.78-2.1.02-.01.03-.02.05-.03,1.15-.63,2.3-1.28,3.45-1.92,2.91-1.63,5.83-3.25,8.73-4.87,19.37-10.81,38.35-21.38,55.87-30.9,19.24-10.43,34.92-19.03,51.78-27.15,10.31-4.95,21.08-9.71,33.38-14.6,8.05-3.19,12.31-4.63,13.5-4.63,2.25,0-6.71,5.23-21.84,13.47-10.87,5.93-18.38,9.63-25.04,12.93-7.2,3.59-13.43,6.7-21.83,11.64-6.76,3.97-13.06,7.82-18.16,11.14l-.03.02-.14.09c-2.69,1.76-5.03,3.36-6.93,4.75-1.52,1.12-2.37,2.44-2.75,4.34-.15.73-.23,1.55-.26,2.48v1.22c-.04,2.13-.16,4.28-.39,6.44-3.09,28.53-23.59,50.94-49.78,57.79-1.27.32-2.55.62-3.84.88-.01,0-.03.01-.04.01-1.42.28-2.85.51-4.3.71-1.27.17-2.54.3-3.83.39-.65.06-1.3.09-1.95.12-.58.02-1.18.04-1.77.04-.39.02-.78.02-1.17.02-.9,0-1.8-.02-2.7-.06-1.08-.04-2.16-.11-3.24-.21-.44-.03-.9-.08-1.35-.13,0,0-.25-.03-.7-.09-.32-.04-.63-.1-.94-.14-4.3-.65-16.1-2.85-23.81-8.24l-32.24,20.66h-.02l7.34,41.93h82.22l-8.74-23.95c1.25-.21,2.49-.44,3.73-.69,1.4-.29,2.8-.6,4.19-.96.02,0,.04,0,.06-.01,1.26-.32,2.52-.66,3.76-1.03,29.81-8.74,54.2-31.37,64.82-61.14,1.16-3.22,2.14-6.52,2.96-9.9,1-4.12,1.73-8.35,2.2-12.67.23-2.06.38-4.08.47-6.14,12.99-12.64,31.32-25.8,48.08-37.48,24.6-17.18,45.83-31.19,41.84-35.76ZM239.07,131.17c-1.19.62-2.35,1.24-3.49,1.85-.01.01-.03.01-.04.02-1.3.67-2.56,1.34-3.82,1.97-1.14.59-2.25,1.15-3.35,1.71-.49.24-.98.49-1.47.73-.07.03-.15.07-.22.11-1.06.51-2.09,1-3.11,1.48-.93.43-1.85.85-2.76,1.26-1.49.68-2.94,1.31-4.35,1.9-11.91,4.95-21.45,7.29-28.52,7.29-2.76,0-5.14-.36-7.13-1.06-4.77-10.54-6.85-22.43-5.52-34.76,1.9-17.57,10.4-32.8,22.77-43.52.82-.72,1.65-1.41,2.5-2.06.2-.17.41-.33.61-.48.51-.4,1.03-.78,1.56-1.16.31-.22.62-.45.93-.67.74-.51,1.5-1.01,2.26-1.5,1.22-.78,2.46-1.52,3.73-2.22.01-.02.03-.02.04-.03,1.15-.63,2.31-1.23,3.5-1.79,8.79-4.2,18.56-6.52,28.77-6.52,2.41,0,4.84.12,7.28.4,25.08,2.7,45.43,18.87,54.65,40.54-25.41,14.06-47.07,26.97-64.82,36.51Z" };
-  function markPaths(){ return '<path class="lg-a" style="--i:0" d="' + MARK.a + '"/><path class="lg-planet" style="--i:1" d="' + MARK.planet + '"/><path class="lg-b" style="--i:2" d="' + MARK.b + '"/>'; }
+  var MARK = { a: "M75.02,202.12c-.23-.51-.42-1.03-.55-1.55-1.4-5.03,1.1-10.58,4.69-15.7,1.61-2.32,3.46-4.55,5.26-6.61,5.43-6.24,12.69-13.56,20.36-21.34l.75-2.51,11.82-39.51c1.65-5.15,3.28-10.61,4.92-16.33,1.65-5.75,3.22-11.29,4.75-16.7,1.51-5.37,2.74-10.18,3.69-14.41h2.81c.93,3.29,1.99,7.09,3.16,11.44,1.17,4.29,2.32,8.67,3.5,13.08.01.02.01.05.02.07.25.96.5,1.9.75,2.84,0,0,0-.01,0-.02.31-1.23.64-2.45,1-3.66,5.47-18.49,15.98-35.18,30.56-48.19,4.24-3.79,8.74-7.19,13.45-10.2.68-.43,1.37-.86,2.05-1.27.2-.12.39-.23.59-.35.35-.21.7-.41,1.05-.61,0,0,0,0,0,0L178.49,0h-90.3L0,241.75h79.41l9.76-32.61c-7.32-.11-12.07-2.47-14.15-7.02Z", leg: "M244.52,226.45c-26.08,0-49.75-9.38-67.03-24.58l6.98,39.88h82.22l-6.03-16.52c-5.25.8-10.64,1.22-16.14,1.22Z", planet: "M430.06,52.02c-2.11-2.4-6.48-3.35-12.27-3.35-14.89,0-39.14,6.29-58.49,10.47-9.63,2.08-18.03,3.64-23.47,3.64-1.62,0-2.99-.14-4.02-.45-8.15-2.37-13.95-6.19-21.9-12.42-15.1-14.47-34.93-24.24-57.33-26.67-3.59-.38-7.15-.56-10.65-.56-13.9,0-27.26,2.94-39.41,8.3-1.2.52-2.39,1.07-3.56,1.65-.01.01-.03.01-.04.02-1.28.62-2.56,1.29-3.81,1.98-.44.24-.88.47-1.32.73-.66.37-1.33.75-1.98,1.14-.42.24-.84.5-1.25.75-.13.08-.26.16-.39.24-.75.48-1.5.95-2.23,1.44-21.79,14.41-37.72,37.37-42.56,64.71-.26,1.45-.49,2.92-.68,4.4-.11.77-.2,1.54-.28,2.31-.49,4.53-.66,9.04-.54,13.48-.22.27-.45.56-.68.84-.43.53-.86,1.06-1.3,1.58-2.69,3.25-5.54,6.5-8.46,9.73-2.57,2.84-5.19,5.66-7.84,8.44-3.56,3.76-7.16,7.46-10.7,11.06-.64.65-1.28,1.3-1.92,1.95-3.59,3.65-7.09,7.18-10.4,10.55-.54.55-1.06,1.1-1.59,1.64h-.01c-4.48,4.6-8.54,8.87-11.9,12.72-13.24,15.16-10.32,20.62.66,20.62.42,0,.84-.01,1.28-.02.37-.02.74-.04,1.13-.06,2.26-.13,4.78-.46,7.51-.93.46-.08.93-.16,1.41-.25,10.79-2.02,24.56-6.24,38.23-11.07,3.13-1.12,6.26-2.24,9.34-3.4,3.45-1.29,6.86-2.59,10.17-3.9.53-.2,1.06-.41,1.59-.62l.54-.21c1.82-.71,3.6-1.43,5.34-2.13.6-.25,1.19-.49,1.78-.73.13-.05.26-.1.38-.16,12.09-4.94,21.78-9.29,25.85-11.39,1.59-.82,3.19-1.65,4.79-2.5l.06-.03c8.45-4.41,16.94-9.01,25.43-13.68.9-.49,1.79-.99,2.68-1.48,1.09-.6,2.17-1.21,3.26-1.81.05-.03.12-.06.17-.09.55-.3,1.1-.61,1.66-.92,1.1-.61,2.2-1.22,3.3-1.83l3.78-2.1s.03-.02.05-.03c1.15-.63,2.3-1.28,3.45-1.92,2.91-1.63,5.83-3.25,8.73-4.87,19.37-10.81,38.35-21.38,55.87-30.9,4-2.17,7.86-4.26,11.59-6.28,2.4-1.3,4.74-2.57,7.05-3.81,11.44-6.15,22.03-11.71,33.14-17.06,10.31-4.95,21.08-9.71,33.38-14.6,8.05-3.19,12.31-4.63,13.5-4.63,2.25,0-6.71,5.23-21.84,13.47-10.87,5.93-18.38,9.63-25.04,12.93-7.2,3.59-13.43,6.7-21.83,11.64-2.56,1.51-5.06,3-7.45,4.44-2.38,1.44-4.65,2.85-6.78,4.19-1.38.86-2.69,1.7-3.93,2.51l-.03.02-.14.09c-2.69,1.76-5.03,3.36-6.93,4.75-2.13,137.54-127.48,83.28-129.23,82.52,15.84,13.82,37.57,22.34,61.54,22.34,7.57,0,14.92-.85,21.93-2.45.04-.01.07-.02.1-.02,1.05-.27,2.1-.56,3.14-.87,19.31-5.66,36.35-17.16,48.84-32.64,6.79-8.42,12.24-18.01,15.98-28.5,1.16-3.22,2.14-6.52,2.96-9.9,1-4.12,1.73-8.35,2.2-12.67.01-.08.02-.17.03-.25.21-1.97.35-3.91.44-5.89,12.99-12.64,31.32-25.8,48.08-37.48,24.6-17.18,45.83-31.19,41.84-35.76ZM239.07,131.17c-1.19.62-2.35,1.24-3.49,1.85-.01.01-.03.01-.04.02-1.3.67-2.56,1.34-3.82,1.97-1.14.59-2.25,1.15-3.35,1.71-.49.24-.98.49-1.47.73-.07.03-.15.07-.22.11-1.06.51-2.09,1-3.11,1.48-.93.43-1.85.85-2.76,1.26-1.49.68-2.94,1.31-4.35,1.9-11.91,4.95-21.45,7.29-28.52,7.29-2.76,0-5.14-.36-7.13-1.06-4.77-10.54-6.85-22.43-5.52-34.76,1.9-17.57,10.4-32.8,22.77-43.52.82-.72,1.65-1.41,2.5-2.06.2-.17.41-.33.61-.48.51-.4,1.03-.78,1.56-1.16.31-.22.62-.45.93-.67.74-.51,1.5-1.01,2.26-1.5,1.22-.78,2.46-1.52,3.73-2.22.01-.02.03-.02.04-.03,1.15-.63,2.31-1.23,3.5-1.79,8.79-4.2,18.56-6.52,28.77-6.52,2.41,0,4.84.12,7.28.4,25.08,2.7,45.43,18.87,54.65,40.54-25.41,14.06-47.07,26.97-64.82,36.51Z", b: "M483.84,145.81c-4.21-8.18-9.79-14.58-16.7-19.13-6.9-4.58-14.58-7.81-23-9.67v-1.4c7.25-2.11,13.93-5.34,20.02-9.66,6.09-4.35,11.01-10.27,14.77-17.76,3.74-7.49,5.61-17.1,5.61-28.79s-3.04-22.02-9.13-30.95c-6.09-8.89-14.18-15.87-24.25-20.9-10.07-5.03-21.2-7.55-33.39-7.55h-230.76l9.78,26.79s.03-.01.04-.02c1.18-.56,2.37-1.1,3.57-1.62,13-5.68,27.11-8.67,41.53-8.67,3.76,0,7.56.2,11.32.61,23.01,2.48,44,12.2,60.73,28.13,7.39,5.78,12.49,9.09,19.56,11.17.11.04.74.19,2.29.19,5.1,0,13.7-1.64,23.47-3.78,3.33-.73,6.8-1.51,10.31-2.3,17.46-3.95,35.49-8.04,48.18-8.04,8.29,0,13.67,1.76,16.94,5.5,1.55,1.77,2.24,4.06,1.94,6.46-.88,7.19-10.49,14.5-37.61,33.36-.2.15-.42.29-.65.45-17.81,12.37-37.93,26.35-52.23,39.84-.08,1.32-.2,2.68-.35,4-.44,4.06-1.11,8.06-2.01,12h49.72c3.5,0,6.61.82,9.31,2.45,2.69,1.63,4.8,3.92,6.32,6.87,1.53,2.91,2.29,6.15,2.29,9.63,0,7.52-1.65,13.13-4.92,16.88-3.29,3.74-7.62,5.63-13,5.63h-59.03v-16.16c-5.76,10.99-13.49,20.95-22.93,29.36-11.58,10.34-25.16,17.88-39.75,22.22-1.25.37-2.52.72-3.78,1.05-.01,0-.03.01-.04.01l7.2,19.74h144.68c13.11,0,24.95-2.69,35.49-8.1,10.54-5.37,18.97-12.86,25.3-22.47,6.32-9.61,9.48-20.85,9.48-33.74s-2.1-23.42-6.32-31.63Z" };
+  function markPaths(){ return '<path class="lg-a" style="--i:0" d="' + MARK.a + '"/><path class="lg-leg" style="--i:1" d="' + MARK.leg + '"/><path class="lg-b" style="--i:2" d="' + MARK.b + '"/><path class="lg-planet" style="--i:3" d="' + MARK.planet + '"/>'; }
   function markSVG(o){
     o = o || {};
     var grid = o.grid ? '<g class="lg-grid" fill="none">' +
@@ -538,12 +828,50 @@ window.Webflow.push(function(){
   Object.assign(AB, { MARK: MARK, markSVG: markSVG });
 
   /* ===== core/22-logo.js ===== */
-  /* ---------- logo: the AB monogram is inlined (from logo/ab-logo.svg) so it can draw itself ----------
+  /* ---------- logo: the AB monogram is inlined (from logo/AB Logo v2.svg) so it can draw itself ----------
      Nav + footer links carry the Webflow Image (.ab_logo-img, the no-JS fallback); this swaps in the SVG.
-     The outline warps in (spins in from a point), fills, then a slow glow pulse (all CSS, see ab-core.css "logo"); hover pulls the letters
-     toward the planet like a small black hole. The footer copy draws when it scrolls into view. */
+     Intro (once per logo): the mark warps in from a point while the planet arrives as a solid sphere spinning on its
+     ring axis (front-side meridians, easing to a stop), then its core opens and it settles into the regular hollow
+     planet; the letters draw + fill as before (CSS, see ab-core.css "logo"). The sphere layer fades on a CSS clock
+     and is removed after, so a throttled tab never strands it. Hover pulls the letters toward the planet like a small
+     black hole. The footer copy plays when it scrolls into view. */
   (function(){
     function svg(){ return markSVG({ cls: 'ab_logo-svg' }); }
+    // planet construction (logo units): center 240,121, r 98, core 68, ring axis 21.5°
+    var CX = 240, CY = 121, R = 98, CORE = 68, AX = 21.5, uid = 0;
+    function sphere(s){
+      var pl = $('.lg-planet', s); if (!pl) return;
+      var id = 'abls' + (++uid), NS = 'http://www.w3.org/2000/svg', g = document.createElementNS(NS, 'g'), i, mer = '';
+      for (i = 0; i < 8; i++) mer += '<path class="lg-mer"/>';
+      g.setAttribute('class', 'lg-sph'); g.setAttribute('aria-hidden', 'true');
+      g.innerHTML = '<defs><clipPath id="' + id + 'c"><circle cx="' + CX + '" cy="' + CY + '" r="' + R + '"/></clipPath>' +
+        '<mask id="' + id + 'm" maskUnits="userSpaceOnUse" x="0" y="0" width="490.16" height="241.75"><rect width="490.16" height="241.75" fill="#fff"/><circle class="lg-core" cx="' + CX + '" cy="' + CY + '" r="' + CORE + '" fill="#000"/></mask>' +
+        '<radialGradient id="' + id + 'g" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient></defs>' +
+        '<g mask="url(#' + id + 'm)"><g clip-path="url(#' + id + 'c)"><circle class="lg-body" cx="' + CX + '" cy="' + CY + '" r="' + R + '"/>' +
+        '<g transform="rotate(' + AX + ' ' + CX + ' ' + CY + ')">' + mer +
+          '<ellipse class="lg-lat" cx="' + CX + '" cy="' + CY + '" rx="' + R + '" ry="' + (R * .28) + '"/>' +
+          '<ellipse class="lg-lat" cx="' + CX + '" cy="' + (CY - R * .55) + '" rx="' + (R * .83) + '" ry="' + (R * .22) + '"/>' +
+          '<ellipse class="lg-lat" cx="' + CX + '" cy="' + (CY + R * .55) + '" rx="' + (R * .83) + '" ry="' + (R * .22) + '"/></g>' +
+        '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="url(#' + id + 'g)"/></g></g>';
+      pl.parentNode.insertBefore(g, pl);
+      var ms = $$('.lg-mer', g), t0 = 0, raf = 0;
+      function ease(x){ return 1 - Math.pow(1 - x, 3); }
+      function frame(now){
+        if (!t0) t0 = now;
+        var t = (now - t0) / 1000, ph = ease(Math.min(1, t / 2.3)) * 540;
+        ms.forEach(function(e, k){
+          var l = (ph + k * 22.5) * Math.PI / 180, sn = Math.sin(l), cs = Math.cos(l);
+          if (cs <= 0){ e.setAttribute('d', ''); return; }
+          e.setAttribute('d', 'M' + CX + ' ' + (CY - R) + 'A' + (Math.abs(sn) * R).toFixed(2) + ' ' + R + ' 0 0 ' + (sn > 0 ? 1 : 0) + ' ' + CX + ' ' + (CY + R));
+          e.style.opacity = (.35 + .65 * cs).toFixed(2);
+        });
+        if (t < 2.7) raf = requestAnimationFrame(frame);
+      }
+      raf = requestAnimationFrame(frame);
+      // the CSS fade (ab-logo-sph) ends at 2.6 s; drop the layer after it whatever the rAF did
+      setTimeout(function(){ cancelAnimationFrame(raf); if (g.parentNode) g.parentNode.removeChild(g); }, 2900);
+    }
+    function play(s){ s.classList.add('is-draw'); sphere(s); }
     $$('.ab_nav_logo').forEach(function(a){
       var img = $('img', a); if (!img || $('.ab_logo-svg', a)) return;
       img.insertAdjacentHTML('beforebegin', svg()); img.style.display = 'none';
@@ -553,8 +881,8 @@ window.Webflow.push(function(){
       $$('path', s).forEach(function(p){ var L = p.getTotalLength ? Math.ceil(p.getTotalLength()) : 2000; p.style.setProperty('--len', L); });
       if (reduce) return;
       var inFooter = !!a.closest('footer, .ab_footer_brand');
-      if (!inFooter || !('IntersectionObserver' in window)){ s.classList.add('is-draw'); return; }
-      var io = new IntersectionObserver(function(es){ if (es[0].isIntersecting){ s.classList.add('is-draw'); io.disconnect(); } }, { threshold: .6 });
+      if (!inFooter || !('IntersectionObserver' in window)){ play(s); return; }
+      var io = new IntersectionObserver(function(es){ if (es[0].isIntersecting){ play(s); io.disconnect(); } }, { threshold: .6 });
       io.observe(a);
     });
   })();
@@ -745,7 +1073,9 @@ window.Webflow.push(function(){
     ['konami', 'Enter the cheat code', 'Some codes never die. Up, up… (on a phone, swipe it on the Player one screen, then tap twice).'],
     ['badge', 'Flip the crew badge', 'Every ID has a back side.'],
     ['lanyard', 'Swing the lanyard', 'That badge is on a string for a reason.'],
+    ['untethered', 'Cut the pilot loose', 'The astronaut on the About page is on a tether. Tethers have limits.'],
     ['book', 'Knock a book off the shelf', 'The bookshelf is a little crowded.'],
+    ['murph', 'Read Murph’s watch', 'Something on the bookshelf keeps time. And sends messages.'],
     ['endurance', 'Fly the Endurance close', 'Get close to something very heavy.'],
     ['escape', 'Break the Endurance free', 'Near the horizon? Hit the thrusters: tap the black hole, fast.'],
     ['spin', 'Spin a planet', 'Not every planet sits still.'],
@@ -753,6 +1083,7 @@ window.Webflow.push(function(){
     ['satellite', 'Make the satellite leave', 'Something on the homepage really hates being dragged.'],
     ['toys', 'Throw a headline around', 'Headlines here are toys.'],
     ['blackhole', 'Feed the black hole', 'Scroll all the way down. It\'s hungry.'],
+    ['wormhole', 'Fall through the wormhole', 'One of the planets on the homepage isn\'t a planet. Someone put it there.'],
     ['channels', 'Watch every channel', 'Mission monitors carry more than one channel.'],
     ['diagnostics', 'Run diagnostics', 'Launch control can tell you what\'s wrong.'],
     ['touchdown', 'Land a mission', 'Follow a flight plan all the way to the end.'],
@@ -781,6 +1112,15 @@ window.Webflow.push(function(){
   quest.count = qCount;
   quest.reset = function(){ qFound = {}; qSave(); qEmit(''); };
   AB.quest = quest;
+  // arrived through the wormhole (core 10-space sets the flag before it jumps): say so here, since the quest toast never got its turn there
+  (function(){
+    var w = null; try { w = sessionStorage.getItem('ab:wormhole'); sessionStorage.removeItem('ab:wormhole'); } catch (e){}
+    if (!w) return;
+    setTimeout(function(){
+      toast('You came out the other side.');
+      if (w === 'new') setTimeout(function(){ toast('✦ Side quest complete · Fall through the wormhole · ' + qCount() + '/' + QUESTS.length); }, 2800);
+    }, 1400);
+  })();
 
   /* ===== core/30-motion.js ===== */
 
@@ -1826,5 +2166,68 @@ window.Webflow.push(function(){
     return { ok: ok, reset: reset, email: EMAIL_RE };
   }
   AB.formCheck = formCheck;
+
+  /* ===== core/44-drifters.js ===== */
+  /* ---------- drifters: small common planets scattered along the page edges, every one draggable ----------
+     A handful per page (about one per 1.3 screens, max 6; 3 on phones), generated by AB.planetLook in small-planet
+     types, 14–38px, in the outer 10% of a dark section (never the hero, footer or light sections). Textures build on
+     idle at 128px, so it costs a few ms. Any other small planet (≤ 60px, not in a card or link) gets the same drag:
+     throw it, it springs home after 6 s (under reduced motion it stays put). ---------- */
+  (function(){
+    if (!AB.buildPlanet || !AB.planetLook) return;
+    var SMALL = { rocky: 1, ice: 1, lava: 1, desert: 1, ocean: 1, crystal: 1, terra: 1, toxic: 1 };
+    var phone = innerWidth < 768;
+    function light(sec){
+      var m = String(getComputedStyle(sec).backgroundColor).match(/[\d.]+/g);
+      if (!m || (m.length > 3 && +m[3] < .5)) return /theme-light|is-light/.test(sec.className);
+      return (.2126 * m[0] + .7152 * m[1] + .0722 * m[2]) / 255 > .55;
+    }
+    function drag(el, box){
+      if (el.__drift || !window.Draggable) return; el.__drift = true;
+      el.classList.add('is-drag'); el.style.touchAction = 'none';
+      var back;
+      // reduced motion / Engines off: nothing moves on its own, so a thrown planet stays where it lands
+      function home(){ if (back) back.kill(); if (reduce) return; back = gsap.delayedCall(6, function(){ gsap.to(el, { x: 0, y: 0, rotation: 0, duration: 1.4, ease: 'elastic.out(1,.55)' }); }); }
+      Draggable.create(el, { type: 'x,y', bounds: box || document.body, inertia: !!window.InertiaPlugin && !reduce, edgeResistance: .7, zIndexBoost: false,
+        onPress: function(){ if (back) back.kill(); gsap.to(el, { scale: 1.12, duration: reduce ? 0 : .2 }); },
+        onRelease: function(){ gsap.to(el, { scale: 1, duration: reduce ? 0 : .3 }); },
+        onDragEnd: home, onThrowComplete: home });
+    }
+    function scatter(){
+      var main = $('.main-wrapper') || $('main') || document.body;
+      var secs = $$('section, [class^="section_"], [class*=" section_"]', main).filter(function(s){
+        if (s.closest('#hero, footer, .ab_footer, [data-no-drifters]') || s.id === 'hero') return false;
+        if (s.parentElement && s.parentElement.closest('section, [class^="section_"]')) return false; // top-level sections only
+        return s.offsetHeight > 420 && !light(s);
+      });
+      var budget = Math.min(phone ? 3 : 6, Math.round(document.documentElement.scrollHeight / (innerHeight * 1.3)));
+      secs.sort(function(a, b){ return b.offsetHeight - a.offsetHeight; });
+      var picks = [], i = 0;
+      while (picks.length < budget && secs.length && i < budget * 3){ var s = secs[i % secs.length]; if (i < secs.length || s.offsetHeight > innerHeight * 1.6) picks.push(s); i++; }
+      picks.forEach(function(sec, k){
+        var L; do { L = AB.planetLook(); } while (!SMALL[L.type]);
+        if (Math.random() < .8) L.ring = '';
+        var sz = Math.round(phone ? 14 + Math.random() * 10 : 16 + Math.random() * 22), left = (k + picks.indexOf(sec)) % 2 === 0;
+        var el = document.createElement('div');
+        el.className = 'ab_planet is-drifter'; el.setAttribute('data-label', 'Small planet');
+        AB.applyPlanetLook(el, L); el.setAttribute('data-spin', String(20 + (Math.random() * 40 | 0)));
+        el.style.cssText = 'position:absolute;width:' + sz + 'px;height:' + sz + 'px;top:' + (10 + Math.random() * 75).toFixed(1) + '%;' +
+          (left ? 'left:' : 'right:') + (phone ? 2 + Math.random() * 3 : 2.5 + Math.random() * 6.5).toFixed(1) + '%';
+        if (getComputedStyle(sec).position === 'static') sec.style.position = 'relative';
+        sec.appendChild(el);
+        AB.buildPlanet(el); drag(el, sec);
+      });
+    }
+    function others(){
+      $$('.ab_planet[data-planet]').forEach(function(p){
+        if (p.__drift || p.hasAttribute('data-drag') || p.classList.contains('is-drifter') || p.getAttribute('data-planet') === 'wormhole' || p.getAttribute('data-planet') === 'blackhole') return;
+        if (p.closest('a, button, #hero, .ab_bento-card, [data-selectable], .ab_next-card, .ab_ks-pl, footer, .ab_footer, .ab_boss, .ab_badge, [data-no-drift]')) return;
+        var w = p.getBoundingClientRect().width; if (!w || w > 60) return;
+        drag(p, p.closest('section, [class^="section_"]') || document.body);
+      });
+    }
+    function go(){ scatter(); others(); }
+    if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 }); else setTimeout(go, 1200);
+  })();
 
 });
