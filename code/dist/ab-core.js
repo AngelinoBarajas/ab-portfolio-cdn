@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.33.44 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.63 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -201,11 +201,32 @@ window.Webflow.push(function(){
   function fbm(x, y, px, s, oct){ var t = 0, amp = .5, f = 1, n = 0; for (var o = 0; o < oct; o++){ t += amp * vnoise(x * f, y * f, px * f, s + o); n += amp; amp *= .5; f *= 2; } return t / n; }
   var DEFAULTS = {
     gas: '#2b1d4f,#5a3f8e,#c68fbf,#3a2f6b,#f0b48a', rocky: '#6b6258,#9a8c7a,#433c35', ice: '#e3f2ff,#9cc3ee,#5a7fb8',
-    lava: '#140807,#3a1510,#ff6a3d,#ffd27a', terra: '#0e3a5c,#1e6e8c,#3f8f4a,#a88b5c,#f2f0ea'
+    lava: '#140807,#3a1510,#ff6a3d,#ffd27a', terra: '#0e3a5c,#1e6e8c,#3f8f4a,#a88b5c,#f2f0ea',
+    woven: '#05060a,#9b87f5,#ef5b3f,#139e8a,#4f7bff'
   };
   // drawTexture paints into any canvas, so the same code runs in the texture worker (OffscreenCanvas) or here
   function drawTexture(cv, type, cols, seed, W){
     var H = W / 2; cv.width = W; cv.height = H;
+    if (type === 'woven'){
+      // Topicweave (2026-10-04): the v3 site's basket-weave cloth (js/site.js sheetWeave) wrapped round the planet. Warp and
+      // weft in pairs; the thread on top at .85, the one underneath at .2; colors = base + 4 threads (lilac, coral, teal,
+      // cobalt). Whole cells around, so it wraps; a small planet gets a few broad bands so it still reads.
+      var wx = cv.getContext('2d'), th = cols.length > 4 ? cols.slice(1, 5) : [[155, 135, 245], [239, 91, 63], [19, 158, 138], [79, 123, 255]];
+      var n = W >= 1024 ? 40 : W >= 512 ? 32 : W >= 256 ? 20 : 8, gs = W / n, rows = Math.ceil(H / gs), r, cc;
+      wx.fillStyle = 'rgb(' + cols[0].map(Math.round).join(',') + ')'; wx.fillRect(0, 0, W, H);
+      wx.lineCap = 'round'; wx.lineWidth = gs * (n <= 8 ? .5 : .3);
+      [false, true].forEach(function(top){
+        for (r = 0; r < rows; r++) for (cc = 0; cc < n; cc++){
+          var vert = ((cc >> 1) + (r >> 1)) & 1, over = ((cc + r) & 1) === (vert ? 0 : 1); if (over !== top) continue;
+          var x0 = cc * gs + gs / 2, y0 = r * gs + gs / 2, half = gs * .4;
+          wx.globalAlpha = over ? .85 : .2; wx.strokeStyle = 'rgb(' + th[(vert ? cc : r) % 4].map(Math.round).join(',') + ')'; wx.beginPath();
+          if (vert){ wx.moveTo(x0, y0 - half); wx.lineTo(x0, y0 + half); } else { wx.moveTo(x0 - half, y0); wx.lineTo(x0 + half, y0); }
+          wx.stroke();
+        }
+      });
+      wx.globalAlpha = 1;
+      return cv;
+    }
     var ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), d = img.data, P = 8;
     for (var y = 0; y < H; y++){
       var v = y / H, lat = Math.abs(v - .5) * 2;
@@ -342,6 +363,8 @@ window.Webflow.push(function(){
   /* ---------- random planets: a type + a color harmony (analogous / complementary / triad) per call ----------
      AB.planetLook(rnd?) -> { type, colors, ring, tilt, open, glow, seed }; AB.applyPlanetLook(el, look) writes the data
      attributes (call before buildPlanet, or clear __built to rebuild). Designer planets and service colors keep theirs. */
+  // never add 'woven' here: it is Topicweave's own surface (Angelino, 2026-10-04), not part of the random pool that
+  // drifters, About's far planet and Home's morph specimen draw from
   var TYPES = ['gas', 'gas', 'storm', 'storm', 'rocky', 'ice', 'lava', 'terra', 'desert', 'ocean', 'toxic', 'crystal'];
   // ring styles (data-ring-style, CSS .is-ring-*): classic bands, one thin bright band, a wide dusty sheet, two rings with a gap, many fine bands
   var RINGS = ['classic', 'classic', 'thin', 'wide', 'double', 'banded'];
@@ -567,7 +590,7 @@ window.Webflow.push(function(){
       if (ds.label && el.hasAttribute('data-drag')){ el.setAttribute('role', 'img'); el.setAttribute('aria-label', 'Draggable planet: ' + ds.label); el.tabIndex = 0; }
       else el.setAttribute('aria-hidden', 'true');
     }
-    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; if (type === 'crystal' || type === 'lava') W = sz > 110 ? 1024 : sz > 50 ? 512 : 256; /* sharp edges need ~2 texels per screen pixel */ textureURL(type, cols, seed, W, function(u){ tex.style.setProperty('--tex', 'url(' + u + ')'); requestAnimationFrame(function(){ tex.classList.add('on'); }); }); };
+    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; if (type === 'crystal' || type === 'lava') W = sz > 110 ? 1024 : sz > 50 ? 512 : 256; if (type === 'woven') W = sz > 160 ? 1024 : sz > 70 ? 512 : sz > 40 ? 256 : 128; /* sharp edges need ~2 texels per screen pixel */ textureURL(type, cols, seed, W, function(u){ tex.style.setProperty('--tex', 'url(' + u + ')'); requestAnimationFrame(function(){ tex.classList.add('on'); }); }); };
     paintNear(el, paint);
   }
   var planets = $$('.ab_planet[data-planet]');
@@ -940,6 +963,20 @@ window.Webflow.push(function(){
       }
       requestAnimationFrame(frame);
     })();
+  })();
+
+  /* ---------- quiet HUD: the cursor readout and the Home distance meter stay bright over the hero and the footer and
+     fade while they float over section content (html.ab-hud-quiet, CSS in ab-core) so they don't talk over the page ---------- */
+  (function(){
+    var root = document.documentElement, foot = $('#siteFoot'), quiet = null, queued = false;
+    function check(){
+      queued = false;
+      var q = scrollY > innerHeight * .6 && !(foot && foot.getBoundingClientRect().top < innerHeight * .7);
+      if (q !== quiet){ quiet = q; root.classList.toggle('ab-hud-quiet', q); }
+    }
+    addEventListener('scroll', function(){ if (!queued){ queued = true; requestAnimationFrame(check); } }, { passive: true });
+    addEventListener('resize', check);
+    check();
   })();
 
   Object.assign(AB, { addSel: addSel, decorate: decorate });
@@ -1437,7 +1474,14 @@ window.Webflow.push(function(){
       });
       $$('.t-signal').forEach(function(el){
         var txt = el.textContent;
-        ScrollTrigger.create({ trigger: el, start: 'top 85%', once: true, onEnter: function(){ gsap.fromTo(el, { scrambleText: { text: '', chars: '' } }, { duration: 1.4, scrambleText: { text: txt, chars: '░▒▓<>/_#', revealDelay: .2, speed: .5 } }); } });
+        // the decode starts from an empty heading, so its size is held for the run: it collapsed (phone) and narrowed, letting
+        // a wrapping sibling (Featured reads lede) ride up beside it (desktop), and the page below jumped;
+        // no < > in the noise: ScrambleText writes HTML, so they showed up as bits of "&lt;"
+        ScrollTrigger.create({ trigger: el, start: 'top 85%', once: true, onEnter: function(){
+          el.style.minHeight = el.offsetHeight + 'px'; el.style.minWidth = el.offsetWidth + 'px';
+          gsap.fromTo(el, { scrambleText: { text: '', chars: '' } }, { duration: 1.4, scrambleText: { text: txt, chars: '░▒▓/_#', revealDelay: .2, speed: .5 },
+            onComplete: function(){ el.style.minHeight = el.style.minWidth = ''; } });
+        } });
       });
     } else decorate(document);
 
@@ -1590,6 +1634,10 @@ window.Webflow.push(function(){
     'gsap': 'M9.83,7.59C10.647,7.595 11.267,7.828 11.672,8.282C12.055,8.713 12.239,9.336 12.219,10.132L12.205,10.193C12.197,10.211 12.185,10.229 12.17,10.243C12.14,10.272 12.099,10.288 12.057,10.288L10.398,10.288C10.29,10.288 10.199,10.2 10.199,10.093C10.199,9.669 10.071,9.435 9.809,9.383L9.689,9.372C9.347,9.372 9.125,9.583 9.119,9.951C9.112,10.361 9.344,10.734 10.004,11.374C10.872,12.19 11.221,12.913 11.204,13.867C11.177,15.411 10.127,16.41 8.531,16.41C7.716,16.41 7.093,16.191 6.678,15.761C6.258,15.324 6.066,14.683 6.106,13.855C6.108,13.813 6.125,13.772 6.155,13.743C6.185,13.714 6.226,13.698 6.267,13.698L7.983,13.698C8.007,13.699 8.03,13.705 8.052,13.715C8.073,13.726 8.092,13.741 8.107,13.76C8.12,13.775 8.129,13.793 8.135,13.813C8.14,13.832 8.141,13.853 8.137,13.873C8.118,14.171 8.171,14.394 8.288,14.518C8.363,14.598 8.469,14.639 8.599,14.639C8.916,14.639 9.102,14.414 9.109,14.024C9.115,13.687 9.007,13.39 8.427,12.792C7.676,12.058 7.003,11.3 7.024,10.108C7.037,9.416 7.311,8.784 7.798,8.327C8.312,7.845 9.014,7.59 9.83,7.59ZM4.047,7.618C4.794,7.612 5.381,7.842 5.789,8.303C6.221,8.79 6.44,9.524 6.441,10.485C6.44,10.527 6.422,10.567 6.392,10.597C6.362,10.626 6.322,10.643 6.28,10.643L4.479,10.643C4.448,10.642 4.417,10.629 4.395,10.607C4.373,10.584 4.361,10.553 4.36,10.522C4.346,9.899 4.172,9.576 3.828,9.538L3.757,9.534C3.067,9.535 2.66,10.472 2.444,10.992C2.142,11.719 1.988,12.507 2.018,13.293C2.033,13.659 2.092,14.173 2.438,14.386C2.746,14.575 3.185,14.45 3.451,14.24C3.716,14.031 3.93,13.669 4.02,13.339C4.033,13.293 4.033,13.258 4.021,13.241C4.015,13.233 4.003,13.229 3.989,13.226L3.485,13.222C3.461,13.222 3.436,13.216 3.414,13.206C3.392,13.196 3.372,13.181 3.356,13.162C3.344,13.148 3.335,13.13 3.331,13.112C3.327,13.093 3.327,13.074 3.331,13.056L3.647,11.682C3.663,11.611 3.726,11.558 3.804,11.548L3.804,11.545L6.839,11.545C6.846,11.545 6.854,11.545 6.86,11.546C6.939,11.556 6.995,11.63 6.994,11.71L6.994,11.714L6.678,13.085C6.661,13.163 6.583,13.22 6.494,13.22L6.113,13.22C6.1,13.22 6.086,13.225 6.075,13.233C6.064,13.241 6.056,13.253 6.052,13.266C5.7,14.46 5.223,15.282 4.594,15.775C4.058,16.195 3.399,16.391 2.517,16.391C1.725,16.391 1.191,16.136 0.738,15.633C0.14,14.967 -0.107,13.879 0.043,12.566C0.313,10.103 1.589,7.618 4.047,7.618ZM21.016,7.75C23.026,7.75 24.03,8.662 23.999,10.461C23.962,12.569 22.678,14.119 20.745,14.477C20.47,14.527 20.191,14.547 19.912,14.545L18.978,14.541C18.963,14.541 18.948,14.547 18.937,14.558C18.926,14.568 18.92,14.583 18.92,14.598C18.92,14.608 18.922,14.618 18.928,14.627C18.933,14.636 18.941,14.643 18.95,14.648L19.744,15.062C19.809,15.096 19.835,15.153 19.82,15.226C19.815,15.249 19.618,16.139 19.613,16.159C19.596,16.237 19.533,16.282 19.442,16.282L17.739,16.282C17.715,16.282 17.69,16.277 17.668,16.267C17.646,16.257 17.626,16.241 17.61,16.223C17.598,16.208 17.589,16.191 17.585,16.173C17.58,16.155 17.581,16.135 17.585,16.116L19.481,7.875C19.5,7.789 19.581,7.751 19.653,7.751L21.016,7.75ZM17.273,7.762C17.292,7.77 17.31,7.781 17.324,7.795C17.338,7.81 17.351,7.828 17.358,7.847C17.366,7.866 17.369,7.886 17.369,7.906L17.358,16.119C17.361,16.138 17.36,16.158 17.355,16.177C17.35,16.196 17.34,16.213 17.328,16.228C17.313,16.245 17.295,16.259 17.274,16.268C17.254,16.277 17.232,16.282 17.21,16.281L15.397,16.281C15.377,16.282 15.356,16.277 15.337,16.27C15.318,16.262 15.3,16.25 15.286,16.236C15.272,16.221 15.26,16.204 15.253,16.185C15.245,16.166 15.241,16.146 15.241,16.125L15.28,15.328C15.282,15.241 15.28,15.217 15.229,15.211L15.161,15.209L13.447,15.209C13.323,15.209 13.314,15.22 13.27,15.334L12.914,16.191C12.882,16.252 12.818,16.281 12.722,16.281L10.927,16.281C10.818,16.281 10.74,16.173 10.781,16.072L14.499,7.873C14.524,7.824 14.562,7.75 14.648,7.75L17.214,7.75C17.234,7.75 17.254,7.754 17.273,7.762ZM15.5,9.985C15.492,9.953 15.466,9.956 15.445,9.998C15.43,10.028 15.416,10.06 15.405,10.091L14.121,13.274C14.114,13.294 14.109,13.31 14.105,13.322C14.104,13.328 14.103,13.335 14.104,13.341C14.105,13.347 14.108,13.353 14.111,13.358C14.115,13.363 14.12,13.367 14.126,13.37C14.131,13.373 14.137,13.376 14.143,13.376L15.215,13.39C15.334,13.38 15.34,13.374 15.352,13.253C15.354,13.21 15.506,10.022 15.5,9.985ZM20.112,9.582C20.097,9.582 20.083,9.588 20.072,9.599C20.061,9.609 20.055,9.624 20.054,9.639C20.054,9.649 20.057,9.659 20.062,9.668C20.068,9.677 20.075,9.685 20.084,9.69C20.097,9.697 20.869,10.104 20.926,10.135C20.968,10.158 20.969,10.198 20.955,10.267C20.948,10.298 20.415,12.642 20.416,12.644C20.419,12.647 20.435,12.655 20.515,12.655L20.551,12.655C21.446,12.619 21.934,11.561 21.952,10.534C21.961,9.979 21.772,9.638 21.429,9.588L21.358,9.582L20.112,9.582Z',
     'webflow': 'm24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z',
     'webflow cms': 'm24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z',
+    'vercel': 'm12 1.608 12 20.784H0Z',
+    'supabase': 'M11.9 1.036c-.015-.986-1.26-1.41-1.874-.637L.764 12.05C-.33 13.427.65 15.455 2.409 15.455h9.579l.113 7.51c.014.985 1.259 1.408 1.873.636l9.262-11.653c1.093-1.375.113-3.403-1.645-3.403h-9.642z',
+    'resend': 'M14.679 0c4.648 0 7.413 2.765 7.413 6.434s-2.765 6.434-7.413 6.434H12.33L24 24h-8.245l-8.88-8.44c-.636-.588-.93-1.273-.93-1.86 0-.831.587-1.565 1.713-1.883l4.574-1.224c1.737-.465 2.936-1.81 2.936-3.572 0-2.153-1.761-3.4-3.939-3.4H0V0z',
+    'hostinger': 'M16.415 0v7.16l5.785 3.384V2.949L16.415 0ZM1.8 0v11.237h18.815L14.89 8.09l-7.457-.003V3.024L1.8 0Zm14.615 20.894v-5.019l-7.514-.005c.007.033-5.82-3.197-5.82-3.197l19.119.091V24l-5.785-3.106ZM1.8 13.551v7.343l5.633 2.949v-6.988L1.8 13.551Z',
     'claude': 'm4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z',
     // Finsweet has no Simple Icons entry: its {F mark, drawn to match
     'finsweet': 'M9 4.5C7.1 4.5 6 5.5 6 7.4v2.2c0 .9-.4 1.4-1.4 1.4H4v2h.6c1 0 1.4.5 1.4 1.4v2.2c0 1.9 1.1 2.9 3 2.9h.6v-2h-.4c-.8 0-1.1-.4-1.1-1.2v-2.2c0-1.1-.5-1.9-1.4-2.1.9-.2 1.4-1 1.4-2.1V7.7c0-.8.3-1.2 1.1-1.2h.4v-2zM12.5 5H20v2.6h-4.7v3.2h4.2v2.6h-4.2V19h-2.8z',
@@ -1638,6 +1686,24 @@ window.Webflow.push(function(){
       $('.ab_stack_readout-title', readout).textContent = c.__name;
       $('.ab_stack_readout-text', readout).textContent = (c.getAttribute('data-use') || '') + ' · ' + c.__ring + ' orbit';
       readout.style.borderColor = c.__color;
+    }
+    // the readout holds the height of its longest tool line: a long one (Hostinger) wrapped to an extra line and
+    // pushed the page down on phones (Angelino 2026-10-06); measured on the real text, again when the width changes
+    function reserve(){
+      var tx = readout && $('.ab_stack_readout-text', readout), tt = readout && $('.ab_stack_readout-title', readout); if (!tx) return;
+      var a = tx.textContent, b = tt && tt.textContent, mx = 0, mt = 0;
+      tx.style.minHeight = ''; if (tt) tt.style.minHeight = '';
+      chips.forEach(function(c){
+        tx.textContent = (c.getAttribute('data-use') || '') + ' · ' + c.__ring + ' orbit'; mx = Math.max(mx, tx.offsetHeight);
+        if (tt){ tt.textContent = c.__name; mt = Math.max(mt, tt.offsetHeight); }
+      });
+      tx.textContent = a; tx.style.minHeight = mx + 'px';
+      if (tt){ tt.textContent = b; tt.style.minHeight = mt + 'px'; }
+    }
+    if (readout){
+      (document.fonts ? document.fonts.ready : Promise.resolve()).then(reserve);
+      var rw = readout.offsetWidth, rT;
+      addEventListener('resize', function(){ clearTimeout(rT); rT = setTimeout(function(){ if (readout.offsetWidth !== rw){ rw = readout.offsetWidth; reserve(); } }, 150); });
     }
     chips.forEach(function(c){
       c.style.setProperty('--tc', c.__color);
@@ -2431,6 +2497,115 @@ window.Webflow.push(function(){
     // never in the hero, so they wait until the page is interactive (perf pass 2026-10-04; was an idle callback, which the
     // site's 2 s idle deadline pulled into the load)
     AB.ambient(function(){ if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 }); else setTimeout(go, 200); });
+  })();
+
+  /* ===== core/45-transmission.js ===== */
+  /* ---------- Tools orbit + transmission (moved from ab-home 2026-10-06: both sections now live on About;
+     each block skips itself when its section is not on the page) ---------- */
+  /* ---------- orbit (Tools Collection List → chips on two rings), shared system in ab-core ---------- */
+  // built when it comes within a screen of the viewport (perf pass 2026-10-04); the orbit box is sized by CSS
+  if ($('#orbit')) AB.near($('#orbit'), function(){ AB.orbit($('#orbit'), $('#toolReadout')); });
+
+  /* ---------- transmission (Quotes via the site-data block) ---------- */
+  (function(){
+    var box = $('#iq'); if (!box || !QUOTES.length) return;
+    var textEl = $('#iqText'), byEl = $('#iqBy'), idx = 0, scrub;
+    $('#iqTotal').textContent = pad2(QUOTES.length);
+    /* the receiving satellite (wide screens): it floats, searches while the quote decodes, then locks onto the new
+       transmission's source; the frequency takes the /process COMMS colors, one per quote, and the readout names the source */
+    var dish = (function(){
+      var inner = $('.ab_transmission_inner'); if (!inner) return null;
+      var FQ = ['#FF6A3D', '#146EF5', '#5eead4', '#0AE448', '#7c5cff', '#ffd166'];
+      var el = document.createElement('div'); el.className = 'abt-dish'; el.setAttribute('aria-hidden', 'true');
+      var grid = '', k;
+      for (k = 1; k < 4; k++) grid += 'M' + (70 + k * 22.5) + ' 236v28M' + (240 + k * 22.5) + ' 236v28';
+      el.innerHTML = '<svg class="abt-sky" viewBox="0 0 400 400"><path class="abt-beam" d="M0 0L0 0"/>' +
+        '<g class="abt-src"><circle class="abt-ring" r="10"/><circle class="abt-ring is-2" r="10"/><circle class="abt-star" r="3.2"/></g>' +
+        '<g class="abt-sat"><path class="abt-arm" d="M160 250H180M220 250H240"/>' +
+        '<rect class="abt-panel" x="70" y="236" width="90" height="28"/><rect class="abt-panel" x="240" y="236" width="90" height="28"/><path class="abt-grid" d="' + grid + 'M70 250H160M240 250H330"/>' +
+        '<rect class="abt-body" x="180" y="226" width="40" height="50"/><rect class="abt-band" x="180" y="226" width="40" height="9"/>' +
+        '<path class="abt-mast" d="M200 226V206"/><path class="abt-ant" d="M184 208Q200 190 216 208Z"/><circle class="abt-rx" cx="200" cy="196" r="3.5"/><circle class="abt-lock" cx="200" cy="196" r="4"/>' +
+        '<circle class="abt-led" cx="200" cy="266" r="2.4"/></g></svg>' +
+        '<div class="abt-read"><div class="abt-read-k"><span>RX</span><b class="abt-src-t"></b></div><svg class="abt-wave" viewBox="0 0 300 48" preserveAspectRatio="none"><path d="M0 24H300"/></svg>' +
+        '<div class="abt-read-k"><span class="abt-stat">Seeking</span><b class="abt-ch">CH 01</b></div>' +
+        '<div class="abt-read-k"><span>Decoded</span><b class="abt-pct">000%</b></div><i class="abt-bar"><i></i></i></div>';
+      inner.appendChild(el);
+      var sat = $('.abt-sat', el), src = $('.abt-src', el), beam = $('.abt-beam', el), wave = $('.abt-wave path', el), pct = $('.abt-pct', el), bar = $('.abt-bar i', el), srcT = $('.abt-src-t', el), stat = $('.abt-stat', el), chEl = $('.abt-ch', el);
+      var st = { noise: 0, dec: 1, ang: 0, seek: 0, beam: 1, mx: 0, my: 0 }, sx = 300, sy = 70, t = 0, running = false, n = 0;
+      function draw(){
+        // float: a slow bob and sway (a little restless while it hunts), plus the drift toward the current signal
+        var fx = st.mx + Math.sin(t * .5) * (4 + st.seek * 6), fy = st.my + Math.sin(t * .8) * (5 + st.seek * 4), wob = Math.sin(t * .7) * 2 + Math.sin(t * 2.3) * 5 * st.seek;
+        var a = (st.ang + wob) * Math.PI / 180, dy = -54;
+        var px = 200 + fx - dy * Math.sin(a), py = 250 + fy + dy * Math.cos(a);
+        sat.setAttribute('transform', 'translate(' + fx.toFixed(2) + ' ' + fy.toFixed(2) + ') rotate(' + (st.ang + wob).toFixed(2) + ' 200 250)');
+        beam.setAttribute('d', 'M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + 'L' + px.toFixed(1) + ' ' + py.toFixed(1)); beam.style.opacity = (st.beam * .8).toFixed(2);
+        var d = '';
+        for (var x = 0; x <= 300; x += 5){ var e = Math.sin(x / 300 * Math.PI), y = 24 + Math.sin(x * .09 + t * 3) * 7 * e + (Math.random() - .5) * 34 * st.noise * e; d += (x ? 'L' : 'M') + x + ' ' + y.toFixed(1); }
+        wave.setAttribute('d', d);
+        var p = Math.round(st.dec * 100); pct.textContent = (p < 10 ? '00' : p < 100 ? '0' : '') + p + '%'; bar.style.transform = 'scaleX(' + st.dec + ')';
+      }
+      if (hasGsap && !reduce) gsap.ticker.add(function(time, dt){ if (!running) return; t += dt / 1000; draw(); });
+      return {
+        on: function(v){ running = v; },
+        tune: function(q, dur){
+          var c = FQ[n % FQ.length], ch = (n % FQ.length) + 1; n++;
+          el.style.setProperty('--fq', c); chEl.textContent = 'CH 0' + ch; srcT.textContent = q.c || q.a;
+          sx = 50 + Math.random() * 300; sy = 24 + Math.random() * 100;
+          src.setAttribute('transform', 'translate(' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ')');
+          var ang = Math.max(-40, Math.min(40, Math.atan2(sx - 200, 250 - sy) * 180 / Math.PI));
+          // it drifts a little toward the signal (a fraction of the way, clamped) as it turns to face it
+          var mx = Math.max(-30, Math.min(30, (sx - 200) * .14)), my = Math.max(-22, Math.min(10, (sy - 250) * .1));
+          if (!hasGsap || reduce){ st.ang = ang; st.mx = mx; st.my = my; st.noise = 0; st.dec = 1; st.seek = 0; st.beam = 1; t = 0; stat.textContent = 'Locked'; el.classList.add('is-lock'); draw(); return; }
+          gsap.killTweensOf(st); gsap.killTweensOf(src); el.classList.remove('is-lock'); stat.textContent = 'Signal';
+          // 1) the signal dot shows up  2) the satellite notices, drifts toward it and turns  3) it grabs the frequency
+          var lockAt = 2, settle = Math.max(1.2, dur - lockAt);
+          gsap.timeline()
+            .to(st, { beam: 0, noise: 1, duration: .3, ease: 'power2.out' }, 0)
+            .fromTo(src, { opacity: 0 }, { opacity: 1, duration: .6, ease: 'power2.out' }, .1)
+            .to(st, { seek: 1, duration: .4 }, .6)
+            .add(function(){ stat.textContent = 'Seeking'; }, .7)
+            .to(st, { ang: ang, mx: mx, my: my, duration: 1.3, ease: 'power2.inOut' }, .7)
+            .to(st, { seek: 0, duration: .5 }, lockAt - .3)
+            .to(st, { beam: 1, duration: .35 }, lockAt)
+            .add(function(){ stat.textContent = 'Locked'; el.classList.remove('is-lock'); void el.offsetWidth; el.classList.add('is-lock'); }, lockAt + .1)
+            .to(st, { noise: 0, duration: settle, ease: 'power2.out' }, lockAt)
+            .fromTo(st, { dec: 0 }, { dec: 1, duration: lockAt + settle - .2, ease: 'none' }, .2);
+        }
+      };
+    })();
+    function render(i, reveal){
+      var q = QUOTES[i]; idx = i;
+      $('#iqIdx').textContent = pad2(i + 1);
+      textEl.classList.toggle('long', q.t.length > 80);
+      textEl.innerHTML = ''; q.t.split(/\s+/).forEach(function(w, k){ if (k) textEl.appendChild(document.createTextNode(' ')); var s = document.createElement('span'); s.className = 'qw'; s.textContent = w; textEl.appendChild(s); });
+      byEl.textContent = q.a + ' · ' + q.c;
+      if (dish) dish.tune(q, reveal === 'scrub' ? 2.6 : 1.6 + q.t.split(/\s+/).length * .14);
+      var words = $$('.qw', textEl);
+      if (reduce || !hasGsap) return;
+      if (reveal === 'scrub'){
+        // reveal once when the quote comes into view (robust to pinned sections above changing the page height)
+        gsap.set(words, { opacity: .12, y: 10 }); gsap.set(byEl, { opacity: 0 });
+        scrub = ScrollTrigger.create({ trigger: box, start: 'top 78%', once: true, onEnter: function(){
+          gsap.to(words, { opacity: 1, y: 0, duration: .7, stagger: .06, ease: 'power3.out' });
+          gsap.to(byEl, { opacity: 1, duration: .6, delay: .4 });
+        } });
+      } else {
+        // the next transmission plots in like the INCOMING label: each word decodes from noise, left to right
+        gsap.set(words, { opacity: 1, y: 0 });
+        if (window.ScrambleTextPlugin) words.forEach(function(w, k){ var txt = w.textContent; gsap.fromTo(w, { opacity: .35 }, { opacity: 1, duration: 1.6, delay: .3 + k * .14, ease: 'none', scrambleText: { text: txt, chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#/+', speed: .25, revealDelay: .7 } }); });
+        else gsap.fromTo(words, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: .5, stagger: .035, ease: 'power3.out' });
+        gsap.fromTo(byEl, { opacity: 0 }, { opacity: 1, duration: .5, delay: 1.2 + words.length * .14 });
+      }
+    }
+    render(0, 'scrub');
+    function next(){ if (scrub){ scrub.kill(); scrub = null; } render((idx + 1) % QUOTES.length, 'pop'); }
+    // transmissions change by themselves while the section is on screen (paused on hover); longer quotes stay up longer
+    var auto = null, seen = false, held = false;
+    function queue(){ clearTimeout(auto); if (reduce || !hasGsap || !seen || held || QUOTES.length < 2) return; auto = setTimeout(function(){ next(); queue(); }, 5200 + QUOTES[idx].t.length * 30 + QUOTES[idx].t.split(/\s+/).length * 140); }
+    onView(box, function(x){ seen = x; if (dish) dish.on(x); if (x) queue(); else clearTimeout(auto); });
+    box.addEventListener('mouseenter', function(){ held = true; clearTimeout(auto); });
+    box.addEventListener('mouseleave', function(){ held = false; queue(); });
+    $('#iqNext').addEventListener('click', function(){ next(); queue(); });
   })();
 
 });

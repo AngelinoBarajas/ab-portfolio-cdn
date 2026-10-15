@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-mission v0.33.45 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-mission v0.33.67 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abMissionInit) return;
@@ -339,111 +339,50 @@ window.Webflow.push(function(){
   })();
   // Keyed under both slugs until the CMS slug change (cks → topicweave) is published.
   MOCKS.cks = MOCKS.topicweave;
-  // kip: a concept baby log (kip-site/kip). Figma frame = the home hero; phone = the Today screen and the shift handoff,
-  // copy taken from the site's app screens. Image channels are recorded loops of the real site, served from this repo on
-  // jsDelivr (`img`: channel id → [loop, still]); the loop plays unless reduced motion or Save-Data asks for the still.
+  // kip: a concept baby log, relaunched 2026-10-06 as a one-page site with an interactive 3D house (kipvillage.com,
+  // repo kip-one). Figma frame = the live hero, element by element (the house card is cropped from the live render:
+  // vendor/kip/hero-house.webp). Image channels are recordings of the live site (prototypes/img/kip2-ch-*, served at this
+  // bundle's tag): `img` maps channel id → [loop, still]; a still-only entry is [still]. The live channel shows the real
+  // site in an iframe once kipvillage.com answers (`live`); kip-plan is the coded site plan (25-kip-plan.js).
   (function(){
-    // the six characters, from the site's press-kit SVGs (kip-site/kip/img/kit)
-    var KC = {
-      ari: '<path d="M60 10C86 10 104 36 106 64c2 30-16 50-46 50S12 94 14 64C16 36 34 10 60 10Z" fill="#FF7A45"/><path d="M58 11c-4-9 4-15 12-11" fill="none" stroke="#FF7A45" stroke-width="7" stroke-linecap="round"/><ellipse cx="40" cy="72" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="80" cy="72" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="47" cy="62" r="4.6" fill="#1E1B2E"/><circle cx="73" cy="62" r="4.6" fill="#1E1B2E"/><path d="M53 75 Q60 82 67 75" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/>',
-      sam: '<rect x="24" y="8" width="72" height="108" rx="36" fill="#6FA8FF"/><path d="M52 10c2-8 12-8 14-2" fill="none" stroke="#6FA8FF" stroke-width="6" stroke-linecap="round"/><path d="M44 44h10M66 44h10" stroke="#1E1B2E" stroke-width="3.2" stroke-linecap="round"/><ellipse cx="42" cy="66" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="78" cy="66" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="49" cy="56" r="4.6" fill="#1E1B2E"/><circle cx="71" cy="56" r="4.6" fill="#1E1B2E"/><path d="M52 67 Q60 79 68 67 Z" fill="#1E1B2E"/>',
-      nana: '<circle cx="60" cy="22" r="13" fill="#FFC94A"/><path d="M8 114C8 58 28 32 60 32s52 26 52 82Z" fill="#FFC94A"/><ellipse cx="38" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="82" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="45" cy="72" r="4.6" fill="#1E1B2E"/><circle cx="75" cy="72" r="4.6" fill="#1E1B2E"/><path d="M53 85 Q60 92 67 85" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/><circle cx="45" cy="72" r="10" fill="none" stroke="#1E1B2E" stroke-width="2.8"/><circle cx="75" cy="72" r="10" fill="none" stroke="#1E1B2E" stroke-width="2.8"/><path d="M55 72h10" stroke="#1E1B2E" stroke-width="2.8"/>',
-      rosa: '<path d="M60 24c-6-12 0-20 10-22 2 10-2 18-10 22Z" fill="#2E9E76"/><path d="M60 24c-4-10-14-12-22-8 4 8 12 11 22 8Z" fill="#5FD3A8"/><path d="M20 58c0-24 14-34 40-34s40 10 40 34v20c0 26-14 36-40 36S20 104 20 78Z" fill="#5FD3A8"/><ellipse cx="40" cy="76" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="80" cy="76" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="47" cy="66" r="4.6" fill="#1E1B2E"/><circle cx="73" cy="66" r="4.6" fill="#1E1B2E"/><path d="M53 79 Q60 86 67 79" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/>',
-      jo: '<g fill="#FF8FA3"><circle cx="38" cy="44" r="24"/><circle cx="82" cy="44" r="24"/><circle cx="60" cy="32" r="24"/><circle cx="30" cy="80" r="26"/><circle cx="90" cy="80" r="26"/><rect x="28" y="40" width="64" height="74" rx="30"/></g><ellipse cx="40" cy="76" rx="6" ry="3.6" fill="#FF7A45" opacity=".55"/><ellipse cx="80" cy="76" rx="6" ry="3.6" fill="#FF7A45" opacity=".55"/><path d="M42 68 Q47 61 52 68" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/><path d="M68 68 Q73 61 78 68" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/><path d="M53 79 Q60 86 67 79" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/>',
-      june: '<path d="M60 26c30 0 48 22 48 48s-18 40-48 40-48-14-48-40 18-48 48-48Z" fill="#FFF4E6" stroke="#1E1B2E" stroke-width="4"/><path d="M58 27c-8-10 0-20 10-16 6 3 2 10-3 8" fill="none" stroke="#1E1B2E" stroke-width="4" stroke-linecap="round"/><ellipse cx="39" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="81" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><path d="M41 71 Q46 76 51 71" fill="none" stroke="#1E1B2E" stroke-width="3.2" stroke-linecap="round"/><path d="M69 71 Q74 76 79 71" fill="none" stroke="#1E1B2E" stroke-width="3.2" stroke-linecap="round"/><ellipse cx="60" cy="86" rx="3.2" ry="3.8" fill="#1E1B2E"/>'
-    };
-    function ch(n, s){ return '<svg viewBox="0 0 120 120" style="width:' + s + 'px;height:' + s + 'px;display:block;flex:none" aria-hidden="true">' + KC[n] + '</svg>'; }
-    var MARK = '<svg viewBox="0 0 64 64" style="width:15px;height:15px;display:block" aria-hidden="true"><path d="M32 4C50 4 60 18 60 34S50 60 32 60 4 50 4 34 14 4 32 4Z" fill="#FF7A45"/><path d="M38 16a14 14 0 1 0 12 22 11 11 0 1 1-12-22Z" fill="#FFF4E6"/><circle cx="24" cy="40" r="3" fill="#1E1B2E"/></svg>';
-    // unquoted on purpose: these go inside style="..." attributes
-    // "Baloo 2" must be quoted: an unquoted family name with a bare number is invalid CSS and drops the whole font shorthand
     var H = "'Baloo 2','Arial Rounded MT Bold',ui-rounded,sans-serif", B = 'Nunito Sans,system-ui,sans-serif';
-    var INK = '#1E1B2E', TAN = '#FF7A45', CREAM = '#FFF4E6', BUTTER = '#FFC94A', MINT = '#5FD3A8', SKY = '#6FA8FF', ROSE = '#FF8FA3';
-    var LOOP = 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio@v0.28.0/prototypes/img/';
-    // one log entry, as on the site: face, icon tint, what, who and when
-    function entry(who, name, tint, what, when, cls){
-      return '<div class="kxe' + (cls ? ' ' + cls : '') + '" style="display:flex;align-items:center;gap:8px;background:#fff;border:2px solid ' + INK + ';border-radius:14px;padding:6px 9px;margin-bottom:6px">' + ch(who, 26) +
-        '<span style="display:flex;flex-direction:column;min-width:0"><b style="font:800 10.5px/1.2 ' + B + ';color:' + INK + '"><i style="display:inline-block;width:8px;height:8px;border-radius:3px;background:' + tint + ';margin-right:5px"></i>' + what + '</b><span style="font:400 8.5px/1.3 ' + B + ';color:#4A4560">logged by <b>' + name + '</b> · ' + when + '</span></span></div>';
-    }
-    var LOG = entry('nana', 'Nana', MINT, 'Diaper · wet', '1:52 pm') + entry('rosa', 'Rosa', '#14204F', 'Nap · 1h 40m', '11:30 am') + entry('sam', 'Sam', TAN, 'Breast · L 12m, R 9m', '11:05 am') + entry('ari', 'Ari', ROSE, 'Vitamin D · as directed', '9:02 am');
+    var INK = '#1E1B2E', TAN = '#FF7A45', CREAM = '#FFF4E6', BUTTER = '#FFC94A', MINT = '#5FD3A8', ROSE = '#FF8FA3';
+    var REC = VENDOR.replace(/code\/vendor\/$/, 'prototypes/img/kip2-ch-');
+    function rec(id, still, mp4){ return still ? [REC + id + '.webp'] : [REC + id + '-anim.webp', REC + id + '.webp'].concat(mp4 ? [REC + id + '-anim.mp4'] : []); }
+    function ball(c){ return '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff 0,' + c + ' 38%,' + c + ' 70%,rgba(0,0,0,.08) 100%);opacity:.85"></div>'; }
     MOCKS.kip = {
       accent: TAN,
       fontCss: 'https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito+Sans:wght@400;700;800&display=swap',
-      img: {
-        story: [LOOP + 'kip-ch-story-anim.webp', LOOP + 'kip-ch-story.webp'],
-        roles: [LOOP + 'kip-ch-roles-anim.webp', LOOP + 'kip-ch-roles.webp'],
-        night: [LOOP + 'kip-ch-night-anim.webp', LOOP + 'kip-ch-night.webp'],
-        report: [LOOP + 'kip-ch-report-anim.webp', LOOP + 'kip-ch-report.webp'],
-        cast: [LOOP + 'kip-ch-cast-anim.webp', LOOP + 'kip-ch-cast.webp'],
-        'try': [LOOP + 'kip-ch-try-anim.webp', LOOP + 'kip-ch-try.webp']
-      },
-      file: 'kip — Product site', page: 'Home', frame: 'Desktop · Hero', url: 'kip (concept)',
-      bg: TAN, hover: 'cta',
-      comment: { on: 'phone', by: 'Review', text: 'A Tylenol dose for an 8-week-old in the sample log reads like dosing advice.', reply: 'Every example dose is now vitamin D, as directed. The site shows patterns, never doses.' },
+      // desktop loops play their MP4 (the camera never rests, so a WebP under 4 MB turns blocky); the phone loop's WebP is clean
+      img: { 'live-kip': rec('live', 1), house: rec('house', 0, 1), night: rec('night', 0, 1), dose: rec('dose', 0, 1), phone: rec('phone'), cast: rec('cast', 0, 1) },
+      live: { base: 'https://kipvillage.com/', probe: 'img/house-poster.jpg', pages: { 'live-kip': 'index.html' } },
+      plan: true,
+      file: 'kip — Product site', page: 'Home', frame: 'Desktop · Hero', url: 'kipvillage.com',
+      bg: CREAM, hover: 'cta',
+      comment: { on: 'house', by: 'Review', text: 'On my phone the full-screen house is tiny. I can’t tell the rooms apart.', reply: 'On phones the house is now a wide card with room buttons under it, and the app phone sits below.' },
       els: [
-        { id: 'blob', name: 'Shape / butter blob', icon: 'img', type: 'Vector', x: 590, y: 150, w: 360, h: 475, wire: 'img',
-          props: { fill: BUTTER },
-          html: '<div style="position:absolute;inset:0;background:' + BUTTER + ';border-radius:46% 54% 50% 50% / 55% 50% 50% 45%"></div>' },
+        { id: 'b1', name: 'Shape / butter ball', icon: 'img', type: 'Ellipse', x: 120, y: 400, w: 88, h: 88, wire: 'img', props: { fill: BUTTER }, html: ball(BUTTER) },
+        { id: 'b2', name: 'Shape / mint ball', icon: 'img', type: 'Ellipse', x: 803, y: 262, w: 57, h: 57, wire: 'img', props: { fill: MINT }, html: ball(MINT) },
+        { id: 'b3', name: 'Shape / rose ball', icon: 'img', type: 'Ellipse', x: 300, y: 75, w: 38, h: 38, wire: 'img', props: { fill: ROSE }, html: ball(ROSE) },
         { id: 'nav', name: 'Nav / header', icon: 'comp', type: 'Component', x: 0, y: 0, w: 1000, h: 46, wire: 'nav',
           props: { fill: CREAM },
-          html: '<div style="height:100%;background:' + CREAM + ';border-bottom:2px solid ' + INK + ';display:flex;align-items:center;gap:16px;padding:0 20px 0 26px;font:700 9px ' + B + ';color:' + INK + '">' + MARK + '<b style="font:800 15px ' + H + ';margin-left:-10px">kip</b><span style="margin-left:auto;background:' + BUTTER + ';border:2px solid ' + INK + ';border-radius:999px;padding:3px 9px">Home</span><span>Village</span><span>Insights</span><span>Try it</span><span>Pricing</span><span style="border:2px solid ' + INK + ';border-radius:999px;padding:3px 9px;font-weight:400">Search · Ctrl K</span><span style="background:' + INK + ';color:' + CREAM + ';border-radius:999px;padding:6px 11px">Try it yourself</span></div>' },
-        { id: 'heading', name: 'H1 / One little log', icon: 'text', type: 'Text', x: 48, y: 96, w: 500, h: 204, wire: 'lines:3:big',
-          props: { fill: INK, font: 'Baloo 2', weight: 'ExtraBold', size: '112', lh: '90%', ls: '-2.5%' },
-          html: '<div style="font:800 64px/.92 ' + H + ';letter-spacing:-.025em;color:' + INK + '"><div>One little log.</div><div>The whole village</div><div>in it.</div></div>' },
-        { id: 'lede', name: 'Lede / what kip does', icon: 'text', type: 'Text', x: 48, y: 320, w: 440, h: 74, wire: 'lines:4',
-          props: { fill: INK, font: 'Nunito Sans', weight: 'Regular', size: '21', lh: '150%' },
-          html: '<p style="margin:0;font:400 13px/1.5 ' + B + ';color:' + INK + '">kip keeps track of June’s feeds, naps, diapers and meds, with everyone who looks after her writing in the same place. So nobody has to text “did she eat?” at 2pm ever again.</p>' },
-        { id: 'cta', name: 'Buttons / hero', icon: 'comp', type: 'Component', x: 48, y: 414, w: 330, h: 42, wire: 'btn',
-          props: { fill: CREAM, font: 'Nunito Sans', weight: 'ExtraBold', size: '17' },
-          html: '<div style="display:flex;gap:10px;height:100%"><span class="hv" style="flex:1;border-radius:999px;background:' + CREAM + ';color:' + INK + ';border:2px solid ' + INK + ';box-shadow:0 4px 0 ' + INK + ';font:800 10.5px ' + B + ';display:flex;align-items:center;justify-content:center">▶ Try it yourself</span><span style="flex:1;border-radius:999px;background:' + INK + ';color:' + CREAM + ';font:800 10.5px ' + B + ';display:flex;align-items:center;justify-content:center">Join early access</span></div>' },
-        { id: 'note', name: 'Note / this is a concept', icon: 'text', type: 'Text', x: 48, y: 480, w: 440, h: 44, wire: 'lines:2',
-          props: { fill: INK, font: 'Nunito Sans', weight: 'Bold', size: '15' },
-          html: '<div style="display:flex;gap:9px;align-items:center;font:700 9.5px/1.4 ' + B + ';color:' + INK + '">' + ch('june', 30) + '<span>kip is a concept. There’s no app to download, just this site and a baby named June, who is 8 weeks old and made up.</span></div>' },
-        { id: 'phone', name: 'Phone / Today screen', icon: 'comp', type: 'Component', x: 646, y: 84, w: 248, h: 541, wire: 'img',
-          props: { fill: CREAM },
-          html: '<div style="position:absolute;inset:0;background:' + INK + ';border-radius:38px 38px 0 0;padding:9px 9px 0"><div style="height:100%;background:' + CREAM + ';border-radius:30px 30px 0 0;padding:26px 12px 0;overflow:hidden">' +
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' + ch('june', 32) + '<span><b style="display:block;font:800 15px/1 ' + H + ';color:' + INK + '">June</b><span style="font:400 8.5px ' + B + ';color:#4A4560">8 weeks, 2 days</span></span><span style="margin-left:auto;display:flex">' + ch('ari', 20) + ch('sam', 20) + ch('rosa', 20) + '</span></div>' +
-            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">' + [[TAN, 'Feed'], ['#14204F', 'Sleep'], [MINT, 'Diaper'], [ROSE, 'Med']].map(function(q){ return '<span style="text-align:center;font:800 7.5px ' + B + ';color:' + INK + '"><i style="display:block;height:30px;border-radius:10px;border:2px solid ' + INK + ';background:' + q[0] + ';margin-bottom:3px"></i>' + q[1] + '</span>'; }).join('') + '</div>' +
-            '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><b style="font:800 12px ' + H + ';color:' + INK + '">Today</b><span style="font:400 8px ' + B + ';color:#4A4560">9 entries from 4 people</span></div>' +
-            entry('nana', 'Nana', TAN, 'Bottle · 4 oz', '2:14 pm') + LOG + '</div></div>' }
-      ],
-      mobile: {
-        bg: CREAM, statusFg: INK,
-        html: '<style>' +
-          '.kxm .kxe.kx-in{max-height:0;margin:0;padding-top:0;padding-bottom:0;border-width:0;opacity:0;overflow:hidden;transition:max-height .5s,margin .5s,padding .5s,opacity .4s}' +
-          '.ph.kx-new .kxm .kxe.kx-in{max-height:60px;margin-bottom:6px;padding:6px 9px;border-width:2px;opacity:1}' +
-          '.kxm .kx-ban{position:absolute;left:10px;right:10px;top:44px;z-index:5;transform:translateY(-140%);transition:transform .45s cubic-bezier(.3,1.4,.5,1)}' +
-          '.ph.kx-banner .kxm .kx-ban{transform:none}' +
-          '.kxm .kx-ho{position:absolute;inset:0;z-index:6;background:' + CREAM + ';padding:62px 16px 0;transform:translateY(100%);transition:transform .55s cubic-bezier(.2,.8,.2,1)}' +
-          '.ph.kx-ho .kxm .kx-ho{transform:none}' +
-          '</style>' +
-          '<div class="kxm" style="padding:56px 14px 30px;font-family:' + B + ';color:' + INK + '">' +
-            '<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">' + ch('june', 40) + '<span><b style="display:block;font:800 19px/1 ' + H + '">June</b><span style="font:400 10px ' + B + ';color:#4A4560">8 weeks, 2 days</span></span><span style="margin-left:auto;display:flex">' + ch('ari', 24) + ch('sam', 24) + ch('rosa', 24) + '</span></div>' +
-            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">' + [[TAN, 'Feed'], ['#14204F', 'Sleep'], [MINT, 'Diaper'], [ROSE, 'Med']].map(function(q){ return '<span style="text-align:center;font:800 9px ' + B + '"><i style="display:block;height:44px;border-radius:14px;border:2px solid ' + INK + ';background:' + q[0] + ';margin-bottom:4px"></i>' + q[1] + '</span>'; }).join('') + '</div>' +
-            '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font:800 15px ' + H + '">Today</b><span style="font:400 9.5px ' + B + ';color:#4A4560">entries from 4 people</span></div>' +
-            entry('nana', 'Nana', TAN, 'Bottle · 4 oz', '2:14 pm', 'kx-in') + LOG +
-          '</div>',
-        nav: '<div class="kxm"><div class="kx-ban" style="background:' + INK + ';color:' + CREAM + ';border-radius:16px;padding:9px 11px;display:flex;align-items:center;gap:9px;box-shadow:0 10px 24px rgba(30,27,46,.35);font-family:' + B + '">' + ch('rosa', 28) + '<span><b style="display:block;font:800 11px ' + B + '">Rosa started her shift</b><span style="font:400 9px ' + B + ';opacity:.8">Here’s what you missed. Tap to hand over.</span></span></div>' +
-          '<div class="kx-ho">' +
-            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' + ch('rosa', 44) + '<b style="font:800 19px/1.1 ' + H + ';color:' + INK + '">Hi Rosa. Since you left:</b></div>' +
-            '<p style="margin:0 0 12px;font:400 10px ' + B + ';color:#4A4560">Monday 6:10 pm to now, logged by Ari, Sam and Jo</p>' +
-            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">' + [['2', 'feeds', TAN], ['1', 'nap', SKY], ['3', 'diapers', MINT]].map(function(s){ return '<div style="border:2px solid ' + INK + ';border-radius:14px;background:' + s[2] + ';padding:10px 8px;text-align:center;color:' + INK + '"><b style="display:block;font:800 24px/1 ' + H + '">' + s[0] + '</b><span style="font:700 9.5px ' + B + '">' + s[1] + '</span></div>'; }).join('') + '</div>' +
-            '<div style="border:2px solid ' + INK + ';border-radius:14px;background:#fff;padding:10px 12px;margin-bottom:16px;font:400 10px ' + B + ';color:' + INK + '"><b style="display:block;font:800 11px ' + B + '">Last feed</b>11:05 by Sam</div>' +
-            '<div class="kx-go" style="background:' + INK + ';color:' + CREAM + ';border-radius:999px;padding:13px;text-align:center;font:800 12px ' + B + '">Start my shift</div>' +
-          '</div></div>',
-        notes: [
-          { t: 'One shared log', d: 'Every feed, nap and diaper carries the face of whoever logged it.' },
-          { t: 'Someone else logged it', d: 'Nana’s bottle lands at the top of the same list everyone sees.' },
-          { t: 'The handoff', d: 'When Rosa starts her shift, one tap shows everything since she left.' },
-          { t: 'Start informed', d: 'She taps Start my shift and she’s caught up, with no phone call.' }
-        ],
-        steps: [
-          { note: 0, hold: 1.8 },
-          { note: 1, add: 'kx-new', hold: 2 },
-          { note: 2, add: 'kx-banner', hold: 1.1 }, { tap: '.kx-ban', add: 'kx-ho', hold: 2.6 },
-          { note: 3, tap: '.kx-go', remove: 'kx-ho', hold: .3 }, { remove: 'kx-banner', hold: 1.6 },
-          { note: -1, remove: 'kx-new', hold: .6 }
-        ]
-      }
+          html: '<div style="height:100%;display:flex;align-items:center;gap:18px;padding:0 34px;font:700 11px ' + B + ';color:' + INK + '"><b style="font:800 21px/1 ' + H + ';letter-spacing:-.02em">kip<sup style="color:' + TAN + ';font-size:9px">z</sup></b><span style="margin-left:auto">The house</span><span>How it works</span><span>Promises</span><span style="background:' + INK + ';color:' + CREAM + ';border-radius:999px;padding:7px 13px;font-weight:800">Get kip</span></div>' },
+        { id: 'eyebrow', name: 'Eyebrow / a concept baby log', icon: 'text', type: 'Text', x: 420, y: 59, w: 160, h: 18, wire: 'lines:1',
+          props: { fill: INK, font: 'Nunito Sans', weight: 'ExtraBold', size: '15', ls: '10%' },
+          html: '<div style="display:flex;gap:7px;align-items:center;justify-content:center;font:800 9px ' + B + ';letter-spacing:.1em;color:' + INK + '"><i style="width:8px;height:8px;border-radius:50%;background:' + TAN + ';box-shadow:0 0 0 3px #FFD9C6"></i>A CONCEPT BABY LOG</div>' },
+        { id: 'heading', name: 'H1 / One little log', icon: 'text', type: 'Text', x: 70, y: 80, w: 860, h: 60, wire: 'lines:1:big',
+          props: { fill: INK, font: 'Baloo 2', weight: 'ExtraBold', size: '84', lh: '100%', ls: '-1%' },
+          html: '<div style="font:800 53px/1.05 ' + H + ';letter-spacing:-.01em;color:' + INK + ';text-align:center;white-space:nowrap">One little log. The whole village in it.</div>' },
+        { id: 'lede', name: 'Lede / what kip does', icon: 'text', type: 'Text', x: 290, y: 147, w: 420, h: 40, wire: 'lines:2',
+          props: { fill: '#4A4560', font: 'Nunito Sans', weight: 'Regular', size: '20', lh: '150%' },
+          html: '<p style="margin:0;font:400 12.5px/1.5 ' + B + ';color:#4A4560;text-align:center">Feeds, naps, diapers and meds in one shared log, with everyone who looks after June writing in the same place.</p>' },
+        { id: 'cta', name: 'Buttons / hero', icon: 'comp', type: 'Component', x: 386, y: 202, w: 228, h: 33, wire: 'btn',
+          props: { fill: TAN, font: 'Nunito Sans', weight: 'ExtraBold', size: '17' },
+          html: '<div style="display:flex;gap:10px;height:100%"><span class="hv" style="flex:1.6;border-radius:999px;background:' + TAN + ';color:' + CREAM + ';box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 10px rgba(255,122,69,.35);font:800 10.5px ' + B + ';display:flex;align-items:center;justify-content:center;white-space:nowrap">▶&nbsp; Step inside the house</span><span style="flex:1;border-radius:999px;background:#fff;color:' + INK + ';box-shadow:0 4px 10px rgba(30,27,46,.12);font:800 10.5px ' + B + ';display:flex;align-items:center;justify-content:center">Get kip</span></div>' },
+        { id: 'house', name: 'Spline / the house', icon: 'img', type: 'Embed', x: 282, y: 294, w: 438, h: 268, wire: 'img',
+          props: { fill: '#BFE6FF' },
+          html: '<img src="' + VENDOR + 'kip/hero-house.webp" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:20px;display:block">' }
+      ]
     };
   })();
   MOCKS['daniel-aguirre-law'].cms = {
@@ -3000,6 +2939,180 @@ window.Webflow.push(function(){
     });
   })();
 
+  /* ===== mission/25-kip-plan.js ===== */
+  /* =========================================================
+     KIP · SITE PLAN (channel kip-plan)
+     The plan behind kipvillage.com, drawn as a blueprint: the cutaway house goes down in chalk lines, then the cursor
+     visits each room, the room fills with its feature color and its card types in with the real 3D cast (the site's
+     own portraits, vendor/kip/cast/), lit with its room on hover. The house rules from the build land last,
+     then the rooms light up one by one. Hover a card (or a room) to trace it; click a card to hold it.
+     Room bounds are the Spline scene's own (kip3d handoff: Entry −1200..−500, Living −500..400, Kitchen 400..1200
+     downstairs; Nursery −1200..0, Study 0..1200 upstairs; floors 0 / 735 / 1460, ridge ~2110).
+     Styles are injected from here, so the scene ships with the script alone (the Missions template head is Designer-only).
+     ========================================================= */
+  (function(){
+    var K = SCENE.kit; if (!K || !K.ks) return;
+    var X = K.ks, q = K.q, qa = K.qa, esc = K.esc;
+    var pth = X.path, hide = X.hide, draw = X.draw, type = X.type, move = X.move, run = X.run, end = X.end, cursor = X.cursor;
+    var NS = 'http://www.w3.org/2000/svg';
+    function tap(el, fn){ el.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); fn(e); }); }
+
+    var CREAM = '#FFF4E6', NIGHT = '#14204F', H = "'Baloo 2','Arial Rounded MT Bold',ui-rounded,sans-serif", B = "'Nunito Sans',system-ui,sans-serif";
+    // [room, x0, x1, y0, y1, fill, feature, what happens there, cast]
+    var ROOMS = [
+      ['Entry', -1200, -500, 0, 735, '#6FA8FF', 'Roles + shift handoff', 'Ari hands June to Grandpa. He sees everything since he left.', ['ari', 'grandpa']],
+      ['Living', -500, 400, 0, 735, '#FFC94A', 'Milestones', 'Nana caught the first smile. Saved for the whole village.', ['nana']],
+      ['Kitchen', 400, 1200, 0, 735, '#FF7A45', 'Shared log', 'Rosa goes to log vitamin D. Ari already did, so kip asks first.', ['rosa']],
+      ['Nursery', -1200, 0, 735, 1460, '#2D3E8C', '3am mode', 'Opening it turns the whole scene to night. Jo logs the 3:07 bottle.', ['jo', 'june']],
+      ['Study', 0, 1200, 735, 1460, '#5FD3A8', 'Pediatrician report', 'Sam builds a read-only report. Dr. Patel reads the patterns.', ['sam', 'patel']]
+    ];
+    var RULES = ['Characters always fully visible', 'Nothing between a room and the camera', 'Tap a room, poke anything'];
+
+    if (!document.getElementById('kp-css')){
+      var css = document.createElement('style'); css.id = 'kp-css';
+      css.textContent =
+        '.stg-kip-plan{background:' + NIGHT + ';font-family:' + B + ';color:' + CREAM + ';overflow:hidden}' +
+        '.stg-kip-plan .kp-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,244,230,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,244,230,.07) 1px,transparent 1px),linear-gradient(rgba(255,244,230,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,244,230,.035) 1px,transparent 1px);background-size:100px 100px,100px 100px,20px 20px,20px 20px}' +
+        '.stg-kip-plan .kp-file{position:absolute;left:24px;top:18px;display:flex;align-items:center;gap:10px;font:700 13px ' + B + '}' +
+        '.stg-kip-plan .kp-file i{width:22px;height:22px;border-radius:7px;background:#FF7A45;display:grid;place-items:center;font:800 13px/1 ' + H + ';color:' + CREAM + ';font-style:normal}' +
+        '.stg-kip-plan .kp-file em{font:600 10px ' + B + ';letter-spacing:.1em;text-transform:uppercase;opacity:.55;font-style:normal;border:1px solid rgba(255,244,230,.3);border-radius:999px;padding:3px 8px}' +
+        '.stg-kip-plan .kp-cap{position:absolute;font:800 22px/1.1 ' + H + ';color:' + CREAM + '}' +
+        '.stg-kip-plan svg{position:absolute;left:0;top:0;overflow:visible}' +
+        '.stg-kip-plan .kp-ln{fill:none;stroke:' + CREAM + ';stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}' +
+        '.stg-kip-plan .kp-ln.thin{stroke-width:1.4;opacity:.6}' +
+        '.stg-kip-plan .kp-room{transition:opacity .25s}' +
+        '.stg-kip-plan .kp-rl{position:absolute;font:800 16px/1 ' + H + ';color:#1E1B2E;white-space:nowrap}.stg-kip-plan .kp-rl.dk{color:' + CREAM + '}' +
+        '.stg-kip-plan .kp-moon{position:absolute;color:#FFC94A;font:16px/1 sans-serif}' +
+        '.stg-kip-plan .kp-card{position:absolute;display:flex;gap:12px;align-items:center;background:' + CREAM + ';color:#1E1B2E;border-radius:16px;padding:10px 14px 10px 12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.8),inset 0 -3px 0 rgba(30,27,46,.08),0 8px 18px rgba(0,0,0,.28);transition:transform .25s,box-shadow .25s;cursor:pointer}' +
+        '.stg-kip-plan .kp-card .bar{position:absolute;left:0;top:12px;bottom:12px;width:5px;border-radius:0 4px 4px 0;background:var(--c)}' +
+        '.stg-kip-plan .kp-card .tx{flex:1;min-width:0}' +
+        '.stg-kip-plan .kp-card b{display:block;font:800 17px/1.15 ' + H + '}' +
+        '.stg-kip-plan .kp-card b span{color:var(--d);font-weight:800}' +
+        '.stg-kip-plan .kp-card p{margin:3px 0 0;font:400 12.5px/1.35 ' + B + ';color:#4A4560}' +
+        '.stg-kip-plan .kp-card .who{display:flex;flex:none}' +
+        '.stg-kip-plan .kp-card .who img{width:44px;height:44px;border-radius:50%;display:block;margin-left:-10px;filter:drop-shadow(0 2px 3px rgba(30,27,46,.25))}' +
+        '.stg-kip-plan .kp-card .who img:first-child{margin-left:0}' +
+        '.stg-kip-plan .kp-rule{position:absolute;display:flex;align-items:center;gap:8px;font:700 12.5px ' + B + ';color:' + CREAM + ';border:1.5px solid rgba(255,244,230,.4);border-radius:999px;padding:7px 14px 7px 10px;white-space:nowrap}' +
+        '.stg-kip-plan .kp-rule i{width:8px;height:8px;border-radius:50%;background:#FF7A45}' +
+        '.stg-kip-plan.kp-hl .kp-card:not(.hl){opacity:.45}.stg-kip-plan.kp-hl .kp-room:not(.hl){opacity:.25}' +
+        '.stg-kip-plan .kp-card.hl{transform:translateX(-6px) scale(1.02);box-shadow:inset 0 2px 0 rgba(255,255,255,.8),0 12px 26px rgba(0,0,0,.4)}' +
+        '.stg-kip-plan.is-p .kp-card{padding:7px 10px 7px 10px;gap:9px;border-radius:13px}.stg-kip-plan.is-p .kp-card b{font-size:14px}.stg-kip-plan.is-p .kp-card p{font-size:10.5px;margin-top:1px}' +
+        '.stg-kip-plan.is-p .kp-card .who img{width:34px;height:34px;margin-left:-8px}.stg-kip-plan.is-p .kp-rl{font-size:12px}.stg-kip-plan.is-p .kp-rule{font-size:10.5px;padding:5px 10px 5px 8px}' +
+        '.stg-kip-plan .fg-fade{background:' + NIGHT + '}' +
+        '.stg-kip-plan .cur.a path{fill:#FF7A45}.stg-kip-plan .cur.a .nm{background:#FF7A45;color:' + CREAM + '}';
+      document.head.appendChild(css);
+    }
+
+    SCENE.add('kip-plan', function(sc){
+      var P = sc.portrait, st = sc.stg;
+      // house units → stage px: s = scale, (OX, GY) = house center at ground level
+      // the monitor's own controls cover the bottom ~70px of the stage, so everything sits above that
+      var L = P ? { s: .19, OX: 320, GY: 448, cx: 22, cy: 464, cw: 596, ch: 50, cg: 6, cap: null }
+                : { s: .2, OX: 330, GY: 610, cx: 680, cy: 104, cw: 492, ch: 88, cg: 12, cap: [680, 60] };
+      function X_(x){ return L.OX + x * L.s; } function Y_(y){ return L.GY - y * L.s; }
+      var html = '<div class="kp-grid"></div><div class="kp-file"><i>k</i><b>kip — Site plan</b><em>FigJam</em></div>' +
+        '<svg class="kp-fill" width="' + sc.SW + '" height="' + sc.SH + '" aria-hidden="true"></svg>' +
+        '<svg class="kp-draw" width="' + sc.SW + '" height="' + sc.SH + '" aria-hidden="true"></svg>';
+      ROOMS.forEach(function(r, i){
+        var lx = X_(r[1]) + 10, ly = Y_(r[4]) + 10;
+        html += '<div class="kp-rl' + (r[0] === 'Nursery' ? ' dk' : '') + '" data-r="' + i + '" style="left:' + lx + 'px;top:' + ly + 'px" data-t="' + esc(r[0]) + '"></div>';
+        var y = L.cy + i * (L.ch + L.cg), dark = r[0] === 'Nursery' ? '#2D3E8C' : r[0] === 'Living' ? '#86610E' : r[0] === 'Kitchen' ? '#A8461F' : r[0] === 'Entry' ? '#2D55A3' : '#1E6F55';
+        html += '<div class="kp-card" data-r="' + i + '" style="left:' + L.cx + 'px;top:' + y + 'px;width:' + L.cw + 'px;height:' + L.ch + 'px;--c:' + (r[0] === 'Nursery' ? '#6F86E8' : r[5]) + ';--d:' + dark + '"><i class="bar"></i>' +
+          '<div class="tx"><b><span>' + esc(r[0]) + '</span> · <em class="ft" style="font-style:normal" data-t="' + esc(r[6]) + '"></em></b>' + (P ? '' : '<p>' + esc(r[7]) + '</p>') + '</div>' +
+          '<span class="who">' + r[8].map(function(n){ return '<img alt="" data-src="' + n + '">'; }).join('') + '</span></div>';
+      });
+      // the nursery's night sky
+      var nm = ROOMS[3];
+      html += '<div class="kp-moon" style="left:' + (X_(nm[2]) - 46) + 'px;top:' + (Y_(nm[4]) + 12) + 'px">☾</div>';
+            RULES.forEach(function(t, i){ html += '<div class="kp-rule" data-k="' + i + '"><i></i>' + esc(t) + '</div>'; });
+      if (L.cap) html += '<div class="kp-cap" style="left:' + L.cap[0] + 'px;top:' + L.cap[1] + 'px">Every room demonstrates one feature.</div>';
+      html += cursor('a', 'Angelino') + '<div class="fg-fade"></div>';
+      st.innerHTML = html;
+
+      var fill = q(st, '.kp-fill'), dr = q(st, '.kp-draw'), cards = qa(st, '.kp-card'), labels = qa(st, '.kp-rl'), rules = qa(st, '.kp-rule'),
+        cur = q(st, '.cur.a'), moon = q(st, '.kp-moon'), cap = q(st, '.kp-cap'), file = q(st, '.kp-file');
+      // rules: stacked top left, beside the roof (portrait: one row under the file bar)
+      var rxp = 22;
+      rules.forEach(function(r, i){ if (P){ r.style.left = rxp + 'px'; r.style.top = '52px'; rxp += r.offsetWidth + 6; } else { r.style.left = '28px'; r.style.top = (64 + i * 38) + 'px'; } });
+      // portraits load on first play
+      var loaded = false;
+      function loadImgs(){ if (loaded) return; loaded = true; qa(st, '.who img').forEach(function(im){ im.src = VENDOR + 'kip/cast/' + im.getAttribute('data-src') + '.webp'; }); }
+
+      // room fills (under the chalk); hovering a card lights its room
+      var rooms = [];
+      ROOMS.forEach(function(r, i){
+        var re = document.createElementNS(NS, 'rect');
+        re.setAttribute('x', X_(r[1])); re.setAttribute('y', Y_(r[4])); re.setAttribute('width', (r[2] - r[1]) * L.s); re.setAttribute('height', (r[4] - r[3]) * L.s);
+        re.setAttribute('fill', r[5]); re.setAttribute('fill-opacity', '.92'); re.setAttribute('class', 'kp-room'); re.setAttribute('data-r', i);
+        fill.appendChild(re); rooms.push(re);
+      });
+      // the chalk drawing: walls, floors, partitions, roof, chimney, attic window, ground, two trees
+      var gx0 = X_(-1200), gx1 = X_(1200);
+      var lines = [
+        'M' + gx0 + ' ' + Y_(0) + 'L' + gx0 + ' ' + Y_(1460) + 'L' + gx1 + ' ' + Y_(1460) + 'L' + gx1 + ' ' + Y_(0),
+        'M' + gx0 + ' ' + Y_(735) + 'L' + gx1 + ' ' + Y_(735),
+        'M' + X_(-500) + ' ' + Y_(0) + 'L' + X_(-500) + ' ' + Y_(735) + 'M' + X_(400) + ' ' + Y_(0) + 'L' + X_(400) + ' ' + Y_(735) + 'M' + X_(0) + ' ' + Y_(735) + 'L' + X_(0) + ' ' + Y_(1460),
+        'M' + X_(-1330) + ' ' + Y_(1430) + 'L' + X_(0) + ' ' + Y_(2110) + 'L' + X_(1330) + ' ' + Y_(1430),
+        'M' + X_(700) + ' ' + Y_(1800) + 'L' + X_(700) + ' ' + Y_(2050) + 'L' + X_(860) + ' ' + Y_(2050) + 'L' + X_(860) + ' ' + Y_(1720),
+        'M' + (X_(0) + 60 * L.s) + ' ' + Y_(1720) + 'A' + 60 * L.s + ' ' + 60 * L.s + ' 0 1 1 ' + (X_(0) + 60 * L.s - .1) + ' ' + Y_(1720)
+      ];
+      var chalk = lines.map(function(d){ return pth(dr, d, 'kp-ln'); });
+      var ground = pth(dr, 'M' + X_(-1550) + ' ' + Y_(0) + 'L' + X_(1550) + ' ' + Y_(0), 'kp-ln');
+      var trees = [[-1430, 1], [1430, -1]].map(function(t){ var x = X_(t[0]), r = 150 * L.s; return pth(dr, 'M' + x + ' ' + Y_(0) + 'L' + x + ' ' + Y_(380) + 'M' + (x + r) + ' ' + (Y_(380) - r) + 'A' + r + ' ' + r + ' 0 1 1 ' + (x + r - .1) + ' ' + (Y_(380) - r - .1), 'kp-ln thin'); });
+      var marks = qa(st, '[data-r]');
+      function light(k){
+        st.classList.toggle('kp-hl', k != null);
+        marks.forEach(function(e){ e.classList.toggle('hl', k != null && e.getAttribute('data-r') === String(k)); });
+      }
+      cards.forEach(function(c){
+        var k = +c.getAttribute('data-r');
+        c.addEventListener('pointerenter', function(){ light(k); });
+        c.addEventListener('pointerleave', function(){ if (!sc.paused) light(null); });
+        tap(c, function(){ if (sc.hold) sc.hold(); light(k); });
+      });
+      rooms.forEach(function(re){ var k = +re.getAttribute('data-r'); re.style.pointerEvents = 'auto'; re.addEventListener('pointerenter', function(){ light(k); }); re.addEventListener('pointerleave', function(){ if (!sc.paused) light(null); }); });
+      fill.style.pointerEvents = 'none';
+
+      var R = run(sc, function(){ light(null); loadImgs(); }), tl = R.tl;
+      tl.set(q(st, '.fg-fade'), { autoAlpha: 0 }, 0).set(cur, { autoAlpha: 0, x: sc.SW * .5, y: sc.SH + 30 }, 0)
+        .set(rooms.concat(cards, labels, rules, [moon]), { autoAlpha: 0 }, 0);
+      if (cap) tl.set(cap, { autoAlpha: 0 }, 0);
+      chalk.concat([ground], trees).forEach(function(p){ hide(R, p); });
+      // 1 · the house goes down in chalk
+      tl.addLabel('house', .2);
+      tl.fromTo(file, { autoAlpha: 0, y: -6 }, { autoAlpha: 1, y: 0, duration: .35, immediateRender: false }, .15);
+      draw(R, ground, .3, .7);
+      chalk.forEach(function(p, i){ draw(R, p, .5 + i * .28, .7); });
+      trees.forEach(function(p, i){ draw(R, p, 1.6 + i * .2, .6); });
+      tl.to(cur, { autoAlpha: 1, duration: .2 }, 2.1);
+      // 2 · room by room: fill, label, card
+      var t = 2.3;
+      tl.addLabel('rooms', t);
+      ROOMS.forEach(function(r, i){
+        var cx2 = (X_(r[1]) + X_(r[2])) / 2, cy2 = (Y_(r[3]) + Y_(r[4])) / 2;
+        move(R, cur, { x: cx2, y: cy2 }, t, .45);
+        tl.fromTo(rooms[i], { autoAlpha: 0 }, { autoAlpha: 1, duration: .35, immediateRender: false }, t + .4);
+        tl.fromTo(labels[i], { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, t + .45);
+        type(R, labels[i], r[0], t + .45, .3);
+        if (i === 3) tl.fromTo(moon, { autoAlpha: 0, rotation: -30 }, { autoAlpha: 1, rotation: 0, duration: .5, ease: 'back.out(2)', immediateRender: false }, t + .55);
+        tl.fromTo(cards[i], { autoAlpha: 0, x: P ? 0 : 24, y: P ? 12 : 0, scale: .96 }, { autoAlpha: 1, x: 0, y: 0, scale: 1, duration: .4, ease: 'back.out(1.6)', immediateRender: false }, t + .6);
+        var ft = q(cards[i], '.ft'); type(R, ft, r[6], t + .75, .4);
+        t += P ? 1 : 1.1;
+      });
+      tl.to(cur, { autoAlpha: 0, duration: .3 }, t);
+      // 3 · the house rules
+      t += .2; tl.addLabel('rules', t);
+      if (cap) tl.fromTo(cap, { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4, immediateRender: false }, t);
+      rules.forEach(function(r, i){ tl.fromTo(r, { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .35, immediateRender: false }, t + .3 + i * .25); });
+      t += 1.4;
+      // 4 · each room lights up in turn
+      tl.addLabel('tour', t);
+      [0, 1, 2, 3, 4].forEach(function(k, i){ R.at(t + i * 1, function(){ light(k); }); });
+      R.at(t + 5.1, function(){ light(null); });
+      end(sc, R, t + 6.2, t - .4, [{ t: 'House', at: 'house' }, { t: 'Rooms', at: 'rooms' }, { t: 'Rules', at: 'rules' }, { t: 'Tour', at: 'tour' }]);
+    });
+  })();
+
   /* ===== mission/30-mission.js ===== */
   /* =========================================================
      MISSION DEBRIEF · read the CMS item + its Collection Lists, then fill and animate the template
@@ -3028,6 +3141,15 @@ window.Webflow.push(function(){
     if (m.slug === SLUG) m.el.setAttribute('aria-current', 'page');
     if (m.slug) m.el.setAttribute('href', '/work/' + m.slug);
   });
+  // phones: the switcher is one swipeable row (ab-core.css); start it with the current mission in view (scrollLeft, not
+  // scrollIntoView, which would also scroll the page) and drop the edge fade at the end of the row
+  (function(){
+    // measured from the link's box: the list items are display:contents, so they have no offsets of their own
+    var row = $('#mswitch .w-dyn-items'), cur = LIST[MI] && LIST[MI].el; if (!row) return;
+    function end(){ row.classList.toggle('is-end', row.scrollLeft + row.clientWidth >= row.scrollWidth - 4); }
+    if (cur && row.scrollWidth > row.clientWidth) row.scrollLeft = Math.max(0, cur.getBoundingClientRect().left - row.getBoundingClientRect().left - 16);
+    end(); row.addEventListener('scroll', end, { passive: true });
+  })();
   var NO = pad2(MI + 1), TOTAL = pad2(Math.max(1, LIST.length));
   var NEXT = LIST.length > 1 ? LIST[(MI + 1) % LIST.length] : null;
 
@@ -3046,16 +3168,16 @@ window.Webflow.push(function(){
     var it = $('[data-channel]', item) || item;
     var imgs = $$('img', it).filter(function(im){ return !im.classList.contains('w-dyn-bind-empty'); }).map(function(im){ return im.getAttribute('src') || ''; }).filter(function(s){ return s && !/placeholder/i.test(s); });
     var cid = it.getAttribute('data-id') || ('ch' + i);
-    // coded scenes are picked by channel id (the CMS Kind option can't gain values via the API); tw-* ids are their own kind
-    return { id: cid, kind: (/^tw-/.test(cid) ? cid : ({ sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable' })[cid]) || (it.getAttribute('data-kind') || 'img').toLowerCase(), mode: (it.getAttribute('data-mode') || '').toLowerCase(),
+    // coded scenes are picked by channel id (the CMS Kind option can't gain values via the API); tw-* and kip-* ids are their own kind
+    return { id: cid, kind: (/^(tw|kip)-/.test(cid) ? cid : ({ sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable' })[cid]) || (it.getAttribute('data-kind') || 'img').toLowerCase(), mode: (it.getAttribute('data-mode') || '').toLowerCase(),
       label: it.getAttribute('data-label') || ('Channel ' + (i + 1)), caption: it.getAttribute('data-caption') || '', src: imgs[0] || '', before: imgs[0] || '', after: imgs[1] || imgs[0] || '' };
   });
-  // image channels whose loops live in the repo (MOCKS[slug].img: id → [loop, still], on jsDelivr, so Webflow can't flatten
+  // image channels whose loops live in the repo ([still] alone = a screenshot, not a loop; a third entry = an MP4 of the loop, played instead of the WebP) (MOCKS[slug].img: id → [loop, still], on jsDelivr, so Webflow can't flatten
   // an animated WebP); reduced motion or Save-Data shows the still. A CMS image, when set, still wins.
   (function(){
     var MI = MOCKS[SLUG] && MOCKS[SLUG].img; if (!MI) return;
     var still = reduce || !!(navigator.connection && navigator.connection.saveData);
-    CH.forEach(function(c){ var L = MI[c.id]; if (!L || c.src) return; c.src = still ? (L[1] || L[0]) : L[0]; c.before = c.src; c.after = L[1] || L[0]; c.loop = !still; });
+    CH.forEach(function(c){ var L = MI[c.id]; if (!L || c.src) return; c.src = still ? (L[1] || L[0]) : L[0]; c.before = c.src; c.after = L[1] || L[0]; c.loop = !still && !!L[1]; c.vid = !still && L[2] || ''; });
   })();
   var PINS = $$('[data-pins-source] .w-dyn-item').map(function(item){
     var it = $('[data-pin]', item) || item;
@@ -3241,12 +3363,16 @@ window.Webflow.push(function(){
     else if (eng && snip) eng.insertAdjacentHTML('beforeend', codeBlock(snip, (txt('.ab_anom_title', a) || 'excerpt').toLowerCase()));
     if (demo && hasCh(demo)){ var st = $('.ab_stamp', a); (st || a).insertAdjacentHTML(st ? 'beforebegin' : 'beforeend', showBtn(demo, 'See it on the monitor')); }
     if (reduce || !hasGsap || !window.ScrollTrigger) return;
+    // no impact jolt on the card at any size (it read as the cards wobbling, on phones and then desktop too, Angelino
+    // 2026-10-06); phones also get a smaller drop (from 2.2x the stamp ran past the screen edge). The waiting size is set
+    // inline too: the Missions head (CSS link) can't be rewritten by API, so the CSS twin only ships with a Designer bump
+    var narrow = innerWidth < 768, stp = $('.ab_stamp', a);
     a.classList.add('pre');
+    if (narrow && stp) stp.style.transform = 'rotate(-8deg) scale(1.5)';
     ScrollTrigger.create({ trigger: a, start: 'top 78%', once: true, onEnter: function(){
       gsap.delayedCall((i % 2) * .18, function(){
         a.classList.remove('pre');
-        gsap.fromTo($('.ab_stamp', a), { scale: 2.2, opacity: 0, rotation: -18 }, { scale: 1, opacity: .9, rotation: -8, duration: .45, ease: 'back.out(2.2)' });
-        gsap.fromTo(a, { x: -3 }, { x: 0, duration: .3, ease: 'elastic.out(1,.3)', delay: .35 });
+        gsap.fromTo(stp, { scale: narrow ? 1.5 : 2.2, opacity: 0, rotation: -18 }, { scale: 1, opacity: .9, rotation: -8, duration: .45, ease: 'back.out(2.2)' });
       });
     } });
   });
@@ -3268,13 +3394,33 @@ window.Webflow.push(function(){
         ScrollTrigger.create({ trigger: n, start: 'top 90%', once: true, onEnter: function(){ gsap.to(o, { v: target, duration: 1.6, ease: 'power3.out', onUpdate: function(){ n.innerHTML = Math.round(o.v) + unit; } }); } });
       }
     }
+    else if (suf && /^[–-]/.test(suf)){
+      // a range (30–60, 10–15): the full "30–60" must fit its column on one line, so it's set first, measured and shrunk
+      // to fit (AB.fitWide), then counted up here (core's counter would measure "0")
+      var rT = +v, full = rT + suf; n.removeAttribute('data-count'); n.style.whiteSpace = 'nowrap'; n.textContent = full;
+      // measured on the final text whenever the column has a width (load, fonts, resize, scrolling in)
+      var fit = function(){
+        var cur = n.textContent; n.textContent = full; n.style.fontSize = '';
+        var cw = n.clientWidth, sw = n.scrollWidth;
+        if (cw && sw > cw + 1) n.style.fontSize = Math.max(26, Math.floor(parseFloat(getComputedStyle(n).fontSize) * cw / sw * .97)) + 'px';
+        n.textContent = cur;
+      };
+      fit(); var rlw = innerWidth;
+      addEventListener('resize', function(){ if (innerWidth !== rlw){ rlw = innerWidth; fit(); } });
+      if (document.fonts) document.fonts.ready.then(fit);
+      if (window.ScrollTrigger) ScrollTrigger.create({ trigger: n, start: 'top bottom', once: true, onEnter: fit });
+      if (!reduce && hasGsap && window.ScrollTrigger){
+        var ro = { v: 0 }; n.textContent = '0' + suf;
+        ScrollTrigger.create({ trigger: n, start: 'top 90%', once: true, onEnter: function(){ fit(); gsap.to(ro, { v: rT, duration: 1.6, ease: 'power3.out', onUpdate: function(){ n.textContent = Math.round(ro.v) + suf; } }); } });
+      }
+    }
     else n.textContent = v + (suf || '');
   });
 
   /* ---------- stack orbit (Tools the mission ran on) ---------- */
   (function(){
     var orbit = $('#stkOrbit'); if (!orbit) return;
-    var TOOLC = { 'webflow': '#146EF5', 'client-first': '#4353FF', 'gsap': '#0AE448', 'three.js': '#FFFFFF', 'lenis': '#FF98A2', 'unicorn studio': '#7C5CFF', 'github': '#F0F6FC', 'd3': '#F9A03C', 'figma': '#A259FF', 'webflow cms': '#146EF5', 'finsweet': '#161616', 'claude': '#D97757', 'pen + paper': '#F2F0EA', 'photoshop': '#31A8FF', 'illustrator': '#FF9A00' };
+    var TOOLC = { 'webflow': '#146EF5', 'client-first': '#4353FF', 'gsap': '#0AE448', 'three.js': '#FFFFFF', 'lenis': '#FF98A2', 'unicorn studio': '#7C5CFF', 'github': '#F0F6FC', 'd3': '#F9A03C', 'figma': '#A259FF', 'webflow cms': '#146EF5', 'finsweet': '#161616', 'claude': '#D97757', 'pen + paper': '#F2F0EA', 'photoshop': '#31A8FF', 'illustrator': '#FF9A00', 'vercel': '#FFFFFF', 'supabase': '#3ECF8E', 'resend': '#F2F0EA', 'hostinger': '#673DE6', 'spline': '#A26CFF' };
     // color fallback when the chip's hidden color node isn't bound in the Designer
     $$('.ab_stack_chip', orbit).forEach(function(c){
       var cn = $('[data-field="color"]', c), nm = (c.getAttribute('data-name') || c.textContent).trim().toLowerCase();
@@ -3469,6 +3615,495 @@ window.Webflow.push(function(){
     }
   })();
 
+  /* ===== mission/35-signature.js ===== */
+  /* =========================================================
+     SIGNATURE PLANETS (mission pages only)
+     A few missions get a one-off planet drawn from their own project's visual language instead of the generated
+     surface: Topicweave = the v3 loom's globe of threads (cks-v3 js/loom.js F.sphere), 510 Visuals = the site's dotted continent
+     globe, see-through, with its graticule, HQ pins and its arcs drawn as thin rings (vendor/510-globe.js).
+     They replace that mission's planet where it shows on a mission page (hero, manifest status card, tools-in-orbit
+     center, next-mission card) and nowhere else: the Work board, Home and Services keep the CMS planet, and these never join the random
+     planet pool. The core planet is still built underneath (drag, magnet and hover keep working on .ab_planet);
+     its sphere + rings are hidden and a canvas draws on top, animated only while on screen, one still frame under
+     reduced motion.
+     ========================================================= */
+  (function(){
+    var SIG = {};
+
+    /* ---- Topicweave: a globe of threads ---- */
+    SIG.topicweave = (function(){
+      var COL = ['#9b87f5', '#ef5b3f', '#139e8a', '#4f7bff', '#9b87f5', '#ef5b3f', '#139e8a', '#4f7bff', '#e9e6df'];
+      var TAU = Math.PI * 2;
+      function rnd(n){ var s = 7, a = []; for (var i = 0; i < n; i++){ s = (s * 16807) % 2147483647; a.push((s - 1) / 2147483646); } return a; }
+      return function(R){
+        // R = planet radius in px: only the globe (Angelino 2026-10-04: no bands or spokes around it)
+        var small = R < 26, N = small ? 120 : R < 70 ? 300 : 700, rr = rnd(N * 3);
+        // four regular rings, one per weave color (Angelino 2026-10-04): concentric, one tilted plane, thread dashes
+        // drifting along each; the half behind the globe is drawn first and dimmer
+        var RG = ['#9b87f5', '#ef5b3f', '#139e8a', '#4f7bff'], RR = [1.24, 1.36, 1.48, 1.6], NR = small ? 0 : R < 70 ? 50 : 110;
+        function rings(ctx, cx, cy, t, front, len, lw, en){
+          var open = .24, tilt = -.24, ca = Math.cos(tilt), sa = Math.sin(tilt);
+          ctx.lineWidth = lw * (1.15 + .5 * en);
+          RG.forEach(function(col, k){
+            var r = RR[k], n = Math.round(NR * r / 1.4);
+            for (var i = 0; i < n; i++){
+              var u = (i / n) * Math.PI * 2 + t * (.05 + k * .015), cu = Math.cos(u), su = Math.sin(u);
+              if ((su > 0) !== front) continue;
+              var wv = en ? Math.sin(u * 9 - t * 4 + k) * .06 * en : 0, rw = r + wv, ex = rw * cu, ey = rw * Math.sin(open) * su, x = ex * ca - ey * sa, y = ex * sa + ey * ca;
+              var tx = -r * su, ty = r * Math.sin(open) * cu, dx = tx * ca - ty * sa, dy = tx * sa + ty * ca, tl = Math.sqrt(dx * dx + dy * dy) || 1;
+              ctx.globalAlpha = Math.min(1, (front ? .85 : (x * x + y * y < 1 ? .08 : .35)) + .25 * en);
+              var X = cx + x * R, Y = cy + y * R, hx = dx / tl * len * .75, hy = dy / tl * len * .75;
+              ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(X - hx, Y - hy); ctx.lineTo(X + hx, Y + hy); ctx.stroke();
+            }
+          });
+          ctx.globalAlpha = 1;
+        }
+        return { pad: NR ? 1.7 : 1.12, pulse: '155,135,245', draw: function(ctx, cx, cy, t, en){
+          en = en || 0;
+          var len = Math.max(2.2, R * (small ? .2 : R < 70 ? .09 : .07)), lw = Math.max(1, Math.min(1.6, R / 70));
+          ctx.lineCap = 'round';
+          if (NR) rings(ctx, cx, cy, t, false, len, lw, en);
+          ctx.lineWidth = lw;
+          for (var i = 0; i < N; i++){
+            var R1 = rr[i * 3], R2 = rr[i * 3 + 1], R3 = rr[i * 3 + 2];
+            // a point on the sphere, turning, tilted toward us; the thread lies along its latitude, back threads faint
+            var lat = Math.acos(2 * R1 - 1), lon = R2 * TAU + t * .12, sl = Math.sin(lat);
+            var px = sl * Math.cos(lon), py = Math.cos(lat), pz = sl * Math.sin(lon), tl = .42, ct = Math.cos(tl), st = Math.sin(tl);
+            var y2 = py * ct - pz * st, z2 = py * st + pz * ct, p = 1 / (1 + z2 * .3);
+            var sw = en ? 1 + Math.sin(lat * 9 + t * 4 + R3 * 6) * .06 * en : 1, x = px * .95 * p * sw, y = y2 * .95 * p * sw, a = Math.atan2(-Math.cos(lon) * st, -Math.sin(lon));
+            var c = COL[Math.floor(R3 * COL.length)], hx = Math.cos(a) * len / 2, hy = Math.sin(a) * len / 2, X = cx + x * R, Y = cy + y * R;
+            ctx.globalAlpha = z2 > 0 ? .2 + .35 * en : .95; ctx.strokeStyle = c; ctx.lineWidth = lw * (1 + .6 * en); ctx.beginPath(); ctx.moveTo(X - hx, Y - hy); ctx.lineTo(X + hx, Y + hy); ctx.stroke();
+          }
+          if (NR) rings(ctx, cx, cy, t, true, len, lw, en);
+          ctx.globalAlpha = 1;
+        } };
+      };
+    })();
+
+    /* ---- 510 Visuals: the dotted continent globe ---- */
+    SIG['510-visuals'] = (function(){
+      // the 510 globe's land dots, 2° lat × 2.5° lon (vendor/510-globe.js LAND_DOTS, Antarctica cap added like the site)
+      var B64 = 'ESwRLRItEysTLBQqFCsULBRVFSoVKxUsFS0WKhYrFiwWLRaLFowXKxcsFy0XjBgrGCwYLRguGIIYgxiNGI4ZKxksGS0ZLhkvGYMZjhorGiwaLRouGi8aMBoxGoEaghqDGoQajhqPGysbLBstGy4bLxswGzEbfxuAG4EbghuDG4QcKxwsHC0cLhwvHDAcMRwyHFAcURx2HHccfxyAHIEcghyDHIQdLB0tHS4dLx0wHTEdMh0zHU8dUB1RHVIdUx13HXgdeR16HXsdfB19HX4dfx2AHYEdgh2DHYQdhR4sHi0eLh4vHjAeMR4yHjMeNB5PHlAeUR5SHlMeVB52HnceeB55Hnoeex58Hn0efh5/HoAegR6CHoMehB6FHywfLR8uHy8fMB8xHzIfMx80H08fUB9RH1IfUx9UH1Ufdh93H3gfeR96H3sffB99H34ffx+AH4Efgh+DH4QfhSAsIC0gLiAvIDAgMSAyIDMgNCBOIE8gUCBRIFIgUyBUIFUgdiB3IHggeSB6IHsgfCB9IH4gfyCAIIEggiCDIIQghSEsIS0hLiEvITAhMSEyITMhNCE1IU4hTyFQIVEhUiFTIVQhVSFWIVkhWiFbIXYhdyF4IXkheiF7IXwhfSF+IX8hgCGBIYIhgyGEIiwiLSIuIi8iMCIxIjIiMyI0IjUiNiI3Ik4iTyJQIlEiUiJTIlQiVSJWIloiWyJ3IngieSJ6InsifCJ9In4ifyKAIoEigiKDIoQjLCMtIy4jLyMwIzEjMiMzIzQjNSM2IzcjOCNOI08jUCNRI1IjUyNUI1UjWiNbI3gjeSN6I3sjfCN9I34jfyOAI4EjgiODJCwkLSQuJC8kMCQxJDIkMyQ0JDUkNiQ3JDgkTSROJE8kUCRRJFIkUyRUJFUkViRXJFokWyR5JHokeyR8JH0kfiR/JIAkgSSCJIwkjyUrJSwlLSUuJS8lMCUxJTIlMyU0JTUlNiU3JTglTSVOJU8lUCVRJVIlUyVUJVUlViVXJVglWiVbJXoleyV8JX0lfiWBJYImKiYrJiwmLSYuJi8mMCYxJjImMyY0JjUmNiY3JjgmTSZOJk8mUCZRJlImUyZUJlUmViZXJlgmWyZcJnsmfCZ9Jn4mgSaCJyknKicrJywnLScuJy8nMCcxJzInMyc0JzUnNic3JzgnOSdOJ08nUCdRJ1InUydUJ1UnVidXJ1gnfSgpKCooKygsKC0oLigvKDAoMSgyKDMoNCg1KDYoNyg4KDkoTShOKE8oUChRKFIoUyhUKFUoVihXKFgogSiEKIkpKSkqKSspLCktKS4pLykwKTEpMikzKTQpNSk2KTcpOCk5KTopTSlOKU8pUClRKVIpUylUKVUpVilXKVgpcyl0KXUpgCmBKYIpgyooKikqKiorKiwqLSouKi8qMCoxKjIqMyo0KjUqNio3KjgqOSpNKk4qTypQKlEqUipTKlQqVSpWKlcqcipzKoAqgSqCKoMqhisoKykrKisrKywrLSsuKy8rMCsxKzIrMys0KzUrNis3KzgrOStMK00rTitPK1ArUStSK1MrVCtVK1YrVytYK3Ercit2K3greSt7K34rfyuAK4ErgiwoLCksKiwrLCwsLSwuLC8sMCwxLDIsMyw0LDUsNixMLE0sTixPLFAsUSxSLFMsVCxVLFYsVyxYLHEscix0LHUsdix4LH0sfy0kLSgtKS0qLSstLC0tLS4tLy0wLTEtMi0zLTQtTC1NLU4tTy1QLVEtUi1TLVQtVS1WLVctWC1ZLXAtcS10LXUtdi13LXgteS16LXstfS4pLiouKy4sLi0uLi4vLjAuMS4yLjMuNC5MLk0uTi5PLlAuUS5SLlMuVC5VLlYuVy5YLlkuWi5wLnEudS52LncvKi8rLywvLS8uLy8vMC8xLzIvMy9FL0ovTC9NL04vTy9QL1EvUi9TL1QvVS9WL1cvWC9ZL1ovWy9vL3Evdi93MCkwKjArMCwwLTAuMC8wMDAxMDMwRDBFMEYwRzBIMEkwSjBLMEwwTTBOME8wUDBRMFIwUzBUMFUwVjBXMFgwWTBaMFswaDBuMG8wcDBxMHcwejEpMSoxKzEsMS0xLjEvMTAxQzFEMUUxRjFHMUgxSTFKMUsxTDFNMU4xTzFQMVExUjFTMVQxVTFWMVcxWDFZMVoxWzFcMWgxaTFwMXkxejImMicyKDIqMisyLDItMi4yLzJDMkQyRTJGMkcySDJJMkoySzJMMk0yTjJPMlAyUTJSMlMyVDJVMlYyVzJYMlkyWjJbMlwyZjJnMmgycDJyMnMyeTJ6MyYzKzNCM0MzRDNFM0YzRzNIM0kzSjNLM0wzTTNOM08zUDNRM1IzUzNUM1UzVjNXM1gzWTNmM2czaDNwM3EzcjNzM3QzejQjNCQ0JTQmNCc0QTRCNEM0RDRFNEY0RzRINEk0SjRLNEw0TTRONE80UDRRNFI0UzRUNFU0VjRXNFg0WTRaNFs0XDRmNGc0aDRvNHA0cTRyNHM0dDR4NHk1ITUiNSM1JDVCNUM1RDVFNUY1RzVINUk1SjVLNUw1TTVONU81UDVRNVI1UzVUNVU1VjVXNVk1WjVbNVw1XTVlNWY1ZzVoNW41bzVwNXE1cjVzNXk2HzYgNiE2IjYjNiQ2JTZCNkM2RDZFNkY2RzZINkk2SjZLNkw2TTZONk82UDZRNlI2UzZUNlU2VjZXNlk2WjZbNlw2XTZeNmY2ZzZoNmk2bjZvNnA2cTZyNnM2eDceNx83IDchNyQ3JTcpNyo3KzcsN0I3QzdEN0U3RjdHN0g3STdKN0s3TDdNN043TzdQN1E3UjdTN1Q3VTdWN1c3WDdZN1o3WzdcN103XjdfN2U3ZjdnN2g3aTdqN203bjdvN3A3cTdyN3Q4HjgfOCA4ITgoOCk4QjhDOEQ4RThGOEc4SDhJOEo4SzhMOE04TjhPOFA4UThSOFM4VDhVOFY4WDhZOFo4WzhcOF04XjhfOGQ4ZThmOGc4aDhpOGo4azhtOG44bzhwOHE4cjhzOHQ5HDkdOR45HzkgOSE5KTlCOUM5RDlFOUY5RzlIOUk5SjlLOUw5TTlOOU85UDlROVI5UzlUOVU5VjlXOVg5WTlaOVs5XDldOV45XzljOWQ5ZTlmOWc5aDlpOWo5azlsOW05bjlvOXA5cTlyOXM5dDl1OXY5dzl5Ohs6HToeOh86IDohOig6KTpDOkQ6RTpGOkc6SDpJOko6SzpMOk06TjpPOlA6UTpSOlM6VDpVOlc6WDpZOlo6WzpcOl86YDphOmI6YzpkOmU6ZjpnOmg6aTpqOms6bDptOm46bzpwOnE6cjpzOnQ6dTp2Onc6eDsaOxw7HTseOx87IDshOyc7KDtDO0Q7RTtGO0c7SDtJO0o7SztMO007TjtPO1A7UTtSO1M7VDtVO1Y7VztYO1k7WjtbO107XjtfO2A7YTtiO2M7ZDtlO2Y7ZztoO2k7ajtrO2w7bTtuO287cDtxO3I7czt0O3U7djt3O3g8GjwbPBw8HTwePB88IDwhPCI8IzwkPCY8JzxFPEY8RzxIPEk8SjxLPEw8TTxOPE88UDxRPFI8UzxUPFU8VjxXPFg8WTxaPFs8XTxePF88YDxhPGI8YzxkPGU8ZjxnPGg8aTxqPGs8bDxtPG48bzxwPHE8cjxzPHQ8dTx2PHc8eDx5PRk9Gj0bPRw9HT0ePR89ID0hPSI9Iz0kPSU9Jj0nPUQ9RT1GPUc9SD1JPUo9Sz1MPU09Tj1QPVE9Uj1WPVc9WD1ZPVo9Wz1cPV09Xj1fPWA9YT1iPWM9ZD1lPWY9Zz1oPWk9aj1rPWw9bT1uPW89cD1xPXI9cz10PXU9dj13PXg9fD4YPhk+Gj4bPhw+HT4ePh8+ID4hPiI+Iz4kPiU+Jj4nPig+KT5FPkY+Rz5IPkk+Sj5LPkw+TT5XPlg+WT5aPls+XD5dPl4+Xz5gPmE+Yj5jPmQ+ZT5mPmc+aD5pPmo+az5sPm0+bj5vPnA+cT5yPnM+dD51PnY+dz59Pn4/GD8ZPxo/Gz8cPx0/Hj8fPyA/IT8iPyM/JD8lPyY/Jz8oPyk/Rj9IP0k/Sj9LP0w/Vz9YP1k/Wj9bP1w/XT9eP18/YD9hP2I/Yz9kP2U/Zj9nP2g/aT9qP2s/bD9tP24/bz9wP3E/cj9zP3Q/dT92P3c/ez98P38/gEAXQBhAGUAaQBtAHEAdQB5AH0AgQCFAIkAjQCRAJUAmQCdAKEApQCpARUBGQEdASEBOQFFAUkBTQFRAVUBWQFdAWEBZQFpAW0BcQF1AXkBfQGBAYUBiQGNAZEBlQGZAZ0BoQGlAakBrQGxAbUBuQG9AcEBxQHJAc0B0QHVAdkB3QHhAeUB7QHxAgEEXQRhBGUEaQRtBHEEdQR5BH0EgQSFBIkEjQSRBJUEmQSdBKEEpQSpBRUFGQUdBSEFQQVNBVEFVQVZBV0FYQVlBWkFbQVxBXUFeQV9BYEFhQWJBY0FkQWVBZkFnQWhBaUFqQWtBbEFtQW5Bb0FwQXFBckFzQXRBdUF2QXdBeEF5QXpBe0GBQhZCF0IYQhlCGkIbQhxCHUIeQh9CIEIhQiJCI0IkQiVCJkInQihCKUIqQitCRUJGQkdCSEJNQk5CT0JQQlFCUkJTQlVCVkJYQllCWkJbQlxCXUJeQl9CYEJhQmJCY0JkQmVCZkJnQmhCaUJqQmtCbEJtQm5Cb0JwQnFCckJzQnRCdUJ2QndCeEJ5QnpCe0J8QoBCgUMXQxhDGUMaQxtDHEMdQx5DH0MgQyFDIkMjQyRDJUMmQydDKEMpQypDK0MsQy5DSENJQ0pDS0NNQ05DT0NQQ1FDUkNTQ1hDWUNaQ1tDXENdQ15DX0NgQ2FDYkNjQ2RDZUNmQ2dDaENpQ2pDa0NsQ21DbkNvQ3BDcUNyQ3NDdEN1Q3ZDd0N4Q3lDekN7Q3xDfUN+Q4FEF0QYRBlEGkQbRBxEHUQeRB9EIEQhRCJEI0QkRCVEJkQnRChEKUQqRCtELEQtRC5EL0RIRElESkRLRExETURORE9EUERRRFJEU0RURFVEVkRXRFhEWURaRFtEXERdRF5EX0RgRGFEYkRjRGREZURmRGdEaERpRGpEa0RsRG1EbkRvRHBEcURyRHNEdER1RHZEd0R4RHlEekR7RHxEfUR+RIFFF0UYRRlFGkUbRRxFHUUeRR9FIEUhRSJFI0UkRSVFJkUnRShFKUUqRStFLEUtRS5FMUUyRTNFR0VIRUlFSkVLRUxFTUVORU9FUEVRRVJFU0VURVVFVkVXRVhFWUVaRVtFXEVdRV5FX0VgRWFFYkVjRWRFZUVmRWdFaEVpRWpFa0VsRW1FbkVvRXBFcUVyRXNFdEV1RXZFd0V4RXlFekV7RXxFfUV+RX9FgUYWRhdGGEYZRhpGG0YcRh1GHkYfRiBGIUYiRiNGJEYlRiZGJ0YoRilGKkYrRixGLUYxRklGSkZLRkxGTUZORk9GUEZRRlJGU0ZURlVGVkZXRlhGWUZaRltGXEZdRl5GX0ZgRmFGYkZjRmRGZUZmRmdGaEZpRmpGa0ZsRm1GbkZvRnBGcUZyRnNGdEZ1RnZGd0Z4RnlGekZ7RnxGfUZ+Rn9GgEaBRwRHE0cVRxZHF0cYRxlHGkcbRxxHHUceRx9HIEchRyJHI0ckRyVHJkcnRyhHKUcqRytHLEctRy5HL0cwRzFHRUdHR0hHSUdKR0tHTEdNR05HT0dQR1FHUkdTR1RHVUdWR1dHWEdZR1pHW0dcR11HXkdfR2BHYUdiR2NHZEdlR2ZHZ0doR2lHakdrR2xHbUduR29HcEdxR3JHc0d0R3VHdkd3R3hHeUd6R3tHfEd9R35Hf0eAR4FHh0gTSBRIFUgWSBdIGEgZSBpIG0gcSB1IHkgfSCBIIUgiSCNIJEglSCZIJ0gpSCpIK0gsSC1ILkgvSDBIMUhFSEdITEhNSE5IT0hQSFFIUkhTSFRIVUhWSFdIWEhZSFpIW0hcSF1IXkhfSGBIYUhiSGNIZEhlSGZIZ0hoSGlIakhrSGxIbUhuSG9IcEhxSHJIc0h0SHVIdkh3SHhIeUh6SHtIfEh9SH5IgEiHSRJJE0kUSRVJFkkXSRhJGUkaSRtJHEkdSR5JH0kgSSFJIkkjSSRJJkkpSSpJK0ksSS1JLkkvSUdJTUlOSVFJUklTSVRJVUlWSVdJWElZSVpJW0lcSV1JXklfSWBJYUliSWNJZEllSWZJZ0loSWlJaklrSWxJbUluSW9JcElxSXJJc0l0SXVJdkl3SXhJeUl6SXtJfEl9SX5Jf0mHSYhJiUoKShJKE0oUShVKFkoXShhKGkobShxKHUoeSh9KIEohSiJKKUorSixKLUouSi9KRkpOSk9KUkpTSlRKVUpWSldKWEpZSlpKW0pcSl5KX0pgSmFKYkpjSmRKZUpmSmdKaEpqSmtKbEptSm5KcEpxSnJKc0p0SnVKdkp3SnhKeUp6SntKfEp9Sn5Kf0qISwhLCUsKSw5LEEsRSxJLE0sUSxVLFksXSxhLGUsbSxxLHUseSx9LIEshSylLKksrSzVLSktLS0xLTUtPS1FLVEtVS1ZLV0tYS1lLWktbS1xLXUteS19LYEthS2JLY0tkS2VLZktnS2hLaUtqS2tLbEtuS29LcEtxS3JLc0t0S3VLdkt3S3hLeUt6S3tLfEt9S35Lf0uAS4FLg0uES4VLiUuMTAZMB0wITApMC0wMTA1MD0wQTBFMEkwTTBRMFUwWTBdMGEwZTBtMHEwdTB5MH0whTCJMJ0wpTCpMLEwtTDRMNUw2TEtMTExNTE9MUUxSTFNMVUxWTFdMWExZTFpMW0xcTF1MXkxgTGFMYkxjTGRMZkxnTGhMaUxqTGxMbUxuTG9McExyTHNMdEx1THdMeEx5THpMe0x8TH1Mfkx/TIBMgUyDTIRMhUyGTIdMiEyJTIpMi0yMTI1NCU0KTQtNDU0OTQ9NEE0STRNNFE0WTRdNGE0ZTRtNHE0dTR5NIE0hTSJNJE0mTSdNK00sTS5NNE01TTdNQU1MTU1NT01QTVNNVE1VTVZNWE1ZTVpNW01dTV5NX01gTWJNY01kTWVNZ01oTWlNak1sTW1Nbk1wTXFNck1zTXVNdk13TXhNek17TXxNfk1/TYBNg02ETYVNhk2ITYlNik2LTY1Njk2PTgFOBE4FTgZOB04ITglOCk4LTgxODU4OTg9OEE4RThJOE04UThVOF04YThlOG04cTh1OHk4fTiBOIU4iTiNOJE4lTiZOJ04oTilOKk4rTixOLU4vTjBOMU4zTjRONU42TjdOOE45TjpOO048Tj1OPk4/TkBOQU5CTkNORE5FTkZOR05ITklOS05MTlFOV05ZTmROgU8BTwNPBE8GTwdPCU8KTwxPDk8PTxBPEk8TTxVPFk8YTxlPG08cTx5PH08hTyJPJE8lTydPKE8qTytPLU8uTzBPMU8zTzRPNk83TzlPOk88Tz1PP09AT0JPQ09FT0ZPSE9JT0tPTE9OT1hPW09mUAhQClALUA1QDlAQUBNQFVAYUBlQGlAbUB1QHlAiUCNQJVAmUCdQKVArUC1QM1A1UDZQN1A4UDlQOlA7UDxQPVA+UFBQUVBSUFNQVFBeUGFQZFBmUGdQaFBpUGpQa1BsUG1QblBvUHBQcVByUHNQdFB1UHZQd1B5UHtQfFB+UH9QgFCBUIJQg1CEUIVQhlCHUIlQilCOUI9RFlEYURpRG1EdUSFRJVEnUShRM1E1UTdROVE7UTxRPlFdUWVRalFsUW5RcFFyUXNRdVF3UXlRe1GAUYJSFlIYUhxSHlIgUiRSJVInUjJSNFI2UjhSOlI8Uj5SP1JpUmpSbFJuUnBSclKBUyJTI1M0UzpTPFNXU19TblNwU3RTgQ==', D = null;
+      function dots(){
+        if (D) return D; D = [];
+        var bin = atob(B64), i, lat, lng, step;
+        for (i = 0; i < bin.length; i += 2) D.push([bin.charCodeAt(i) * 2 - 90, bin.charCodeAt(i + 1) * 2.5 - 180]);
+        for (lat = -64; lat >= -84; lat -= 3){ step = 3 / Math.max(.15, Math.cos(lat * Math.PI / 180)); for (lng = -180; lng < 180; lng += step) D.push([lat, lng]); }
+        D.forEach(function(d){ var la = d[0] * Math.PI / 180, lo = d[1] * Math.PI / 180, r = Math.random(); d.push(Math.cos(la) * Math.cos(lo), Math.sin(la), Math.cos(la) * Math.sin(lo), r > .85 ? '#b8c9cc' : r > .6 ? '#5a8a94' : '#37535a'); });
+        return D;
+      }
+      // the site's three HQ pins (Brooklyn, Shenzhen, Brussels) and its arcs, turned into thin rings around the globe
+      var PINS = [[40.68, -73.94], [22.54, 114.06], [50.85, 4.35]];
+      var RINGS = [{ r: 1.22, inc: .42, node: .3, sp: .55 }, { r: 1.36, inc: -.62, node: 1.9, sp: -.4 }, { r: 1.5, inc: .78, node: 3.6, sp: .3 }];
+      function v3(lat, lng){ var la = lat * Math.PI / 180, lo = lng * Math.PI / 180; return [Math.cos(la) * Math.cos(lo), Math.sin(la), Math.cos(la) * Math.sin(lo)]; }
+      return function(R){
+        var list = dots(), small = R < 26;
+        return { pad: small ? 1.3 : 1.62, pulse: '94,234,212', draw: function(ctx, cx, cy, t, en){
+          en = en || 0;
+          var rot = t * .16, cr = Math.cos(rot), sr = Math.sin(rot), tl = .38, ct = Math.cos(tl), st = Math.sin(tl);
+          // world → screen: spin about the axis, tilt toward the viewer; returns [x, y, depth]
+          function pr(x, y, z, spin){ var X = spin ? x * cr - z * sr : x, Z = spin ? x * sr + z * cr : z; return [X, y * ct - Z * st, y * st + Z * ct]; }
+          var i, k, q, a;
+          ctx.lineWidth = Math.max(.6, R / 260);
+          // graticule: lat every 30° (−60..60), lng every 30°, thin, the back half fainter (the globe is see-through)
+          if (!small){
+            ctx.strokeStyle = '#5a8a94';
+            for (var lat = -60; lat <= 60; lat += 30) for (var ln = -180; ln < 180; ln += 6){ seg(v3(lat, ln), v3(lat, ln + 6)); }
+            for (var lg = -180; lg < 180; lg += 30) for (var lt = -90; lt < 90; lt += 6){ seg(v3(lt, lg), v3(lt + 6, lg)); }
+          }
+          function seg(p0, p1){ var A = pr(p0[0], p0[1], p0[2], true), B = pr(p1[0], p1[1], p1[2], true); ctx.globalAlpha = (A[2] + B[2]) > 0 ? .22 : .07; ctx.beginPath(); ctx.moveTo(cx + A[0] * R, cy - A[1] * R); ctx.lineTo(cx + B[0] * R, cy - B[1] * R); ctx.stroke(); }
+          // continent dots, front bright, back faint
+          var dr = Math.max(.55, R / (small ? 30 : 120)), skip = small ? 3 : R < 70 ? 2 : 1;
+          for (i = 0; i < list.length; i += skip){
+            var d = list[i]; q = pr(d[2], d[3], d[4], true);
+            ctx.globalAlpha = q[2] >= 0 ? Math.min(1, .4 + .55 * q[2] + .3 * en) : .1 + .1 * en; ctx.fillStyle = en > .5 && d[5] === '#37535a' ? '#5a8a94' : d[5];
+            ctx.fillRect(cx + q[0] * R - dr, cy - q[1] * R - dr, dr * 2, dr * 2);
+          }
+          // pins on the front: a teal core with a glow
+          PINS.forEach(function(pn){ var v = v3(pn[0], pn[1]); q = pr(v[0], v[1], v[2], true); if (q[2] < .05) return; glow(cx + q[0] * R, cy - q[1] * R, Math.max(1.4, R / 70), .9); });
+          function glow(x, y, r, al){ var g = ctx.createRadialGradient(x, y, 0, x, y, r * 4); g.addColorStop(0, 'rgba(94,234,212,' + al + ')'); g.addColorStop(.3, 'rgba(45,212,191,' + al * .5 + ')'); g.addColorStop(1, 'rgba(45,212,191,0)'); ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 4, 0, Math.PI * 2); ctx.fill(); }
+          // the arcs as rings: tilted circles around the globe, each with a pin of light travelling along it;
+          // the part behind the globe is dimmer
+          RINGS.forEach(function(rg, ri){
+            var ci = Math.cos(rg.inc), si = Math.sin(rg.inc), cn = Math.cos(rg.node), sn = Math.sin(rg.node), prev = null, n = 96;
+            function pt(u){ var x = Math.cos(u) * rg.r, z = Math.sin(u) * rg.r, y = z * si; z = z * ci; var X = x * cn - z * sn, Z = x * sn + z * cn; return pr(X, y, Z, false); }
+            ctx.lineWidth = Math.max(.7, R / 200);
+            for (k = 0; k <= n; k++){
+              q = pt(k / n * Math.PI * 2);
+              if (prev){ var behind = (prev[2] + q[2]) < 0 && Math.hypot((prev[0] + q[0]) / 2, (prev[1] + q[1]) / 2) < 1; ctx.globalAlpha = behind ? .1 : .55 + .4 * en; ctx.strokeStyle = ri ? '#2dd4bf' : '#5eead4'; ctx.beginPath(); ctx.moveTo(cx + prev[0] * R, cy - prev[1] * R); ctx.lineTo(cx + q[0] * R, cy - q[1] * R); ctx.stroke(); }
+              prev = q;
+            }
+            if (!small){ a = t * rg.sp + ri * 2.1; q = pt(a); var hid = q[2] < 0 && Math.hypot(q[0], q[1]) < 1; if (!hid) glow(cx + q[0] * R, cy - q[1] * R, Math.max(1.2, R / 90), .85); }
+          });
+          ctx.globalAlpha = 1;
+        } };
+      };
+    })();
+
+    // when the hero planet sits on the mission switcher row (phones, tablets, ~1024), a drawing that reaches past (June's curl and mobile, the AB logo)
+    // her planet box. Measure the page and move her into the bigger clear strip, above the switcher (under the fixed
+    // header) or below it (above the summary), sized to fit. UP / DN / SIDE = how far it reaches (× R) up, down and to each side.
+    function heroFit(el, R0, UP, DN, SIDE){
+      var out = { R: R0, dy: 0, dx: 0 };
+      if (!el || !el.closest || !el.closest('#hero')) return out;
+      var sw = document.getElementById('mswitch'), nav = document.querySelector('.ab_nav_component'), sum = document.querySelector('.ab_dbh_sum');
+      if (!sw) return out;
+      var y0 = window.pageYOffset || 0, pr = el.getBoundingClientRect(), s = sw.getBoundingClientRect();
+      var cx = pr.left + pr.width / 2, cy = pr.top + pr.height / 2 + y0, sTop = s.top + y0, sBot = s.bottom + y0;
+      if (cx + SIDE * R0 < s.left || cx - SIDE * R0 > s.right || cy - UP * R0 > sBot || cy + DN * R0 < sTop) return out;
+      var hb = nav ? nav.getBoundingClientRect().bottom : 0, lim = sum ? sum.getBoundingClientRect().top + y0 : sBot + 4 * R0;
+      var up = (sTop - 8 - (hb + 8)) / (UP + DN), dn = (lim - 8 - (sBot + 8)) / (UP + DN);
+      var R = Math.max(R0 * .4, Math.min(R0, Math.max(up, dn)));
+      var top = up >= dn ? hb + 8 : sBot + 8;
+      // below the switcher, the eyebrow line ("Mission debrief · 03 / 05") can still run under her: then start below it
+      var eb = up < dn && document.querySelector('.ab_dbh_eyebrow');
+      if (eb && document.createRange){
+        var rg = document.createRange(); rg.selectNodeContents(eb); var er = rg.getBoundingClientRect();
+        if (er.width && cx - SIDE * R < er.right && cx + SIDE * R > er.left && top + (UP + DN) * R > er.top + y0){
+          top = er.bottom + y0 + 8; R = Math.max(R0 * .4, Math.min(R0, (lim - 8 - top) / (UP + DN)));
+        }
+      }
+      out.R = R; out.dy = top + UP * R - cy;
+      // and keep the mobile on screen sideways
+      var W = document.documentElement.clientWidth;
+      if (cx + SIDE * R > W - 6) out.dx = W - 6 - SIDE * R - cx; else if (cx - SIDE * R < 6) out.dx = 6 + SIDE * R - cx;
+      return out;
+    }
+    /* ---- kip: baby June's head, with the crib mobile turning around her ---- */
+    // Angelino 2026-10-06: June's head is the planet and the rings are the nursery mobile spinning. The head is the real 3D
+    // character (shot on the live kipvillage.com scene against its green booth: vendor/kip/june-head.webp); the rings are the
+    // mobile's wire arms, its butter stars and mint/rose balls hanging on short strings, the half behind her head dimmer.
+    SIG.kip = (function(){
+      var img = null, ok = false, waits = [];
+      function load(){
+        if (img) return; img = new Image(); img.decoding = 'async';
+        img.onload = function(){ ok = true; waits.forEach(function(f){ f(); }); waits = []; };
+        img.src = VENDOR + 'kip/june-head.webp';
+      }
+      // the cut-out is 373 × 357: the skull is ~290 px wide, centered at (186, 206); the curl rises above it
+      var IW = 373, IH = 357, SKULL = 290, SCX = 186, SCY = 206;
+      var STAR = '#FFC94A', MINT = '#5FD3A8', ROSE = '#FF8FA3', WIRE = '#FFF4E6';
+      // the mobile's arm: radius (× R), tilt, turn speed, and what hangs from it
+      // one ring (Angelino 2026-10-07: one mobile, not two)
+      var ARMS = [
+        { r: 1.5, open: .28, tilt: -.14, sp: .32, items: ['star', 'mint', 'star', 'rose', 'star', 'mint', 'star', 'rose'] }
+      ];
+      function star(ctx, x, y, s, hi){
+        ctx.beginPath();
+        for (var i = 0; i < 10; i++){ var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? s * .48 : s; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+        ctx.closePath();
+        var g = ctx.createRadialGradient(x - s * .3, y - s * .35, s * .1, x, y, s * 1.1);
+        g.addColorStop(0, hi ? '#FFF1BF' : '#FFE38A'); g.addColorStop(.55, STAR); g.addColorStop(1, '#E2A21C');
+        ctx.fillStyle = g; ctx.lineJoin = 'round'; ctx.lineWidth = s * .28; ctx.strokeStyle = g; ctx.stroke(); ctx.fill();
+      }
+      function ball(ctx, x, y, s, col, hi){
+        var g = ctx.createRadialGradient(x - s * .35, y - s * .4, s * .08, x, y, s);
+        g.addColorStop(0, hi ? '#ffffff' : 'rgba(255,255,255,.9)'); g.addColorStop(.35, col); g.addColorStop(1, col === MINT ? '#2E9E76' : '#D9607A');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+      }
+      return function(R0, el){
+        load();
+        var F = heroFit(el, R0, 1.15, .95, 1.62), R = F.R, DY = F.dy, DX = F.dx;
+        var small = R < 26;
+        function arms(ctx, cx, cy, t, front, en){
+          ARMS.forEach(function(A, ai){
+            if (small && ai) return;
+            // the ring plane sits at her chin, so the pieces cross below her eyes
+            var ca = Math.cos(A.tilt), sa = Math.sin(A.tilt), so = Math.sin(A.open), rr = A.r * R;
+            function pt(u){ var ex = rr * Math.cos(u), ey = rr * so * Math.sin(u); return [cx + ex * ca - ey * sa, cy + R * .24 + ex * sa + ey * ca, Math.sin(u)]; }
+            // the wire: the far half first (behind her head), the near half after it
+            ctx.lineWidth = Math.max(.8, R / 110); ctx.strokeStyle = WIRE; ctx.lineCap = 'round';
+            var prev = null, n = 72;
+            for (var k = 0; k <= n; k++){
+              var p = pt(k / n * Math.PI * 2);
+              if (prev && ((p[2] + prev[2]) > 0) === front){ ctx.globalAlpha = front ? .7 + .25 * en : .28; ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(p[0], p[1]); ctx.stroke(); }
+              prev = p;
+            }
+            // the hanging pieces turn with the arm; each swings a little on its string
+            var N = A.items.length, rot = t * A.sp;
+            A.items.forEach(function(kind, i){
+              var u = rot + i / N * Math.PI * 2, p = pt(u);
+              if ((p[2] > 0) !== front) return;
+              var depth = .82 + .18 * p[2], s = Math.max(1.6, R * (small ? .2 : .13)) * depth, len = R * (small ? .12 : .17) * depth;
+              var sw = Math.sin(t * 1.7 + i * 1.9 + ai) * .16 * (1 + en), hx = p[0] + Math.sin(sw) * len, hy = p[1] + Math.cos(sw) * len;
+              ctx.globalAlpha = front ? 1 : .55;
+              if (!small){ ctx.lineWidth = Math.max(.6, R / 160); ctx.strokeStyle = WIRE; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(hx, hy); ctx.stroke(); }
+              if (kind === 'star') star(ctx, hx, hy + s * .8, s * 1.1, en > .3); else ball(ctx, hx, hy + s * .8, s * .82, kind === 'mint' ? MINT : ROSE, en > .3);
+            });
+          });
+          ctx.globalAlpha = 1;
+        }
+        return { pad: Math.max(small ? 1.75 : 1.85, (Math.max(Math.abs(DY), Math.abs(DX)) + 1.7 * R) / R0), boost: .5, pulse: '255,201,74', ready: function(f){ if (ok) f(); else waits.push(f); }, draw: function(ctx, cx, cy, t, en){
+          en = en || 0; cx += DX; cy += DY;
+          arms(ctx, cx, cy, t, false, en);
+          if (ok){
+            // her head: the skull fills 80% of the planet circle, so the mobile stays inside the planet's reach; a slow sway
+            // charged: a slow, soft bounce (Angelino 2026-10-07: much slower than the first wobble)
+            var sc = R * 1.6 / SKULL, w = IW * sc, h = IH * sc, hop = en * Math.abs(Math.sin(t * 1.4)) * R * .08;
+            ctx.save(); ctx.translate(cx, cy + Math.sin(t * .9) * R * .025 - hop); ctx.rotate(Math.sin(t * .55) * .07);
+            ctx.drawImage(img, -SCX * sc, -SCY * sc, w, h); ctx.restore();
+          }
+          arms(ctx, cx, cy, t, true, en);
+        } };
+      };
+    })();
+
+    /* ---- AB Identity: the logo, tilted and solid, with a real planet in the mark's planet ---- */
+    // Angelino 2026-10-07: the A and B white, tilted a little and extruded so they read 3D, a shine sweeping over them on
+    // hover. The planet fills the mark's circle, in the style of the About page's planet (the core gas texture in the brand
+    // oranges), and its thin rings fill the logo's own negative space: they're clipped to the mark's planet shape, so they
+    // run exactly where the swoosh cuts the A's crossbar and the B's top loop. Logo units: AB.MARK, 490.16 × 241.75,
+    // planet circle r 98 at (240, 121). The texture is the core planet's own (`.tex` --tex), built under this canvas.
+    // The word "Identity" in the hero title turns to the site's starfield outline (.t-outline) so the logo can sit big behind it.
+    SIG['ab-identity'] = (function(){
+      var CX = 240, CY = 121, PR = 95, TILT = -21.5 * Math.PI / 180, LTILT = -6 * Math.PI / 180;
+      var COLS = ['#ffd29a', '#ff8a4c', '#6b2b16', '#ffb27a', '#a44a1f', '#ffe6cf', '#c2451a'];
+      function sil(k){
+        // the letters (A, its leg, B) as one white silhouette on an offscreen canvas, logo units × k, 10-unit margin
+        var M = AB.MARK; if (!M || !window.Path2D) return null;
+        var c = document.createElement('canvas'), x = c.getContext('2d');
+        c.width = Math.ceil(510 * k); c.height = Math.ceil(262 * k); x.scale(k, k); x.translate(10, 10); x.fillStyle = '#fff';
+        try { [M.a, M.leg, M.b].forEach(function(d){ x.fill(new Path2D(d)); }); } catch(e){ return null; }
+        return c;
+      }
+      function tint(src, col){
+        var c = document.createElement('canvas'); c.width = src.width; c.height = src.height; var x = c.getContext('2d');
+        x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); return c;
+      }
+      var titled = false;
+      function outlineTitle(){
+        // "AB Identity" → the last word in the starfield outline style (the CSS class already ships in ab-core.css)
+        // core's hero toys (39-herodrag) split the title into draggable .w word spans just after the page bundles run, so
+        // mark the last word once that split exists (or wrap it ourselves if the toys never run: no GSAP / Draggable)
+        if (titled) return; titled = true;
+        var tries = 0;
+        (function mark(){
+          var h = document.getElementById('heroTitle'); if (!h) return;
+          var ws = h.querySelectorAll('.w');
+          if (ws.length > 1){ ws[ws.length - 1].classList.add('t-outline'); return; }
+          if (++tries < 20) return setTimeout(mark, 100);
+          if (h.children.length) return;
+          var t = h.textContent, i = t.lastIndexOf(' '); if (i < 0) return;
+          h.innerHTML = esc(t.slice(0, i + 1)) + '<span class="t-outline">' + esc(t.slice(i + 1)) + '</span>';
+        })();
+      }
+      return function(R0, el){
+        var hero = el && el.closest && el.closest('#hero'); if (hero) outlineTitle();
+        // the logo reaches ~0.8R up, ~0.88R down (with the extrusion) and ~1.66R to each side (tilt included) at the hero's 2.9R width
+        var F = hero ? heroFit(el, R0, .82, .88, 1.66) : { R: R0, dx: 0, dy: 0 }, R = F.R, DX = F.dx, DY = F.dy;
+        var small = R < 26, k = R * (hero ? 2.9 : 2.3) / 490.16, dpr = Math.min(2, window.devicePixelRatio || 1);
+        var S = sil(k * dpr), face = S && tint(S, '#F2F0EA'), side = S && tint(S, '#4d3f3a'), edge = S && tint(S, '#7d6d66');
+        var PP = null; try { PP = window.Path2D && AB.MARK ? new Path2D(AB.MARK.planet) : null; } catch(e){}
+        var texImg = null, texTry = 0, tex = el && el.querySelector('.tex');
+        function getTex(){
+          if (texImg || !tex || texTry++ % 30) return;
+          var v = tex.style.getPropertyValue('--tex'), m = v && v.match(/url\(["']?(.*?)["']?\)$/);
+          if (m){ var im = new Image(); im.onload = function(){ texImg = im; }; im.src = m[1]; texTry = 1e9; }
+        }
+        function rings(ctx, front, t, en, overPlanet){
+          // thin bands on one tilted plane. Off the planet they're clipped to the mark's planet shape (the swoosh fills
+          // the A's crossbar and the B's top loop); over the planet the near half is drawn whole, so the rings pass in
+          // front of it instead of showing only the swoosh's thin strip (which read as rings cutting through it)
+          if (!PP) return;
+          ctx.save();
+          if (overPlanet){ ctx.beginPath(); ctx.arc(0, 0, PR, 0, Math.PI * 2); ctx.clip(); }
+          else { ctx.translate(-CX, -CY); ctx.clip(PP); ctx.translate(CX, CY); }
+          ctx.rotate(TILT);
+          for (var a = 104, n = 0; a <= 226; a += 5.5, n++){
+            ctx.beginPath();
+            if (front) ctx.ellipse(0, 0, a, a * .17, 0, 0, Math.PI); else ctx.ellipse(0, 0, a, a * .17, 0, Math.PI, Math.PI * 2);
+            ctx.lineWidth = 2.2 + (n % 3) * 1.4; ctx.strokeStyle = COLS[n % COLS.length];
+            ctx.globalAlpha = (front ? .85 : .6) * (.65 + .35 * Math.sin(n * 1.7 + t * .3 * (1 + en))) + .1 * en; ctx.stroke();
+          }
+          ctx.globalAlpha = 1; ctx.restore();
+        }
+        return { pad: Math.max(hero ? 1.6 : 1.3, (Math.max(Math.abs(DX), Math.abs(DY)) + 1.6 * R) / R0), boost: 1, pulse: '255,106,61', draw: function(ctx, cx, cy, t, en){
+          en = en || 0; getTex(); cx += DX; cy += DY;
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(LTILT);
+          // letters: an extrusion down-right, the face, and the shine on hover (source-atop: only the letters are drawn yet)
+          if (S){
+            var w = S.width / dpr, h = S.height / dpr, ox = -(CX + 10) * k, oy = -(CY + 10) * k, d = Math.max(2, Math.round(10 * k));
+            for (var i = d; i > 0; i--) ctx.drawImage(i > 1 ? side : edge, ox + i * .5, oy + i * .85, w, h);
+            ctx.drawImage(face, ox, oy, w, h);
+            if (en > .02){
+              var sx = ((t * .9) % 2.2 - .6) * w + ox, g = ctx.createLinearGradient(sx - w * .12, oy, sx + w * .12, oy + h * .3);
+              g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,' + (.8 * en) + ')'); g.addColorStop(1, 'rgba(255,255,255,0)');
+              ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = g; ctx.fillRect(ox, oy, w, h); ctx.globalCompositeOperation = 'source-over';
+            }
+          }
+          ctx.scale(k, k);
+          if (!small) rings(ctx, false, t, en);
+          // the planet: the core gas texture turning in the circle, lit from the top left
+          ctx.save(); ctx.beginPath(); ctx.arc(0, 0, PR, 0, Math.PI * 2); ctx.clip();
+          ctx.fillStyle = '#a44a1f'; ctx.fillRect(-PR, -PR, PR * 2, PR * 2);
+          if (texImg){
+            ctx.rotate(-16 * Math.PI / 180);
+            var th = PR * 2.3, tw = th * texImg.width / texImg.height, off = (t * 7) % tw;
+            for (var x = -tw * 2 + off; x < PR * 1.6; x += tw) ctx.drawImage(texImg, x, -th / 2, tw, th);
+            ctx.rotate(16 * Math.PI / 180);
+          }
+          var sh = ctx.createRadialGradient(-PR * .35, -PR * .4, PR * .05, 0, 0, PR * 1.02);
+          sh.addColorStop(0, 'rgba(255,236,220,.35)'); sh.addColorStop(.45, 'rgba(255,200,160,0)'); sh.addColorStop(.8, 'rgba(30,6,0,.25)'); sh.addColorStop(1, 'rgba(20,4,0,.7)');
+          ctx.fillStyle = sh; ctx.fillRect(-PR, -PR, PR * 2, PR * 2);
+          ctx.restore();
+          if (!small){ rings(ctx, true, t, en, false); rings(ctx, true, t, en, true); }
+          ctx.restore();
+        } };
+      };
+    })();
+
+    /* ---- Knowledge System: a knowledge graph planet with the KNS satellite as its moon ---- */
+    // Angelino 2026-10-07 (option B): 90 entries (small dots) wired to 10 tag hubs (bright nodes) across a violet sphere, signals
+    // running along the links, the far side faint; the site's KNS satellite glyph (core 42-top .sat-ico) orbits as a moon.
+    // Hover: the links light up and the satellite beams to the nearest hub. Colors = the mission's CMS planet palette.
+    SIG['knowledge-system'] = (function(){
+      var TAU = Math.PI * 2;
+      function rnd(n, s){ var a = []; for (var i = 0; i < n; i++){ s = (s * 16807) % 2147483647; a.push((s - 1) / 2147483646); } return a; }
+      function pt(lat, lon){ var c = Math.cos(lat); return [c * Math.cos(lon), Math.sin(lat), c * Math.sin(lon)]; }
+      // 10 hubs (topics) spread evenly over the sphere (golden spiral), 90 entries each linked to 1–2 hubs
+      var NH = 10, H = [], E = [], L = [], r = rnd(900, 11), i, j, q = 0;
+      for (i = 0; i < NH; i++) H.push(pt(Math.asin(1 - 2 * (i + .5) / NH), i * 2.39996 + .4));
+      for (i = 0; i < 90; i++){
+        var h = Math.floor(r[q++] * NH), b = H[h], v = [b[0] + (r[q++] - .5) * .7, b[1] + (r[q++] - .5) * .7, b[2] + (r[q++] - .5) * .7], m = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        E.push([v[0] / m, v[1] / m, v[2] / m]); L.push([E.length - 1, h, r[q++]]);
+        if (r[q++] > .7){ var h2 = (h + 1 + Math.floor(r[q++] * (NH - 1))) % NH; L.push([E.length - 1, h2, r[q++]]); }
+      }
+      for (i = 0; i < NH; i++) for (j = i + 1; j < NH; j++) if (r[q++] > .78) L.push([-1 - i, j, r[q++]]); // hub to hub
+      var SAT = { a: 'M9.5 4l2.5-2.5 2.5 2.5', p: 'M1 9.5h6v5H1zM17 9.5h6v5h-6z', s: 'M7 12h3M14 12h3' };
+      var SP = null;
+      function satPaths(){ if (SP !== null) return SP; SP = false; try { if (window.Path2D) SP = [new Path2D(SAT.a), new Path2D(SAT.p), new Path2D(SAT.s)]; } catch(e){} return SP; }
+      return function(R0, el){
+        // on narrow layouts the hero planet + its satellite's orbit move clear of the mission switcher (heroFit)
+        var F = el && el.closest && el.closest('#hero') ? heroFit(el, R0, 1.05, 1.05, 1.6) : { R: R0, dx: 0, dy: 0 }, R = F.R, DX = F.dx, DY = F.dy;
+        var small = R < 26, rot = 0, tl = .35, ct = Math.cos(tl), st = Math.sin(tl);
+        function proj(v){ var x = v[0] * Math.cos(rot) - v[2] * Math.sin(rot), z = v[0] * Math.sin(rot) + v[2] * Math.cos(rot), y = v[1] * ct - z * st, z2 = v[1] * st + z * ct; return [x, -y, z2]; }
+        function slerp(a, b, f){ var v = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f], m = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) || 1; return [v[0] / m, v[1] / m, v[2] / m]; }
+        function sat(ctx, cx, cy, t, front, en, hubs){
+          // the moon's orbit: a tilted ellipse; its far half is drawn before the planet
+          var u = t * .45, a = R * 1.55, b = R * .42, ti = -.38, ex = Math.cos(u) * a, ey = Math.sin(u) * b, x = cx + ex * Math.cos(ti) - ey * Math.sin(ti), y = cy + ex * Math.sin(ti) + ey * Math.cos(ti);
+          var isFront = Math.sin(u) > 0;
+          if (front){
+            ctx.globalAlpha = .18 + .2 * en; ctx.strokeStyle = '#a597ff'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+            ctx.beginPath(); ctx.ellipse(cx, cy, a, b, ti, 0, Math.PI); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+          }
+          if (isFront !== front) return;
+          if (front && en > .05 && hubs.length){
+            var best = hubs[0]; hubs.forEach(function(hb){ if (hb[2] > best[2]) best = hb; });
+            var g = ctx.createLinearGradient(x, y, cx + best[0] * R, cy + best[1] * R); g.addColorStop(0, 'rgba(236,232,255,' + .8 * en + ')'); g.addColorStop(1, 'rgba(76,141,255,0)');
+            ctx.strokeStyle = g; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx + best[0] * R, cy + best[1] * R); ctx.stroke();
+          }
+          var P = satPaths(), s = Math.max(.5, R / 70) * (front ? 1 : .8);
+          ctx.save(); ctx.translate(x, y); ctx.rotate(ti + Math.cos(u) * .2); ctx.scale(s, s); ctx.translate(-12, -9);
+          ctx.globalAlpha = front ? 1 : .45;
+          if (P){ ctx.lineWidth = 1.3 / s * Math.max(1, s * .7); ctx.strokeStyle = '#ece8ff'; ctx.stroke(P[0]); ctx.stroke(P[2]); ctx.fillStyle = 'rgba(76,141,255,.55)'; ctx.fill(P[1]); ctx.stroke(P[1]); }
+          ctx.fillStyle = '#ece8ff'; ctx.fillRect(10, 8.5, 4, 7);
+          ctx.restore(); ctx.globalAlpha = 1;
+        }
+        return { pad: Math.max(small ? 1.3 : 1.75, (Math.max(Math.abs(DX), Math.abs(DY)) + 1.75 * R) / R0), boost: 1.4, pulse: '165,151,255', draw: function(ctx, cx, cy, t, en){
+          en = en || 0; rot = t * .16; cx += DX; cy += DY;
+          var hubs = H.map(proj);
+          if (!small) sat(ctx, cx, cy, t, false, en, hubs);
+          // the sphere
+          var g = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .05, cx, cy, R);
+          g.addColorStop(0, '#3f33a3'); g.addColorStop(.5, '#211a52'); g.addColorStop(1, '#0d0a20');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+          ctx.globalAlpha = .55; ctx.strokeStyle = '#a597ff'; ctx.lineWidth = Math.max(.8, R / 110); ctx.beginPath(); ctx.arc(cx, cy, R - .5, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+          // links: each drawn as a curve over the surface, with a signal pulse running along it
+          var ents = E.map(proj), seg = small ? 4 : 10;
+          L.forEach(function(l){
+            var A = l[0] < 0 ? H[-1 - l[0]] : E[l[0]], B = H[l[1]], hubLink = l[0] < 0;
+            ctx.beginPath(); var prev = null, zs = 0;
+            for (var k = 0; k <= seg; k++){ var p = proj(slerp(A, B, k / seg)); zs += p[2]; if (k) ctx.lineTo(cx + p[0] * R, cy + p[1] * R); else ctx.moveTo(cx + p[0] * R, cy + p[1] * R); }
+            var front = zs / (seg + 1) > 0;
+            ctx.globalAlpha = front ? (hubLink ? .65 : .5) + .4 * en : .1; ctx.strokeStyle = hubLink ? '#4C8DFF' : '#a597ff'; ctx.lineWidth = Math.max(.7, R / (hubLink ? 100 : 140)) * (1 + .5 * en); ctx.stroke();
+            if (front && !small){
+              var f = ((t * (.25 + .5 * en) + l[2]) % 1), s = proj(slerp(A, B, f));
+              ctx.globalAlpha = .9; ctx.fillStyle = '#ece8ff'; ctx.beginPath(); ctx.arc(cx + s[0] * R, cy + s[1] * R, Math.max(.8, R / 110), 0, TAU); ctx.fill();
+            }
+          });
+          // entries and hubs, front bright and back faint
+          ents.forEach(function(p){ ctx.globalAlpha = p[2] > 0 ? 1 : .2; ctx.fillStyle = '#c4baff'; ctx.beginPath(); ctx.arc(cx + p[0] * R, cy + p[1] * R, Math.max(.8, R / 75) * (p[2] > 0 ? 1 : .7), 0, TAU); ctx.fill(); });
+          hubs.forEach(function(p){
+            if (p[2] < 0){ ctx.globalAlpha = .2; ctx.fillStyle = '#4C8DFF'; ctx.beginPath(); ctx.arc(cx + p[0] * R, cy + p[1] * R, Math.max(1, R / 45) * .7, 0, TAU); ctx.fill(); return; }
+            var X = cx + p[0] * R, Y = cy + p[1] * R, rr = Math.max(1.4, R / 40), gl = ctx.createRadialGradient(X, Y, 0, X, Y, rr * (3 + 2 * en));
+            gl.addColorStop(0, 'rgba(236,232,255,.95)'); gl.addColorStop(.35, 'rgba(76,141,255,.55)'); gl.addColorStop(1, 'rgba(76,141,255,0)');
+            ctx.globalAlpha = 1; ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(X, Y, rr * (3 + 2 * en), 0, TAU); ctx.fill();
+          });
+          ctx.globalAlpha = 1;
+          if (!small) sat(ctx, cx, cy, t, true, en, hubs.filter(function(p){ return p[2] > 0; }));
+        } };
+      };
+    })();
+
+    // styles injected from here, so they ship with the script alone (no stylesheet release)
+    var css = document.createElement('style'); css.id = 'sig-planets';
+    css.textContent = '.ab_planet.is-sig .sphere,.ab_planet.is-sig .pring,.ab_planet.is-sig .tex{opacity:0!important}' +
+      '.ab_planet.is-sig{overflow:visible!important}.ab_planet.is-sig .sig-cv{position:absolute;left:50%;top:50%;pointer-events:none;z-index:2}' +
+      // monitor scene controls: every button at least 24 × 24 (WCAG 2.2 target size); .scn-pp's own size lost to the
+      // `all:unset` on `.scn-ctl button`. Also in ab-mission.css for its next release; injected here so it ships now.
+      '.scn-ctl button{min-width:24px;min-height:24px;box-sizing:border-box}.scn-ctl .scn-pp{width:24px;height:24px}';
+    document.head.appendChild(css);
+    function mount(el, slug){
+      var make = SIG[slug]; if (!make || el.__sig) return; el.__sig = true;
+      el.classList.add('is-sig', 'is-sig-' + slug);
+      var cv = document.createElement('canvas'); cv.className = 'sig-cv'; cv.setAttribute('aria-hidden', 'true'); el.appendChild(cv);
+      var ctx = cv.getContext('2d'), P = null, W = 0, H = 0, raf = 0, on = false, last = 0, T = 6, EN = 0, until = 0, pulseT = -9, ptr = null;
+      function size(){
+        var r = el.getBoundingClientRect(), R = r.width / 2; if (!R) return false;
+        P = make(R, el); var s = R * 2 * P.pad, dpr = Math.min(2, window.devicePixelRatio || 1);
+        cv.style.width = cv.style.height = s + 'px'; cv.style.marginLeft = cv.style.marginTop = (-s / 2) + 'px';
+        W = H = s; cv.width = cv.height = Math.round(s * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        P.R = R; return true;
+      }
+      // supercharge (the v3 site's hover "energize"): the threads speed up, brighten and undulate, one pulse runs out
+      function frame(now){
+        if (!P) return; now = now || 0;
+        var dt = last ? Math.min(.05, (now - last) / 1000) : .016; last = now;
+        // a resting pointer keeps it charged (also when the page scrolls the planet under a still pointer)
+        if (ptr && !reduce){ var br = el.getBoundingClientRect(), qx = ptr[0] - (br.left + br.width / 2), qy = ptr[1] - (br.top + br.height / 2), qr = br.width / 2 * 1.15; if (qx * qx + qy * qy < qr * qr){ if (now >= until) pulseT = now / 1000; until = now + 300; } }
+        var want = now < until ? 1 : 0; EN += (want - EN) * Math.min(1, dt * (want ? 4 : 2.5)); if (EN < .002) EN = 0;
+        if (!reduce) T += dt * (1 + (P.boost != null ? P.boost : 2.4) * EN); // kip: hover only nudges the mobile faster
+        ctx.clearRect(0, 0, W, H); P.draw(ctx, W / 2, H / 2, T, EN);
+        var pa = (now / 1000 - pulseT) / 1.1;
+        if (pa >= 0 && pa < 1){
+          var R = P.R; ctx.globalAlpha = (1 - pa) * .7; ctx.strokeStyle = 'rgb(' + P.pulse + ')'; ctx.lineWidth = Math.max(1, R / 60) * (1 - pa * .6);
+          ctx.beginPath(); ctx.arc(W / 2, H / 2, R * (1 + pa * (P.pad - 1) * .95), 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+        }
+        raf = (on && !reduce) || EN > 0 || pa < 1 ? requestAnimationFrame(frame) : 0;
+      }
+      function charge(ms){
+        if (reduce) return; var now = performance.now();
+        if (now >= until) pulseT = now / 1000;
+        until = now + (ms || 900); if (!raf){ last = 0; raf = requestAnimationFrame(frame); }
+      }
+      if (!size()) return;
+      frame(performance.now());
+      // a planet drawn from an image (kip) paints again once its picture arrives (one still frame under reduced motion)
+      if (P.ready) P.ready(function(){ frame(performance.now()); });
+      var lw = innerWidth; addEventListener('resize', function(){ if (innerWidth !== lw){ lw = innerWidth; if (size()) frame(performance.now()); } });
+      if (window.IntersectionObserver) new IntersectionObserver(function(es){
+        on = es[0].isIntersecting; if (on && !raf && !reduce){ last = 0; raf = requestAnimationFrame(frame); }
+      }, { rootMargin: '100px' }).observe(el);
+      // mouse: charged while the pointer is over the planet (hit-tested by position, since the hero title sits on top
+      // of it); touch: a tap charges it for a moment
+      addEventListener('pointermove', function(e){
+        if (e.pointerType !== 'mouse' || !P || !on) return;
+        var r = el.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2), R = r.width / 2 * 1.15;
+        ptr = [e.clientX, e.clientY]; if (dx * dx + dy * dy < R * R) charge(700);
+      }, { passive: true });
+      document.addEventListener('pointerleave', function(){ ptr = null; });
+      el.addEventListener('pointerdown', function(e){ if (e.pointerType !== 'mouse') charge(1600); });
+    }
+
+    // this page's own planet: the hero + the manifest status card
+    if (SIG[SLUG]){
+      var hp = $('#hero .ab_planet[data-slug]'); if (hp) mount(hp, SLUG);
+      $$('.ab_planet.is-mf, .ab_planet.is-orbit').forEach(function(p){ mount(p, SLUG); });
+    }
+    // the next-mission card, when the next mission has a signature planet
+    if (NEXT && SIG[NEXT.slug]) $$('.ab_next-card .ab_planet').forEach(function(p){ mount(p, NEXT.slug); });
+  })();
+
   /* ===== mission/40-monitor.js ===== */
   /* =========================================================
      MISSION CONTROL monitor · views built from the Mission Channels list
@@ -3481,7 +4116,9 @@ window.Webflow.push(function(){
     function channelView(c){
       // (a mobile still/loop centers its phone inline too, so it doesn't wait on a stylesheet release)
       var v = '<div class="view ' + c.kind + (c.mode === 'light' ? ' light' : '') + '" data-ch="' + esc(c.id) + '" data-kind="' + c.kind + '" role="tabpanel" aria-label="' + esc(c.label) + '"' + (c.kind === 'mobile' ? ' style="display:grid;place-items:center"' : '') + '>';
-      if (c.kind === 'img') v += c.src ? '<img class="full" src="' + esc(c.src) + '" alt="' + esc(c.caption) + '" loading="lazy">' : '';
+      // a recorded loop with an MP4 plays as a muted video (sharper than the size-capped WebP), loaded and played only while its channel is on screen
+      if (c.kind === 'img') v += c.vid ? '<video class="full" muted loop playsinline preload="none" poster="' + esc(c.after) + '" data-src="' + esc(c.vid) + '" aria-label="' + esc(c.caption) + '" style="width:100%;height:100%;object-fit:cover;display:block"></video>'
+        : c.src ? '<img class="full" src="' + esc(c.src) + '" alt="' + esc(c.caption) + '" loading="lazy">' : '';
       else if (c.kind === 'mobile') v += '<div class="phone-f"><div><img src="' + esc(c.src) + '" alt="' + esc(c.caption) + '" loading="lazy"></div></div>';
       else if (c.kind === 'wipe') v += '<div class="wipe"><img src="' + esc(c.before) + '" alt="Design file"><img class="aft" src="' + esc(c.after) + '" alt="Built site"><span class="hdl"><i>⇆</i></span><span class="lab l">Design</span><span class="lab r">Build</span></div>';
       else if (c.kind === 'live-globe') v += '<div class="boot">Booting globe…</div>';
@@ -3494,9 +4131,9 @@ window.Webflow.push(function(){
       return v + '</div>';
     }
     var TYPE = { 'live-globe': 'Live', 'live-map': 'Live', 'wipe': 'Compare', 'mobile': 'Phone', 'img': 'Still', 'logo': 'Vector', 'apps': 'Mockups', 'figma': 'Build', 'phone': 'Phone', 'flow': 'Plan', 'exploded': 'Layers', 'cms': 'CMS', 'sketch': 'Sketch', 'vector': 'Vector', 'graph': 'Graph', 'library': 'Library', 'voice': 'AI + you', 'setup': 'CMS', 'video': 'Video', 'schema': 'Schema', 'portable': 'Model',
-      'tw-loom': 'Play', 'tw-plan': 'Plan', 'tw-app': 'Explore', 'tw-capture': 'Phone', 'tw-cms': 'Try it', 'tw-roadmap': 'Phases' };
+      'tw-loom': 'Play', 'tw-plan': 'Plan', 'tw-app': 'Explore', 'tw-capture': 'Phone', 'tw-cms': 'Try it', 'tw-roadmap': 'Phases', 'kip-plan': 'Plan' };
     var KIND = { 'live-globe': 'LIVE · three.js r128', 'live-map': 'LIVE · d3 v7', 'wipe': 'COMPARE · figma ↔ webflow', 'figma': 'MOCKUP · figma → webflow', 'phone': 'MOCKUP · mobile', 'flow': 'MOCKUP · figjam → build', 'exploded': 'BREAKDOWN · layers', 'cms': 'MOCKUP · cms → site', 'mobile': 'STILL · mobile', 'img': 'STILL', 'logo': 'VECTOR · svg', 'apps': 'MOCKUPS', 'sketch': 'SKETCH · pen + paper', 'vector': 'MOCKUP · illustrator', 'graph': 'MOCKUP · knowledge graph', 'library': 'MOCKUP · insights library', 'voice': 'MOCKUP · voice kit → review', 'setup': 'MOCKUP · cms → site', 'video': 'MOCKUP · video + chapters', 'schema': 'MOCKUP · json-ld → search + ai', 'portable': 'MOCKUP · content model',
-      'tw-loom': 'DEMO · the loom, canvas', 'tw-plan': 'FIGJAM · ideation → wireframes → build', 'tw-app': 'DEMO · dashboard prototype', 'tw-capture': 'DEMO · voice kit, phone app', 'tw-cms': 'DEMO · cms → site + json-ld', 'tw-roadmap': 'ROADMAP · five phases' };
+      'tw-loom': 'DEMO · the loom, canvas', 'tw-plan': 'FIGJAM · ideation → wireframes → build', 'tw-app': 'DEMO · dashboard prototype', 'tw-capture': 'DEMO · voice kit, phone app', 'tw-cms': 'DEMO · cms → site + json-ld', 'tw-roadmap': 'ROADMAP · five phases', 'kip-plan': 'FIGJAM · wireframe → rooms → build' };
     screen.innerHTML = CH.map(channelView).join('') + '<div class="scan"></div><div class="roll"></div><div class="vig"></div><canvas class="noise" id="noise" width="160" height="100"></canvas>' +
       '<i class="brk tl"></i><i class="brk tr"></i><i class="brk bl"></i><i class="brk br"></i><div class="osd" id="osd">CH 1</div>';
     // a recorded loop of the real site (MOCKS[slug].img) is labeled as a recording, not a still
@@ -3507,7 +4144,7 @@ window.Webflow.push(function(){
     var views = $$('.view', screen), chBtns = $$('button', chans), osd = $('#osd'), monLabel = $('#monLabel'), monCap = $('#monCap'), monKind = $('#monKind');
     // coded scenes need this mission's mockup spec for that kind; one broken scene never stops the monitor
     var NEED = { figma: 'els', phone: 'mobile', flow: 'flow', exploded: 'explode', cms: 'cms', sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable',
-      'tw-loom': 'tw', 'tw-plan': 'tw', 'tw-app': 'tw', 'tw-capture': 'tw', 'tw-cms': 'tw', 'tw-roadmap': 'tw' };
+      'tw-loom': 'tw', 'tw-plan': 'tw', 'tw-app': 'tw', 'tw-capture': 'tw', 'tw-cms': 'tw', 'tw-roadmap': 'tw', 'kip-plan': 'plan' };
     views.forEach(function(v, k){
       var c = CH[k], key = NEED[c.kind]; if (!key) return;
       if (!(M.mock && M.mock[key])){ v.innerHTML = '<div class="boot">Mockup coming soon</div>'; return; }
@@ -3531,13 +4168,13 @@ window.Webflow.push(function(){
       seenCh[i] = true; if (CH.length > 1 && Object.keys(seenCh).length >= CH.length && AB.quest) AB.quest('channels');
       // Topicweave: the site's thread cloth knits over the screen from the tab you pressed, then unravels onto the new channel
       var woven = !silent && TWV && !reduce;
-      function show(){ views.forEach(function(v, k){ v.classList.toggle('on', k === i); }); }
+      function show(){ views.forEach(function(v, k){ v.classList.toggle('on', k === i); }); vids(); }
       if (woven){ var sr = screen.getBoundingClientRect(), pt = lastPt && lastPt.t > Date.now() - 800 ? [lastPt.x - sr.left, lastPt.y - sr.top] : [sr.width / 2, sr.height / 2]; TWV(true, pt, function(){ if (curCh === i) show(); TWV(false); }); }
       else show();
       chBtns.forEach(function(b, k){ b.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
       monLabel.textContent = c.label; monCap.textContent = c.caption; monKind.textContent = KIND[tk(c)] || '';
       $('#tCh').textContent = (i + 1) + ' / ' + CH.length;
-      $('#tSrc').textContent = c.kind.indexOf('live') === 0 ? 'Live code' : liveOn(c) ? 'Live site' : c.loop ? 'Recording' : /^tw-/.test(c.kind) ? 'Coded demo' : c.kind === 'wipe' ? 'Figma + site' : /^(figma|phone|flow|exploded|cms|sketch|vector|graph|library|voice|setup|video|schema|portable)$/.test(c.kind) ? 'Mockup' : c.kind === 'logo' || c.kind === 'apps' ? 'Vector' : 'Screenshot';
+      $('#tSrc').textContent = c.kind.indexOf('live') === 0 ? 'Live code' : liveOn(c) ? 'Live site' : c.loop ? 'Recording' : /^(tw|kip)-/.test(c.kind) ? 'Coded demo' : c.kind === 'wipe' ? 'Figma + site' : /^(figma|phone|flow|exploded|cms|sketch|vector|graph|library|voice|setup|video|schema|portable)$/.test(c.kind) ? 'Mockup' : c.kind === 'logo' || c.kind === 'apps' ? 'Vector' : 'Screenshot';
       if (liveOn(c)){ monKind.textContent = 'LIVE · ' + LIVE.host; chBtns[i].querySelector('.t').textContent = 'Live'; }
       osd.textContent = 'CH ' + (i + 1) + ' · ' + c.label;
       if (!silent){ if (!woven) staticBurst(); if (!reduce && hasGsap) gsap.fromTo(osd, { opacity: 0 }, { opacity: 1, duration: .1, repeat: 3, yoyo: true }); }
@@ -3554,7 +4191,15 @@ window.Webflow.push(function(){
       var go = function(){ setCh(i); }, mon = $('#monitor');
       if (AB.lenis && AB.lenis.scrollTo) AB.lenis.scrollTo(mon, { offset: -80, duration: 1.2, onComplete: go }); else { mon.scrollIntoView({ behavior: 'smooth' }); setTimeout(go, 600); }
     });
-    new IntersectionObserver(function(es){ monVisible = es[0].isIntersecting; if (monVisible) boot(CH[curCh], views[curCh]); }, { rootMargin: '200px' }).observe(screen);
+    new IntersectionObserver(function(es){ monVisible = es[0].isIntersecting; vids(); if (monVisible) boot(CH[curCh], views[curCh]); }, { rootMargin: '200px' }).observe(screen);
+    // loop videos: only the showing channel's plays, and only while the monitor is on screen
+    function vids(){
+      views.forEach(function(v, k){
+        var vd = v.querySelector('video.full'); if (!vd) return;
+        if (k === curCh && monVisible){ if (!vd.getAttribute('src')) vd.setAttribute('src', vd.getAttribute('data-src')); var pr = vd.play(); if (pr && pr.catch) pr.catch(function(){}); }
+        else if (!vd.paused) vd.pause();
+      });
+    }
     document.addEventListener('keydown', function(e){
       if (!monVisible || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
       var n = parseInt(e.key, 10); if (n >= 1 && n <= CH.length && n - 1 !== curCh) setCh(n - 1);
@@ -3632,19 +4277,19 @@ window.Webflow.push(function(){
     function liveOn(c){ return !!(LIVE && LIVE.ok && LIVE.pages[c.id]); }
     function liveSite(c, view){
       if (view.__live) return; view.__live = true;
-      var url = LIVE.base + LIVE.pages[c.id], sc = SCENE.get(c.id);
+      var url = LIVE.base + LIVE.pages[c.id], sc = SCENE.get(c.id), ALT = sc ? 'Show the coded demo' : 'Show the screenshot'; // kip's live channel falls back to a still
       if (coarse){ view.insertAdjacentHTML('beforeend', '<a class="cx-open" href="' + esc(url) + '" target="_blank" rel="noopener">Open the live site ↗</a>'); return; }
       var box = document.createElement('div'); box.className = 'cx-live';
       box.innerHTML = '<iframe title="' + esc(c.label) + ', live on ' + esc(LIVE.host) + '" src="' + esc(url) + '" loading="lazy" referrerpolicy="no-referrer"></iframe>';
       var bar = document.createElement('div'); bar.className = 'cx-live-bar';
-      bar.innerHTML = '<a href="' + esc(url) + '" target="_blank" rel="noopener"><i></i>Live · ' + esc(LIVE.host) + ' ↗</a><button type="button">Show the coded demo</button>';
+      bar.innerHTML = '<a href="' + esc(url) + '" target="_blank" rel="noopener"><i></i>Live · ' + esc(LIVE.host) + ' ↗</a><button type="button">' + ALT + '</button>';
       view.appendChild(box); view.appendChild(bar);
       var fr = $('iframe', box), btn = $('button', bar);
       // the page renders at desktop width, scaled down to the screen
       function fit(){ var W = view.clientWidth, H = view.clientHeight; if (!W) return; var k = Math.min(1, W / 1280); fr.style.width = W / k + 'px'; fr.style.height = H / k + 'px'; fr.style.transform = 'scale(' + k + ')'; }
       fit(); if (window.ResizeObserver) new ResizeObserver(fit).observe(view);
       // one class flips between the real page and the coded demo (which pauses while hidden)
-      function show(live){ view.classList.toggle('is-live', live); btn.textContent = live ? 'Show the coded demo' : 'Show the live site'; if (sc){ if (live && sc.hold) sc.hold(); if (!live && sc.resume) sc.resume(); } }
+      function show(live){ view.classList.toggle('is-live', live); btn.textContent = live ? ALT : 'Show the live site'; if (sc){ if (live && sc.hold) sc.hold(); if (!live && sc.resume) sc.resume(); } }
       btn.addEventListener('click', function(){ show(!view.classList.contains('is-live')); });
       show(true);
     }
@@ -3655,28 +4300,6 @@ window.Webflow.push(function(){
       setCh(curCh, true);
     });
     setCh(0, true);
-  })();
-
-  /* ===== mission/45-tw-page.js ===== */
-  /* =========================================================
-     TOPICWEAVE PAGE SEAMS (mission topicweave only)
-     The v3 site ties its sections together with threads; here every section boundary gets a strip of the site's
-     cloth (K.tw.weave, band mode) that knits in from alternating sides as it reaches the screen and unravels
-     once it has left the screen. The wave only runs while a strip is on screen; reduced motion: woven, still.
-     ========================================================= */
-  (function(){
-    var T = SCENE.kit && SCENE.kit.tw; if (!T || !(M.mock && M.mock.tw) || !window.IntersectionObserver) return;
-    // the page's top-level sections (each carries data-frame), not the hero and not sections nested inside them
-    var secs = $$('section[data-frame]').filter(function(s){ return s.id !== 'hero' && !s.parentNode.closest('section'); });
-    secs.forEach(function(sec, i){
-      if (sec.offsetHeight < 80) return;
-      var seam = document.createElement('div'); seam.className = 'tw-seam'; seam.setAttribute('aria-hidden', 'true');
-      sec.classList.add('tw-seam-host'); sec.insertBefore(seam, sec.firstChild);
-      var cloth = T.weave(seam, { mode: 'band', from: i % 2 ? 'right' : 'left', grid: 14, len: 10 });
-      if (reduce){ cloth.set(true); return; }
-      // knits as it comes on screen (a little inside the edge, so it's seen), unravels once it's gone
-      new IntersectionObserver(function(es){ cloth(es[0].isIntersecting); }, { rootMargin: '-8% 0px -8% 0px' }).observe(seam);
-    });
   })();
 
 });

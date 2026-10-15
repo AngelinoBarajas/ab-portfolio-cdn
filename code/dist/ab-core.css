@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core.css v0.33.43 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core.css v0.33.63 · github.com/AngelinoBarajas/ab-portfolio */
 /* body font fallback sized to Geist (Arial measured against it: 102.47% wide), so text keeps its line breaks when Geist
    swaps in and the heroes don't jump (About CLS 0.24 on desktop). Re-declares the Webflow variable: if the body font is
    changed in the Designer, change it here too. Android (no Arial) falls through to plain sans-serif. */
@@ -208,6 +208,11 @@ input.button.is-primary:hover{background-color:var(--_color---text--primary)}
 /* ---------- nav ---------- */
 .ab_nav_bar{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);transition:transform .4s ease}
 .ab_nav_component.is-hidden .ab_nav_bar{transform:translateY(-130%)}
+/* the fixed header box is 88px tall and stays put when the bar slides away: only the bar takes clicks, and not while hidden
+   (it covered the footer's first row of links when the page was scrolled to the bottom) */
+.ab_nav_component{pointer-events:none}
+.ab_nav_component > *{pointer-events:auto}
+.ab_nav_component.is-hidden .ab_nav_bar{pointer-events:none}
 /* Home testimonials: the CMS list wrappers stay out of the quote grid; its empty state never shows */
 .ab_quotes .w-dyn-list,.ab_quotes .w-dyn-items,.ab_quotes .w-dyn-item{display:contents}
 .ab_quotes .w-dyn-empty{display:none}
@@ -427,7 +432,8 @@ input.button.is-primary:hover{background-color:var(--_color---text--primary)}
 .ab_mx_lids{position:absolute;inset:0;pointer-events:none;display:none}
 .ab_mx.is-wake{background:transparent}.ab_mx.is-wake .ab_mx_lids{display:block}
 .ab_mx_lids i,.ab_mx_lids b{position:absolute;inset:0}
-.ab_mx_lids i{--eh:0.01%;background:#000;-webkit-mask-image:radial-gradient(92% var(--eh) at 50% 50%,transparent 74%,#000 100%);mask-image:radial-gradient(92% var(--eh) at 50% 50%,transparent 74%,#000 100%)}
+/* --ew = the eye's half-width: 50% keeps the corners inside the screen during the blinks (92% ran past the edges, so light showed at the sides); the last open widens it */
+.ab_mx_lids i{--eh:0.01%;--ew:50%;background:#000;-webkit-mask-image:radial-gradient(var(--ew) var(--eh) at 50% 50%,transparent 74%,#000 100%);mask-image:radial-gradient(var(--ew) var(--eh) at 50% 50%,transparent 74%,#000 100%)}
 .ab_mx_lids .is-b1{-webkit-backdrop-filter:blur(18px) brightness(.85);backdrop-filter:blur(18px) brightness(.85)}
 .ab_mx_lids .is-b2{-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);opacity:0}
 .ab_mx_stage{position:relative;width:min(100% - 32px,720px);text-align:center}
@@ -750,6 +756,9 @@ input.button.is-primary:hover{background-color:var(--_color---text--primary)}
 .ab_alt-sub{display:block;margin-top:2px;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--_color---brand--signal)}
 .ab_alt-bh{position:absolute;left:50%;bottom:-7px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#07080D;box-shadow:0 0 0 1.5px rgba(255,179,107,.9),0 0 10px 2px rgba(255,106,61,.55)}
 @media (max-width:900px){.ab_alt{display:none}}
+/* quiet HUD (core/20-ui.js): the cursor readout + distance meter fade while they float over section content */
+.ab_hud,.ab_alt{transition:opacity .45s ease}
+html.ab-hud-quiet .ab_hud,html.ab-hud-quiet .ab_alt{opacity:.22}
 /* same nesting as the page: gutters on the full width (padding-global), then the max width inside them (container-large).
    The max width used to include the gutters, so the columns sat ~33px inside the content on each side at 1440.
    Column gap 16px = the card grids' gap (bento, Problems solved), so 3-up cards span 4 columns exactly */
@@ -984,6 +993,8 @@ section:hover > .ab_frame-label{color:var(--_color---ui--select)}
 
 /* ---------- logo (core/22-logo.js inlines the SVG): warp in, the planet spins in as a sphere and opens, letters draw + fill, black-hole hover ---------- */
 .ab_logo-svg{display:block;height:24px;width:auto;overflow:visible;color:inherit}
+/* Webflow's normalize (svg:not(:root){overflow:hidden}) outranks the class: the draw-in stroke was clipped at the viewBox (bottom of the B) */
+.ab_logo-svg:not(:root),.ab_mark:not(:root){overflow:visible}
 .ab_logo-svg path{fill:currentColor;stroke:currentColor;stroke-width:10;stroke-linejoin:round;stroke-opacity:0;transform-box:view-box;transform-origin:240px 121px;transition:transform .9s cubic-bezier(.2,.9,.2,1)}
 .ab_logo-svg.is-draw{animation:ab-logo-warp 1s cubic-bezier(.16,1,.3,1) both}
 .ab_logo-svg.is-draw .lg-m>path{animation:ab-logo-fill .6s ease-out calc(.85s + var(--i) * .12s) both}
@@ -1232,3 +1243,15 @@ div.abx-bad,fieldset.abx-bad{outline:1px dashed color-mix(in srgb,var(--_color--
 /* card arrow (→) sat ~2.5px low: JetBrains Mono's arrow rides below the line box's middle. Line-height 1 + a little bottom
    padding centers the ink in the 34px square (measured from pixels at 2x) */
 .ab_ks-go{line-height:1;padding-bottom:5px}
+
+/* ---------- mission switcher on phones: one swipeable row instead of three wrapped rows (Angelino 2026-10-06).
+   Lives here, not in ab-mission.css: the Missions template head holds CMS bindings, so its CSS link is a Designer-only
+   bump. ab-mission JS scrolls the current mission into view and drops the edge fade once the row is scrolled to its end */
+@media (max-width:767px){
+  .ab_mswitch{flex-wrap:nowrap;min-width:0;width:100%;max-width:100%}
+  .ab_mswitch > .w-dyn-list{min-width:0;width:100%}
+  .ab_mswitch .w-dyn-items{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-right:28px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+  .ab_mswitch .w-dyn-items::-webkit-scrollbar{display:none}
+  .ab_mswitch .w-dyn-items.is-end{-webkit-mask-image:none;mask-image:none}
+  .ab_mswitch_link{flex:none;white-space:nowrap;scroll-snap-align:start}
+}
