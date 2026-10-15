@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-hub v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-hub v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHubInit) return;
@@ -180,6 +180,7 @@ window.Webflow.push(function(){
       callRow.style.setProperty('--cw', Math.max(8, Math.min(16, Math.floor(cc * 10) / 10)) + 'px');
     }
     // after a print the pass keeps GSAP's transform (same tilt); drop it on resize so each breakpoint's tilt applies
+    if (lifted) drop(true);
     var ps = $('[data-hub-pass]'); if (ps && hasGsap && !gsap.isTweening(ps)) gsap.set(ps, { clearProps: 'transform' });
     hang();
   }
@@ -278,11 +279,12 @@ window.Webflow.push(function(){
     if (!quiet) prompt('AB-' + s.no + ' ' + s.short.toUpperCase() + ' ARMED · PRINTING LAUNCH PASS');
     if (!pass) return;
     if (quiet || reduce || !hasGsap){ fillPass(s); hang(); return; }
+    drop(true);
     mon.classList.add('is-printing');
     gsap.killTweensOf(pass);
     // transform only: the pass slides back up into the slot, is refilled while hidden, then feeds out smoothly.
     // .ab_hub-print clips everything above the slot, so no clip-path is animated (it repaints the drop shadow every frame)
-    gsap.timeline({ onComplete: function(){ mon.classList.remove('is-printing'); later(function(){ if (cur === i) heroPlanet(s); }); prompt('AB-' + s.no + ' PASS PRINTED · EXPLORE THE SERVICE FROM THE PASS'); } })
+    gsap.timeline({ onComplete: function(){ mon.classList.remove('is-printing'); if (AB.hubPassSettle) AB.hubPassSettle(); later(function(){ if (cur === i) heroPlanet(s); }); prompt('AB-' + s.no + ' PASS PRINTED · EXPLORE THE SERVICE FROM THE PASS'); } })
       .to(pass, { yPercent: -100, y: -30, rotationX: 12, rotationY: 0, duration: prev > -1 ? .32 : 0, ease: 'power2.in' })
       .add(function(){ fillPass(s, true); hang(); })
       .to(pass, { yPercent: 0, y: 0, rotationX: 0, duration: 1, ease: 'power3.out', delay: .06 });
@@ -317,7 +319,77 @@ window.Webflow.push(function(){
     }
   });
   sws.forEach(function(s, i){ s.addEventListener('click', function(){ print(i); }); });
-  glass(pass, function(){ return mon && mon.classList.contains('is-printing'); });
+  // on desktop the pass only tilts while it's lifted (focus mode below); elsewhere it tilts as before
+  glass(pass, function(){ return (mon && mon.classList.contains('is-printing')) || (growOk() && !lifted); });
+
+  /* ---------- launch pass focus (desktop): hover a moment and the pass lifts, grows and centers itself in the view
+     over a soft dim, then tilts toward the pointer. The hover target is the lifted pass's final rect (not its live rect),
+     so edges don't flicker; once it drops back it stays down until the pointer has left its slot. Keyboard focus lifts
+     it too; Esc, a scroll, a print or a resize drops it. Touch, narrow windows and reduced motion keep the plain pass. ---------- */
+  var printBox = $('[data-hub-print]'), lifted = false, armed = true, liftT = 0, settleT = 0, overPass = false, liftBox = null, liftY = 0, lastScroll = 0, dim = null, ptX = 0, ptY = 0, hasPt = false;
+  var fineMq = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+  function growOk(){ return !!(pass && printBox && hasGsap && !reduce && !coarse && fineMq && fineMq.matches && innerWidth >= 992); }
+  if (pass && printBox){ dim = document.createElement('div'); dim.className = 'hb-pass-dim'; dim.setAttribute('aria-hidden', 'true'); printBox.insertBefore(dim, pass); }
+  // the pass's layout box (without its transform)
+  function homeRect(){ var w = printBox.getBoundingClientRect(); return { l: w.left + pass.offsetLeft, t: w.top + pass.offsetTop, w: pass.offsetWidth, h: pass.offsetHeight }; }
+  function inBox(x, y, b, m){ return x >= b.l - m && x <= b.l + b.w + m && y >= b.t - m && y <= b.t + b.h + m; }
+  function lift(px, py){
+    if (lifted || !growOk() || (mon && mon.classList.contains('is-printing'))) return;
+    var h = homeRect(), vw = document.documentElement.clientWidth, vh = innerHeight;
+    var s = Math.max(1, Math.min(1.12, (vw - 64) / h.w, (vh - 48) / h.h)), W = h.w * s, H = h.h * s;
+    var cx = h.l + h.w / 2, cy = h.t + h.h / 2, x = vw / 2 - cx, y = vh / 2 - cy, m = 48;
+    // the lifted pass always ends up under the pointer (48px in from its edges), so it can't slide away from the cursor
+    if (px != null){
+      x = Math.min(Math.max(x, px + m - cx - W / 2), px - m - cx + W / 2);
+      y = Math.min(Math.max(y, py + m - cy - H / 2), py - m - cy + H / 2);
+    }
+    lifted = true; liftY = scrollY;
+    liftBox = { l: cx + x - W / 2, t: cy + y - H / 2, w: W, h: H };
+    printBox.classList.add('is-focus', 'is-dim'); pass.classList.add('is-lifted');
+    gsap.set(pass, { transformOrigin: '50% 50%', transformPerspective: 1000 });
+    gsap.to(pass, { x: x, y: y, scale: s, duration: .6, ease: 'power3.out', overwrite: 'auto' });
+  }
+  function drop(instant){
+    clearTimeout(liftT);
+    if (!lifted) return;
+    lifted = false; armed = false; liftBox = null;
+    printBox.classList.remove('is-dim'); pass.classList.remove('is-lifted');
+    pass.style.setProperty('--tx', '0px'); pass.style.setProperty('--ty', '0px');
+    function done(){ if (lifted) return; printBox.classList.remove('is-focus'); gsap.set(pass, { transformOrigin: '50% 0%' }); }
+    if (instant){ gsap.killTweensOf(pass); gsap.set(pass, { x: 0, y: 0, scale: 1, rotationX: 0, rotationY: 0 }); done(); return; }
+    gsap.to(pass, { x: 0, y: 0, scale: 1, rotationX: 0, rotationY: 0, duration: .55, ease: 'power3.inOut', overwrite: 'auto', onComplete: done });
+  }
+  // the pass can arrive under a still mouse (scrolled to it, or it printed there): once the scroll settles and the
+  // print is done, lift it if the pointer is over it. Retries while either is still moving.
+  function settle(){
+    clearTimeout(settleT);
+    if (lifted || !armed || !hasPt || !growOk()) return;
+    if ((mon && mon.classList.contains('is-printing')) || Date.now() - lastScroll < 150){ settleT = setTimeout(settle, 160); return; }
+    if (inBox(ptX, ptY, homeRect(), 0)) lift(ptX, ptY);
+  }
+  AB.hubPassSettle = settle;
+  if (pass && printBox){
+    pass.addEventListener('pointerenter', function(e){
+      overPass = true;
+      if (e.pointerType !== 'mouse' || !armed || lifted || !growOk()) return;
+      clearTimeout(liftT);
+      // a short dwell, so a pointer passing over the pass on the way down the page doesn't lift it
+      liftT = setTimeout(function(){ if (overPass && armed && Date.now() - lastScroll > 150 && !(mon && mon.classList.contains('is-printing'))) lift(ptX, ptY); else settle(); }, 180);
+    });
+    pass.addEventListener('pointerleave', function(){ overPass = false; if (!lifted) clearTimeout(liftT); });
+    document.addEventListener('pointermove', function(e){
+      ptX = e.clientX; ptY = e.clientY; if (e.pointerType === 'mouse') hasPt = true;
+      if (lifted){ if (e.pointerType === 'mouse' && !inBox(ptX, ptY, liftBox, 10)) drop(); return; }
+      if (!armed && !inBox(ptX, ptY, homeRect(), 2)) armed = true;
+    }, { passive: true });
+    document.documentElement.addEventListener('mouseleave', function(){ drop(); });
+    addEventListener('scroll', function(){ lastScroll = Date.now(); if (lifted && Math.abs(scrollY - liftY) > 24) drop(); else if (!lifted){ clearTimeout(settleT); settleT = setTimeout(settle, 200); } }, { passive: true });
+    addEventListener('blur', function(){ drop(); });
+    // keyboard: tabbing into the pass lifts it (centered), tabbing out or Esc drops it
+    pass.addEventListener('focusin', function(e){ var t = e.target; if (!lifted && t.matches && t.matches(':focus-visible') && growOk()){ armed = true; lift(null, null); } });
+    pass.addEventListener('focusout', function(e){ if (lifted && !(e.relatedTarget && pass.contains(e.relatedTarget))) drop(); });
+    document.addEventListener('keydown', function(e){ if (lifted && (e.key === 'Escape' || e.key === 'Esc')) drop(); });
+  }
   function peek(i){
     if (!board) return;
     peekEls.forEach(function(p, j){
@@ -383,6 +455,35 @@ window.Webflow.push(function(){
     return 'M' + A[0].toFixed(1) + ' ' + A[1].toFixed(1) + ' Q' + (mx - dy * bend).toFixed(1) + ' ' + (my + dx * bend).toFixed(1) + ' ' + B[0].toFixed(1) + ' ' + B[1].toFixed(1);
   }
   var itin = null, hint = null, ports = [];
+  // the Knowledge-system add-on: a satellite on the map (not a stop) and a chip in the trajectory; shared with the
+  // /process form through localStorage ab:ks, like the route goes through ab:dest
+  var KS_ICO = '<svg class="sat-ico hb-ks-ico" viewBox="0 0 24 12" aria-hidden="true"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg>';
+  var ks = false, ksBtn = null, ksOrb = null; try { ks = localStorage.getItem('ab:ks') === '1'; } catch (e){}
+  function syncKs(){
+    if (ksBtn){ ksBtn.classList.toggle('is-on', ks); ksBtn.setAttribute('aria-pressed', ks ? 'true' : 'false'); $('.hb-kssat-state', ksBtn).textContent = ks ? 'Add-on · on' : '+ Add-on'; }
+    if (!ksOrb){ ksOrb = document.createElement('span'); ksOrb.className = 'hb-ks-orb'; ksOrb.setAttribute('aria-hidden', 'true'); ksOrb.innerHTML = '<i>' + KS_ICO + '</i>'; }
+    var host = main > -1 ? ports[main] : null;
+    if (host && ks){ if (ksOrb.parentNode !== host) host.appendChild(ksOrb); } else if (ksOrb.parentNode) ksOrb.parentNode.removeChild(ksOrb);
+    $$('[data-ks-chip]', panel || document).forEach(function(c){ c.setAttribute('aria-pressed', ks ? 'true' : 'false'); });
+    // the flight plan cards carry a small KNS flag while the add-on rides along (before the 1 / 6 counter)
+    $$('.ab_hub-wp_top').forEach(function(top){
+      var f = $('.hb-ks-flag', top);
+      if (!f){ f = document.createElement('span'); f.className = 'hb-ks-flag'; f.title = 'KNS · Knowledge system rides along'; f.innerHTML = KS_ICO + 'KNS'; top.insertBefore(f, top.lastElementChild); }
+      f.hidden = !ks;
+    });
+    // the flight plan's touchdown planet gets the same satellite on its own orbit
+    var fd = $('.hbf-dock');
+    if (fd){
+      var fk = $('.hbf-ks', fd);
+      if (!fk){ fk = document.createElement('span'); fk.className = 'hbf-ks'; fk.setAttribute('aria-hidden', 'true'); fk.innerHTML = '<i>' + KS_ICO + '</i>'; fd.appendChild(fk); }
+      fk.classList.toggle('is-on', ks);
+    }
+  }
+  function toggleKs(from){
+    ks = !ks; try { localStorage.setItem('ab:ks', ks ? '1' : ''); } catch (e){}
+    syncKs(); toast(ks ? 'Add-on · KNS · Knowledge system' : 'Add-on removed');
+    if (from && hasGsap && !reduce) gsap.fromTo(from, { scale: .92 }, { scale: 1, duration: .5, ease: 'elastic.out(1,.4)', clearProps: 'scale' });
+  }
   if (map){
     map.insertAdjacentHTML('beforeend', '<svg class="hb-map-svg" viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true"><g class="hb-arcs">' +
       ROUTES.map(function(r, k){ return '<path class="hb-arc" data-k="' + r.k + '" d="' + arcD(PORT[r.a], PORT[r.b], k % 2 ? .22 : -.22) + '"/>'; }).join('') +
@@ -399,6 +500,11 @@ window.Webflow.push(function(){
       b.addEventListener('click', function(){ clickPort(s.i); });
       map.appendChild(b); ports.push(b);
     });
+    ksBtn = document.createElement('button'); ksBtn.type = 'button'; ksBtn.className = 'hb-kssat'; ksBtn.style.left = '47%'; ksBtn.style.top = '12%';
+    ksBtn.setAttribute('aria-label', 'KNS, Knowledge system add-on'); ksBtn.setAttribute('aria-pressed', 'false');
+    ksBtn.innerHTML = '<span class="hb-kssat-body"><svg class="sat-ico " viewBox="0 0 24 12" aria-hidden="true"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg></span><span class="hb-port-code">KNS</span><span class="hb-port-n">Knowledge system</span><span class="hb-kssat-state">+ Add-on</span>';
+    ksBtn.addEventListener('click', function(){ toggleKs(ksBtn); });
+    map.appendChild(ksBtn);
     onView(map, function(v){ if (v) $$('.hb-port-pl', map).forEach(build); }, { rootMargin: '600px' });
   }
   function sel(){ return main > -1 ? [main].concat(stops) : []; }
@@ -467,8 +573,9 @@ window.Webflow.push(function(){
         legs += '<li style="--c:' + o.c + '" class="' + (w ? '' : 'is-custom') + '"><b>' + esc(o.short) + ' · ' + esc(o.code) + '</b><small>' + (w ? 'Stop ' + (k + 1) + ' · transfer orbit' : 'Stop ' + (k + 1) + ' · custom transfer, planned on the discovery call') + '</small>' + (w ? '<br>' + esc(w) : '') + '</li>';
       });
       var all = flownAll(chosen);
+      var ksChip = '<div class="hb-pl-k" style="margin-top:14px"><span>Add-on</span></div><div class="hb-pl-pick"><button type="button" class="is-addon" data-ks-chip="" aria-pressed="' + ks + '" style="--c:#E0A458">' + KS_ICO + 'KNS · Knowledge system</button></div>';
       h += '<div class="hb-pl-b"><div class="hb-pl-k"><span>Your trajectory</span><span>' + chosen.length + ' destination' + (chosen.length > 1 ? 's' : '') + '</span></div><ol class="hb-legs">' + legs + '</ol>' +
-        '<div class="hb-flown" style="margin-top:14px">' + (all.length ? 'Flown before · ' + flownLinks(all) : 'No mission has flown this exact trajectory yet · yours could be first') + '</div></div>';
+        '<div class="hb-flown" style="margin-top:14px">' + (all.length ? 'Flown before · ' + flownLinks(all) : 'No mission has flown this exact trajectory yet · yours could be first') + '</div>' + ksChip + '</div>';
       h += '<div class="hb-pl-b' + (step === 3 ? ' is-next' : '') + '">' + (step === 3 ? '<span class="hb-pl-tag">Next</span>' : '') + '<div class="hb-pl-go">' +
         btnHTML('is-primary', '#flight', flightOpen() && fsel.join() === chosen.join() ? 'Fly it again' : 'Launch the flight plan', '→', ' data-launch') + '</div>' +
         '<p class="hb-pl-note">Your flight plan warps in below: six stages, re-plotted for this trajectory.</p></div>';
@@ -477,6 +584,8 @@ window.Webflow.push(function(){
     if (animate && !reduce){ panel.classList.remove('is-ping'); void panel.offsetWidth; panel.classList.add('is-ping'); }
     $$('[data-pick]', panel).forEach(function(b){ b.addEventListener('click', function(){ clickPort(+b.getAttribute('data-pick')); }); });
     $$('[data-stop]', panel).forEach(function(b){ b.addEventListener('click', function(){ clickPort(+b.getAttribute('data-stop')); }); });
+    $$('[data-ks-chip]', panel).forEach(function(b){ b.addEventListener('click', function(){ toggleKs(b); }); });
+    syncKs();
     var rs = $('[data-reset]', panel); if (rs) rs.addEventListener('click', function(){ main = -1; stops = []; drawPlan(false); });
     var go = $('[data-launch]', panel);
     if (go) go.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); launchFlight(); });
@@ -529,6 +638,7 @@ window.Webflow.push(function(){
     dock.insertBefore(planetEl(m, 90, 'hbf-dock-pl'), dock.children[1] || null);
     track.appendChild(dock);
     $$('.ab_planet', track).forEach(build);
+    syncKs();
     // the Process page reads ab:dest (main first, then stops) and pre-fills its star chart + form
     // re-plot: warp back up to the planner on this page (the trajectory stays set; the flight plan stays below until relaunched)
     $('[data-replot]', dock).addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); warp(function(){ goTo($('#trajectory'), true, 20); }, true); });

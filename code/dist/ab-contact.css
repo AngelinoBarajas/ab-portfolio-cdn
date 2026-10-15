@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-contact.css v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-contact.css v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
 /* =========================================================
    CONTACT (/contact) · open a channel. Page <head> <link>.
    Designer classes: section_contact-hero, ab_ct-*; script-built parts: abc-*.
@@ -56,9 +56,9 @@
 .abc-needle::before{content:"";position:absolute;left:-5px;top:0;border:6px solid transparent;border-top-color:var(--ch)}
 .abc-band.is-drag .abc-needle{box-shadow:0 0 16px var(--ch)}
 .abc-chips{display:flex;flex-wrap:wrap;gap:6px}
-.abc-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--_color---neutral--hair-strong);background:none;font-family:var(--_typography---font--mono);font-size:11px;letter-spacing:.04em;color:var(--_color---text--secondary);cursor:pointer;transition:background .2s,border-color .2s,color .2s}
-.abc-chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
-.abc-chip:hover{color:var(--_color---text--primary);border-color:var(--_color---text--primary)}
+.abc-chip{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--_color---neutral--hair-strong);background:none;font-family:var(--_typography---font--mono);font-size:12px;line-height:1.2;color:var(--_color---text--secondary);cursor:var(--hand,pointer);transition:background .2s,border-color .2s,color .2s}
+.abc-chip i{width:9px;height:9px;flex:none;border-radius:50%;background:var(--c)} /* round = pick one (stations); squares elsewhere = pick several */
+.abc-chip:hover{color:var(--_color---text--primary);border-color:var(--c)}
 .abc-chip[aria-pressed="true"]{border-color:var(--c);color:var(--_color---text--primary);background:color-mix(in srgb,var(--c) 14%,transparent)}
 .abc-hint{margin:12px 0 0;min-height:3em;padding:10px 12px;border-left:2px solid var(--ch);background:color-mix(in srgb,var(--ch) 8%,transparent);font-size:14.5px;color:var(--_color---text--secondary)}
 .abc-row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
@@ -68,7 +68,7 @@ textarea.abc-in{min-height:128px;resize:vertical}
 .abc-err{color:#ff5a5a;font-family:var(--_typography---font--mono);font-size:11.5px}
 .abc-err:empty{display:none}
 .abc-go{display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;margin-top:4px}
-.abc-go .button{border:0;cursor:pointer}
+.abc-go .button{border:0;cursor:var(--hand,pointer)}
 .abc-go-n{font-family:var(--_typography---font--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--_color---text--tertiary)}
 .ab_ct-form form.is-sending .abc-go .button{opacity:.7;pointer-events:none}
 
@@ -90,3 +90,12 @@ textarea.abc-in{min-height:128px;resize:vertical}
   .ab_ct-route_btns .button{width:100%}
 }
 @media (prefers-reduced-motion:reduce){.abc-beacon{animation:none}}
+
+/* Other channels › Email: the uppercase display address overflowed its quarter-width cell and clipped "Copy".
+   The address reads in mono lowercase on its own full-width row, Copy tag pinned right */
+.ab_ct-cell .button.is-email{width:100%;justify-content:space-between;gap:10px;padding:0 14px}
+.ab_ct-cell .button.is-email .ab_button-label{min-width:0;overflow:hidden;text-overflow:ellipsis;font-family:var(--_typography---font--mono);font-weight:500;font-size:12.5px;letter-spacing:0;text-transform:none}
+.ab_ct-cell .button.is-email .ab_footer_email-copy{flex:none;font-family:var(--_typography---font--mono);color:var(--_color---text--tertiary)}
+.ab_ct-cell .button.is-email:hover .ab_footer_email-copy{color:inherit}
+/* 992–1439px: four cells left ~190px for the address + Copy, so the cells go two by two */
+@media (min-width:992px) and (max-width:1439px){.ab_ct-cells{grid-template-columns:repeat(2,minmax(0,1fr))}}

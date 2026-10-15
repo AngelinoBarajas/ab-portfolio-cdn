@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-process v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-process v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abProcessInit) return;
@@ -58,7 +58,8 @@ window.Webflow.push(function(){
   }
 
   /* ---------- star chart ---------- */
-  var chart = $('[data-chart]'), ORB = [0.36, 0.52, 0.68, 0.84], dests = [];
+  // phone-size charts: the planets spread outward, clear of the sun and its label
+  var chart = $('[data-chart]'), ORB = chart && chart.clientWidth < 520 ? [0.5, 0.64, 0.78, 0.92] : [0.36, 0.52, 0.68, 0.84], dests = [], chartSat = null;
   if (chart && DEST.length){
     ORB.forEach(function(r){ var o = document.createElement('span'); o.className = 'abp-orbit'; o.style.width = o.style.height = (r * 100) + '%'; chart.appendChild(o); });
     var spin = document.createElement('div'); spin.className = 'abp-spin'; chart.appendChild(spin);
@@ -81,6 +82,15 @@ window.Webflow.push(function(){
       });
       spin.appendChild(b); dests.push(b);
     });
+    // the Knowledge System add-on as a satellite on the outer orbit (upper right, in the open sky): not a stop,
+    // clicking it toggles the add-on, same state as the form chip; the small satellite then circles the main planet
+    var kr = ORB[3] / 2 * 100, ka = (chart.clientWidth < 520 ? -55 : -32) * Math.PI / 180;
+    chartSat = document.createElement('button'); chartSat.type = 'button'; chartSat.className = 'abp-kssat'; chartSat.setAttribute('aria-pressed', 'false');
+    chartSat.setAttribute('aria-label', 'KNS, Knowledge system add-on');
+    chartSat.style.left = (50 + Math.cos(ka) * kr).toFixed(2) + '%'; chartSat.style.top = (50 + Math.sin(ka) * kr).toFixed(2) + '%';
+    chartSat.innerHTML = '<span class="abp-counter"><span class="abp-kssat-body"><svg class="sat-ico " viewBox="0 0 24 12" aria-hidden="true"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg></span><span class="abp-tag">KNS · Knowledge system</span><span class="abp-kssat-state">+ Add-on</span></span>';
+    chartSat.addEventListener('click', function(){ toggleKs(chartSat); });
+    spin.appendChild(chartSat);
   }
   // panel: the stops list + "Add a stop" (script UI; the destination copy itself comes from the CMS)
   var panelBody = $('.ab_chart_panel-body'), stopsBox = null, addBtn = null;
@@ -124,12 +134,17 @@ window.Webflow.push(function(){
   var ship = document.createElement('div'); ship.className = 'abp-ship'; ship.setAttribute('aria-hidden', 'true');
   ship.innerHTML = '<svg viewBox="0 0 44 44"><path class="abp-flame" d="M6 22 L-8 17 L-4 22 L-8 27 Z" fill="#FF6A3D"/><path d="M6 14 H26 L40 22 L26 30 H6 Z" fill="#F2F0EA"/><path d="M14 14 L10 6 H18 L22 14 Z M14 30 L10 38 H18 L22 30 Z" fill="#8A8FA3"/><circle cx="28" cy="22" r="3.5" fill="#4C8DFF"/></svg>';
   // touchdown: the mission's main destination waits at the end of the route (stops orbit it as moons); landing sets off a small celebration
+  // touchdown buttons: the same site buttons as the /services touchdown (primary + two ghosts)
+  function dockBtn(kind, href, label, arrow, attrs){
+    return '<a class="button ' + kind + '" href="' + href + '"' + (attrs || '') + '>' + (kind.indexOf('is-primary') > -1 ? '<span class="ab_button-shine"></span>' : '') +
+      '<span class="ab_button-label">' + label + '</span>' + (arrow ? '<span class="ab_button-arrow" aria-hidden="true">' + arrow + '</span>' : '') + '</a>';
+  }
   var dock = document.createElement('div'); dock.className = 'abp-dock';
   dock.innerHTML = '<div class="abp-dock-sys" aria-hidden="true"><div class="abp-dock-moons"></div><div class="ab_planet abp-dock-pl"></div><div class="abp-burst"></div></div>' +
-    '<div class="abp-dock-txt"><div class="abp-dock-l">Touchdown · <span data-dest-short>Website</span></div><div class="abp-dock-h">Mission <span class="t-outline">live</span></div><div class="abp-dock-acts"><a class="abp-dock-cta" href="#launch">Plan this mission →</a><a class="abp-dock-cta is-replot" href="#chart">↺ Re-plot route</a></div></div>';
+    '<div class="abp-dock-txt"><div class="abp-dock-l">Touchdown · <span data-dest-short>Website</span></div><div class="abp-dock-h">Mission <span class="t-outline">live</span></div><div class="abp-dock-acts">' + dockBtn('is-primary', '#launch', 'Request this mission', '→', ' data-dock-go') + dockBtn('is-ghost', '/contact#call', 'Book a call') + dockBtn('is-ghost', '#chart', 'Re-plot route', '↺', ' data-dock-go') + '</div></div>';
   var dockPl = $('.abp-dock-pl', dock), moons = $('.abp-dock-moons', dock), lastDock = -1;
   // touchdown links are script-built (core binds same-page anchors at load), so they warp + jump here: back to the star chart, or on to the form
-  $$('.abp-dock-cta', dock).forEach(function(a){
+  $$('[data-dock-go]', dock).forEach(function(a){
     a.addEventListener('click', function(e){
       var t = document.getElementById(a.getAttribute('href').slice(1)); if (!t) return;
       e.preventDefault(); e.stopPropagation();
@@ -164,12 +179,14 @@ window.Webflow.push(function(){
     var link = $('[data-dest-link]'); if (link) link.href = '/services/' + d.slug;
     // panel stops: each with a service link, "make main" and remove
     if (stopsBox){
-      stopsBox.innerHTML = stops.length ? '<div class="abp-stops-h">Stops on this mission</div>' + sel.slice(1).map(function(k, n){
+      stopsBox.innerHTML = (stops.length || sel[0] !== 0 ? '<button type="button" class="abp-reset" data-reset="">↺ Reset route</button>' : '') + (stops.length ? '<div class="abp-stops-h">Stops on this mission</div>' : '') + sel.slice(1).map(function(k, n){
         var s = DEST[k];
         return '<div class="abp-stop" style="--c:' + s.c + '"><i aria-hidden="true"></i><span class="abp-stop-n">' + (n + 2) + '</span><a href="/services/' + esc(s.slug) + '">' + esc(s.t1 + ' ' + s.t2) + '</a>' +
           '<button type="button" class="abp-stop-b" data-main="' + k + '" aria-label="Make ' + esc(s.short) + ' the main destination">Main</button>' +
           '<button type="button" class="abp-stop-b is-x" data-remove="' + k + '" aria-label="Remove ' + esc(s.short) + '">×</button></div>';
-      }).join('') : '';
+      }).join('');
+      // back to the default route: the first destination alone (stops cleared)
+      var rst = $('[data-reset]', stopsBox); if (rst) rst.addEventListener('click', function(){ sel = [0]; setMore(false); render(false, 'Route reset · ' + DEST[0].short); });
       $$('[data-main]', stopsBox).forEach(function(b){ b.addEventListener('click', function(){ makeMain(+b.getAttribute('data-main')); }); });
       $$('[data-remove]', stopsBox).forEach(function(b){ b.addEventListener('click', function(){ removeStop(+b.getAttribute('data-remove')); }); });
     }
@@ -213,16 +230,62 @@ window.Webflow.push(function(){
   }
 
   /* ---------- what moves the timeline ---------- */
+  // each factor has its own color (service palette, same hues as the chips); a picked option fills with it and the
+  // gauge arc blends the colors of every factor that stretches the route, weighted by how far it stretches it
+  var ETA_C = ['#146EF5', '#ffd166', '#FF6A3D', '#0AE448', '#5eead4', '#7c5cff'], ETA_T = ['#fff', '#07080d', '#07080d', '#07080d', '#07080d', '#fff'];
   var segs = $$('.ab_eta_seg'), fv = segs.map(function(){ return 1; });
   var BUCKETS = $$('[data-eta-buckets] .ab_eta_bucket').map(function(b){ var t = $('.ab_eta_bucket-t', b), p = $('.ab_eta_bucket-p', b); return [t ? t.textContent : '', p ? p.textContent : '']; });
-  var dial = $('[data-gauge]');
-  if (dial) dial.innerHTML = '<svg viewBox="0 0 300 170"><path class="abp-arc" d="M30 150 A120 120 0 0 1 270 150"/><path class="abp-arc-on" d="M30 150 A120 120 0 0 1 270 150"/>' +
-    '<g class="abp-needle"><line x1="150" y1="150" x2="150" y2="52"/><circle cx="150" cy="150" r="7"/></g>' +
-    '<text class="abp-tickl" x="18" y="168">' + esc((BUCKETS[0] || ['Short hop'])[0]) + '</text><text class="abp-tickl" x="150" y="18" text-anchor="middle">' + esc((BUCKETS[1] || ['Standard orbit'])[0]) + '</text><text class="abp-tickl" x="282" y="168" text-anchor="end">Deep space</text></svg>';
-  var arc = dial && $('.abp-arc-on', dial), needle = dial && $('.abp-needle', dial), arcLen = arc ? arc.getTotalLength() : 0;
-  if (arc){ arc.style.strokeDasharray = arcLen; arc.style.strokeDashoffset = arcLen; }
+  var dial = $('[data-gauge]'), gauge = dial && dial.parentNode, SVGN = 'http://www.w3.org/2000/svg';
+  // console dial: inner tick ring (majors on the bucket lines), blended arc, a light pulse riding the lit arc, glowing needle
+  function ticks(){
+    var s = '';
+    for (var k = 0; k <= 30; k++){
+      var t = k / 30, a = Math.PI * (1 - t), mj = k % 5 === 0 || k === 10 || k === 20, r1 = mj ? 96 : 100, r2 = 106;
+      s += '<line class="abp-tk' + (mj ? ' is-mj' : '') + (k === 10 || k === 20 ? ' is-zone' : '') + '" data-t="' + t.toFixed(3) + '" x1="' + (150 + Math.cos(a) * r1).toFixed(1) + '" y1="' + (150 - Math.sin(a) * r1).toFixed(1) + '" x2="' + (150 + Math.cos(a) * r2).toFixed(1) + '" y2="' + (150 - Math.sin(a) * r2).toFixed(1) + '"/>';
+    }
+    return s;
+  }
+  if (dial){
+    var stopsHtml = ''; for (var gi = 0; gi < 8; gi++) stopsHtml += '<stop offset="0" stop-color="#FF6A3D"/>';
+    dial.innerHTML = '<svg viewBox="0 0 300 170"><defs><linearGradient id="abpArcG" gradientUnits="userSpaceOnUse" x1="23" y1="0" x2="277" y2="0" color-interpolation="linearRGB">' + stopsHtml + '</linearGradient>' +
+      '<radialGradient id="abpFace" cx="150" cy="150" r="140" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
+      '<path class="abp-face" d="M10 150 A140 140 0 0 1 290 150 Z"/><g class="abp-ticks">' + ticks() + '</g>' +
+      '<path class="abp-arc" d="M30 150 A120 120 0 0 1 270 150"/><path class="abp-arc-on" d="M30 150 A120 120 0 0 1 270 150"/><path class="abp-arc-pulse" d="M30 150 A120 120 0 0 1 270 150"/>' +
+      '<g class="abp-needle"><g class="abp-needle-j"><line x1="150" y1="150" x2="150" y2="62"/><circle class="abp-hub-r" cx="150" cy="150" r="11"/><circle cx="150" cy="150" r="6"/></g></g>' +
+      '<text class="abp-tickl" x="18" y="168">' + esc((BUCKETS[0] || ['Short hop'])[0]) + '</text><text class="abp-tickl" x="150" y="12" text-anchor="middle">' + esc((BUCKETS[1] || ['Standard orbit'])[0]) + '</text><text class="abp-tickl" x="282" y="168" text-anchor="end">Deep space</text></svg>';
+    // instrument chrome: status strip with a live readout, corner brackets + rivets, scanlines
+    gauge.classList.add('abp-console');
+    var cTop = document.createElement('div'); cTop.className = 'abp-con-top'; cTop.setAttribute('aria-hidden', 'true');
+    cTop.innerHTML = '<span class="abp-con-led"></span><span class="abp-con-name">Route length</span><span class="abp-con-read">RNG <b>050</b>%</span>';
+    gauge.insertBefore(cTop, dial);
+    var cDeco = document.createElement('div'); cDeco.className = 'abp-con-deco'; cDeco.setAttribute('aria-hidden', 'true'); gauge.appendChild(cDeco);
+  }
+  var arc = dial && $('.abp-arc-on', dial), pulse = dial && $('.abp-arc-pulse', dial), needle = dial && $('.abp-needle', dial), jit = dial && $('.abp-needle-j', dial);
+  var gStops = dial ? $$('#abpArcG stop', dial) : [], tks = dial ? $$('.abp-tk', dial) : [], readN = dial && $('.abp-con-read b', gauge);
+  var arcLen = arc ? arc.getTotalLength() : 0, gs = { r: 0 }, lastGc = '';
+  segs.forEach(function(s, f){ gs['w' + f] = 1; });
+  if (arc){ arc.style.strokeDasharray = arcLen; arc.style.strokeDashoffset = arcLen; arc.setAttribute('stroke', 'url(#abpArcG)'); }
+  if (pulse){ pulse.style.strokeDasharray = '12 ' + Math.ceil(arcLen * 2); pulse.style.strokeDashoffset = arcLen; }
+  // arc position t (0..1 along the semicircle) → gradient offset (the gradient runs along x, the arc is x = 150 - 120cos(πt))
+  function gOff(t){ return (1 - Math.cos(Math.PI * Math.max(0, Math.min(1, t)))) / 2 * 240 / 254 + 7 / 254; }
+  // repaint from the tweened state: arc length, color stops (one band per stretching factor, blended between centers),
+  // lit ticks, readout, and --gc (the color at the needle) for the needle glow + LED
+  function paintArc(){
+    if (!arc) return;
+    var r = Math.max(.04, gs.r), tot = 0, cum = 0, st = [];
+    segs.forEach(function(s, f){ tot += gs['w' + f]; });
+    segs.forEach(function(s, f){ var w = gs['w' + f]; if (w > .01) st.push([(cum + w / 2) / tot * r, ETA_C[f]]); cum += w; });
+    if (!st.length) st = [[0, '#8A8FA3']];
+    var list = [[0, st[0][1]]].concat(st, [[r, st[st.length - 1][1]]]);
+    gStops.forEach(function(n, k){ var p = list[Math.min(k, list.length - 1)]; n.setAttribute('offset', gOff(p[0]).toFixed(4)); n.setAttribute('stop-color', p[1]); });
+    arc.style.strokeDashoffset = arcLen * (1 - r);
+    tks.forEach(function(t){ t.classList.toggle('is-lit', +t.getAttribute('data-t') <= r + .001); });
+    if (readN) readN.textContent = ('00' + Math.round(gs.r * 100)).slice(-3);
+    var gc = st[st.length - 1][1]; if (gc !== lastGc && gauge){ gauge.style.setProperty('--gc', gc); lastGc = gc; }
+  }
   segs.forEach(function(seg, f){
     seg.setAttribute('data-factor', f);
+    var fac = seg.parentNode; if (fac){ fac.style.setProperty('--c', ETA_C[f % 6]); fac.style.setProperty('--tc', ETA_T[f % 6]); }
     $$('.ab_eta_opt', seg).forEach(function(o, v){
       o.setAttribute('role', 'button'); o.tabIndex = 0; o.setAttribute('aria-pressed', 'false');
       function go(){ setFactor(f, v); eta(); }
@@ -238,15 +301,28 @@ window.Webflow.push(function(){
     if (bk && tt) tt.textContent = bk[0]; if (bk && tp) tp.textContent = bk[1];
     if (adds){
       var names = segs.map(function(s){ var n = s.parentNode && $('.ab_eta_factor-name', s.parentNode); return n ? n.firstChild.textContent.trim() : ''; });
-      var on = fv.map(function(v, f){ return v === 2 ? '<span class="abp-add">+ ' + esc(names[f]) + '</span>' : ''; }).join('');
+      var on = fv.map(function(v, f){ return v === 2 ? '<span class="abp-add" style="--c:' + ETA_C[f % 6] + '">+ ' + esc(names[f]) + '</span>' : ''; }).join('');
       adds.innerHTML = on || '<span class="abp-add is-none">Nothing stretching it</span>';
     }
+    if (gauge) gauge.setAttribute('data-bucket', b);
     if (!arc) return;
-    var rot = -90 + 180 * r; arc.style.strokeDashoffset = arcLen * (1 - Math.max(.04, r));
-    if (instant || reduce || !hasGsap) needle.setAttribute('transform', 'rotate(' + rot + ' 150 150)');
-    else gsap.to(needle, { rotation: rot, svgOrigin: '150 150', duration: .9, ease: 'elastic.out(1,.6)' });
+    var rot = -90 + 180 * r, to = { r: r };
+    fv.forEach(function(v, f){ to['w' + f] = v; });
+    if (instant || reduce || !hasGsap){ for (var k in to) gs[k] = to[k]; paintArc(); needle.setAttribute('transform', 'rotate(' + rot + ' 150 150)'); return; }
+    to.duration = .9; to.ease = 'power3.out'; to.overwrite = true; to.onUpdate = paintArc;
+    gsap.to(gs, to);
+    gsap.to(needle, { rotation: rot, svgOrigin: '150 150', duration: .9, ease: 'elastic.out(1,.6)' });
   }
-
+  // idle life while on screen: the needle hums (small random wobble), a light pulse runs up the lit arc
+  if (dial && hasGsap && !reduce){
+    var pl = { p: 0 };
+    var hum = gsap.to(jit, { rotation: function(){ return (Math.random() - .5) * 2.6; }, svgOrigin: '150 150', duration: .45, ease: 'sine.inOut', repeat: -1, repeatRefresh: true, paused: true });
+    var run = gsap.to(pl, { p: 1, duration: 2.4, ease: 'power1.inOut', repeat: -1, repeatDelay: 1.3, paused: true, onUpdate: function(){
+      var fill = arcLen * Math.max(.04, gs.r); pulse.style.strokeDashoffset = -(pl.p * Math.max(0, fill - 12)); pulse.style.opacity = Math.sin(pl.p * Math.PI).toFixed(3);
+    } });
+    if ('IntersectionObserver' in window) new IntersectionObserver(function(es){ var v = es[0].isIntersecting; if (v){ hum.play(); run.play(); } else { hum.pause(); run.pause(); } }).observe(dial);
+    else { hum.play(); run.play(); }
+  }
   /* ---------- the flight: pinned sideways (≥768) or a vertical rail (phones) ---------- */
   var hudN = $('[data-hud-n]'), hudL = $('[data-hud-l]'), countN = $('[data-count-n]');
   var pts = [], len = 0, st = null, wide = false, lastK = -2, CARD_TOP = 200, pinOver = 0, routeSec = $('.section_process-route'), trackW = 0, landed = false, lastBurst = 0, D = 240;
@@ -267,10 +343,10 @@ window.Webflow.push(function(){
     track.style.height = (CARD_TOP + tallest + 40) + 'px';
     var f = CARD_TOP / 200;
     var step = Math.max(380, innerWidth * .3), x0 = Math.min(260, innerWidth * .18), h = track.offsetHeight;
-    // the finale: last card on the left of the screen, the destination planet on the right (the scroll ends there)
+    // the finale: last card on the left of the screen, the destination planet right of center at 58% (was 70%: it sat far right)
     var lastX = x0 + step * (wps.length - 1) + step * .35, viewL = lastX - 72, W = viewL + innerWidth - 40;
     D = Math.round(Math.max(150, Math.min(280, innerWidth * .2, h - 190)));
-    var xp = viewL + innerWidth * .7, dTop = Math.max(10, Math.round((h - D - 130) / 2)), yc = dTop + D / 2;
+    var xp = viewL + innerWidth * .58, dTop = Math.max(10, Math.round((h - D - 130) / 2)), yc = dTop + D / 2;
     dock.style.setProperty('--dock', D + 'px'); dock.style.left = Math.round(xp - 170) + 'px'; dock.style.top = dTop + 'px';
     if (dockPl) dockPl.style.setProperty('--sz', D + 'px');
     trackW = W; track.style.width = W + 'px'; svg.setAttribute('width', W); svg.setAttribute('height', h); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + h);
@@ -348,6 +424,101 @@ window.Webflow.push(function(){
   addEventListener('resize', function(){ if (innerWidth === lastW && (!wide || innerHeight === lastH)) return; lastW = innerWidth; lastH = innerHeight; clearTimeout(rsT); rsT = setTimeout(function(){ build(); if (window.ScrollTrigger) ScrollTrigger.refresh(); }, 250); });
 
   /* ---------- crew: boxes tick in as the lists scroll into view ---------- */
+  /* ---------- crew: a satellite on orbit above the two cards. When it passes over a card it drops a signal cone,
+     the card's edge lights and its checklist re-ticks. Drag it and it springs back to its orbit. The comms bar gets
+     a live waveform. Paused off screen ---------- */
+  (function(){
+    var link = $('.ab_crew_link'), grid = link && link.parentNode, bar = $('.ab_crew_comms'); if (!link) return;
+    var cols = $$('.ab_crew_col', grid);
+    var orbit = document.createElement('div'); orbit.className = 'abp-sat-orbit'; orbit.setAttribute('aria-hidden', 'true');
+    orbit.innerHTML = '<div class="abp-sat"><span class="abp-sat-cone"></span><svg class="sat-ico " viewBox="0 0 24 12" aria-hidden="true"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg></div>';
+    grid.appendChild(orbit); grid.classList.add('has-sat');
+    var sat = $('.abp-sat', orbit), cone = $('.abp-sat-cone', orbit);
+    function ping(col){
+      col.classList.remove('is-ping'); void col.offsetWidth; col.classList.add('is-ping');
+      var lis = $$('.ab_crew_item', col);
+      lis.forEach(function(li, i){ li.classList.remove('is-on'); setTimeout(function(){ li.classList.add('is-on'); }, 140 + 110 * i); });
+    }
+    if (!hasGsap || reduce){ sat.style.left = '50%'; return; }
+    // the orbit: glides back and forth across the section (easing at each end, always on screen) with a slow bob and
+    // roll; a card is pinged each time the satellite crosses its middle, in either direction
+    var o = { p: 0 }, dragging = false, hit = [], W = 0;
+    function measure(){ W = grid.clientWidth; }
+    // width can read 0 at startup (layout not settled yet), so re-measure on view and fall back to a live read
+    function posX(p){ if (!W) measure(); return 8 + Math.max(0, W - 84 - 16) * p; } // 84 = satellite width
+    // phones: the cards stack, so the satellite (smaller) travels down the right side from above the first card to
+    // the gap above the second, and back; each card is pinged at its stop
+    var mq = window.matchMedia ? matchMedia('(max-width: 767px)') : null;
+    function stacked(){ return !!(mq && mq.matches); }
+    function pos(p){ if (!stacked()) return [posX(p), 0]; if (!W) measure(); return [Math.max(0, W - 60 - 12), (cols[1] ? cols[1].offsetTop : 0) * p]; } // 60 = phone satellite width
+    measure(); addEventListener('resize', measure);
+    var loop = gsap.to(o, { p: 1, duration: 10, ease: 'sine.inOut', repeat: -1, yoyo: true, paused: true, onRepeat: function(){ hit = []; }, onUpdate: function(){
+      if (dragging) return;
+      var xy = pos(o.p), x = xy[0], st = stacked(), y = xy[1] + Math.sin(o.p * Math.PI * 4) * (st ? 4 : 6), rot = Math.sin(o.p * Math.PI * 2) * 6;
+      gsap.set(sat, { x: x, y: y, rotation: rot });
+      cols.forEach(function(col, i){
+        var mid = col.offsetLeft + col.offsetWidth / 2, near = st ? (i === 0 ? o.p < .04 : o.p > .96) : Math.abs(x + 42 - mid) < col.offsetWidth * .28;
+        if (near && !hit[i]){ hit[i] = true; ping(col); cone.classList.add('is-on'); setTimeout(function(){ cone.classList.remove('is-on'); }, 1400); }
+      });
+    } });
+    if (window.Draggable){
+      Draggable.create(sat, { type: 'x,y', bounds: grid.parentNode, inertia: !!window.InertiaPlugin,
+        onPress: function(){ dragging = true; cone.classList.remove('is-on'); },
+        onRelease: function(){ var d = this; gsap.delayedCall(.6, function(){ gsap.to(sat, { x: pos(o.p)[0], y: pos(o.p)[1], rotation: 0, duration: 1.2, ease: 'elastic.out(1,.5)', onComplete: function(){ dragging = false; } }); }); } });
+    }
+    if ('IntersectionObserver' in window) new IntersectionObserver(function(es){ if (es[0].isIntersecting){ measure(); loop.play(); } else loop.pause(); }).observe(grid);
+    else loop.play();
+  })();
+  /* ---------- comms bar: the COMMS chip sits over a small signal scope (same look as the /contact signal line: dashed
+     center line, a glowing wave that tapers at both ends, a packet riding it now and then); the updates run to the
+     right. The scope steps through the service colors, one channel at a time. Runs only while on screen ---------- */
+  (function(){
+    var bar = $('.ab_crew_comms'); if (!bar) return;
+    var lab = $('.ab_crew_comms-label', bar), items = Array.prototype.slice.call(bar.children).filter(function(n){ return n !== lab; });
+    var l = document.createElement('div'); l.className = 'abp-comms-l';
+    l.innerHTML = '<div class="abp-comms-top"><i class="abp-comms-dot" aria-hidden="true"></i><span class="abp-comms-ch" aria-hidden="true">CH <b>01</b></span></div>' +
+      '<div class="abp-scope" aria-hidden="true"><svg viewBox="0 0 1000 100" preserveAspectRatio="none"><path class="abp-scope-grid" d="M0 50 H1000"/><path class="abp-scope-wave" d="M0 50 H1000"/></svg><span class="abp-packet"></span></div>';
+    var r = document.createElement('div'); r.className = 'abp-comms-r';
+    items.forEach(function(n){ r.appendChild(n); });
+    var topRow = l.firstChild; if (lab) topRow.insertBefore(lab, topRow.firstChild);
+    bar.insertBefore(l, bar.firstChild); bar.appendChild(r); bar.classList.add('abp-comms');
+    var wave = $('.abp-scope-wave', l), packet = $('.abp-packet', l), chN = $('.abp-comms-ch b', l);
+    var CH = ['#FF6A3D', '#146EF5', '#5eead4', '#0AE448', '#7c5cff', '#ffd166'], ch = 0;
+    l.style.setProperty('--ch', CH[0]);
+    var N = 120, t = 0, bump = null, nextBump = 1.6, nextCh = 7, running = false, last = 0;
+    function draw(){
+      var d = '';
+      for (var i = 0; i <= N; i++){
+        var x = i / N * 1000, env = Math.sin(Math.PI * i / N);
+        var y = 13 * env * (Math.sin(x * .031 + t * 2.2) + .45 * Math.sin(x * .083 - t * 3.3));
+        if (bump) y += bump.a * Math.exp(-Math.pow((x - bump.x) / 40, 2)) * Math.sin(x * .12 - t * 14) * env;
+        d += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + (50 + y).toFixed(1);
+      }
+      wave.setAttribute('d', d);
+    }
+    function loop(now){
+      if (!running) return;
+      var dt = Math.min(.05, (now - (last || now)) / 1000); last = now; t += dt;
+      // a packet crosses every few seconds, dragging a bump in the wave with it
+      if (!bump && t > nextBump) bump = { x: 0, a: 26 };
+      if (bump){ bump.x += dt * 620; packet.style.left = (bump.x / 10) + '%'; packet.style.opacity = Math.min(1, Math.sin(Math.PI * Math.min(1, bump.x / 1000)) * 1.6).toFixed(2);
+        if (bump.x > 1000){ bump = null; packet.style.opacity = 0; nextBump = t + 2.8 + Math.random() * 2.4; } }
+      if (t > nextCh){ ch = (ch + 1) % CH.length; l.style.setProperty('--ch', CH[ch]); if (chN) chN.textContent = '0' + (ch + 1); nextCh = t + 7; }
+      draw();
+      requestAnimationFrame(loop);
+    }
+    function go(on){ if (on === running) return; running = on; last = 0; if (on) requestAnimationFrame(loop); }
+    if (reduce){ draw(); return; }
+    var vis = true;
+    if ('IntersectionObserver' in window) new IntersectionObserver(function(es){ vis = es[0].isIntersecting; go(vis && !document.hidden); }).observe(bar);
+    document.addEventListener('visibilitychange', function(){ go(vis && !document.hidden); });
+    go(true);
+  })();
+  // the Crew card (you) is one of a kind: an aurora border in the service colors that drifts slowly, starting at a
+  // different angle for every visitor, a soft wash and a gradient checklist
+  var youCard = $$('.ab_crew_col')[1];
+  if (youCard){ youCard.classList.add('abp-you'); youCard.style.setProperty('--you-d', '-' + (Math.random() * 18).toFixed(2) + 's'); }
+
   $$('.ab_crew_tick').forEach(function(t){ t.innerHTML = '<svg viewBox="0 0 12 12"><path d="M1.5 6.5l3 3 6-7"/></svg>'; });
   $$('.ab_crew_col').forEach(function(col){
     var lis = $$('.ab_crew_item', col);
@@ -358,6 +529,37 @@ window.Webflow.push(function(){
 
   /* ---------- launch form: destination chips (Webflow Forms posts it) ---------- */
   // multi-select: the first pick is the main destination; up to 3 here, "More than three" opens a field for the rest
+  var KS_KEY = 'ab:ks', ks = false, ksChip = null, ksField = null, ksSat = null;
+  try { ks = localStorage.getItem(KS_KEY) === '1'; } catch (e){}
+  var KS_ICON = '<svg class="sat-ico abp-ks-ico" viewBox="0 0 24 12" aria-hidden="true"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg>';
+  // the satellite follows the main destination (moved into its counter-rotating layer, so it stays upright)
+  function toggleKs(from){
+    ks = !ks; try { localStorage.setItem(KS_KEY, ks ? '1' : ''); } catch (e){}
+    syncKs(); if (toast) toast(ks ? 'Add-on · KNS · Knowledge system' : 'Add-on removed');
+    if (from && hasGsap && !reduce) gsap.fromTo(from, { scale: .92 }, { scale: 1, duration: .5, ease: 'elastic.out(1,.4)', clearProps: 'scale' });
+  }
+  function syncKs(){
+    if (ksChip) ksChip.setAttribute('aria-pressed', ks ? 'true' : 'false');
+    if (chartSat){ chartSat.setAttribute('aria-pressed', ks ? 'true' : 'false'); chartSat.classList.toggle('is-on', ks); var stt = $('.abp-kssat-state', chartSat); if (stt) stt.textContent = ks ? 'Add-on · on' : '+ Add-on'; }
+    if (ksField) ksField.value = ks ? 'KNS · Knowledge system' : '';
+    if (!dests.length) return;
+    if (!ksSat){ ksSat = document.createElement('span'); ksSat.className = 'abp-ks'; ksSat.setAttribute('aria-hidden', 'true'); ksSat.innerHTML = '<span class="abp-ks-orb">' + KS_ICON + '</span>'; }
+    var host = $('.abp-counter', dests[sel[0]]); if (host && ksSat.parentNode !== host) host.appendChild(ksSat);
+    ksSat.classList.toggle('is-on', ks);
+    // the flight plan cards carry a small KNS flag while the add-on rides along
+    $$('.ab_route_card-top').forEach(function(top){
+      var f = $('.abp-ks-flag', top);
+      if (!f){ f = document.createElement('span'); f.className = 'abp-ks-flag'; f.title = 'KNS · Knowledge system rides along'; f.innerHTML = KS_ICON + 'KNS'; top.insertBefore(f, top.lastElementChild); }
+      f.hidden = !ks;
+    });
+    // touchdown: the same satellite orbits the landed planet when the add-on rides along
+    var dsys = $('.abp-dock-sys');
+    if (dsys){
+      var dks = $('.abp-dock-ks', dsys);
+      if (!dks){ dks = document.createElement('div'); dks.className = 'abp-dock-ks'; dks.innerHTML = '<i>' + KS_ICON + '</i>'; dsys.appendChild(dks); }
+      dks.classList.toggle('is-on', ks);
+    }
+  }
   var chips = $('[data-chips]'), moreBox = $('[data-more]'), moreChip = null;
   if (chips && DEST.length){
     chips.innerHTML = DEST.map(function(d, i){ return '<button type="button" class="abp-chip" data-i="' + i + '" aria-pressed="false" style="--c:' + d.c + '"><i aria-hidden="true"></i>' + esc(d.short) + '<span class="abp-chip-main">Main</span></button>'; }).join('') +
@@ -372,6 +574,15 @@ window.Webflow.push(function(){
       sel.push(i); render(false, 'Stop added · ' + DEST[i].short);
     }); });
     moreChip = $('.abp-chip.is-more', chips);
+    // the Knowledge System add-on (same as the Home planner): rides along with any route, drawn as a satellite
+    // circling the main destination on the star chart; posted in its own "Add-ons" field
+    var ksRow = document.createElement('div'); ksRow.className = 'abp-addons';
+    ksRow.innerHTML = '<span class="abp-addon-label">Add-on</span><button type="button" class="abp-chip is-addon" data-ks="" aria-pressed="false" style="--c:#FFD29A">' + KS_ICON + 'KNS · Knowledge system</button>';
+    chips.parentNode.insertBefore(ksRow, chips.nextSibling);
+    ksChip = $('[data-ks]', ksRow);
+    var fm = chips.closest('form');
+    if (fm && !$('input[name="Add-ons"]', fm)){ ksField = document.createElement('input'); ksField.type = 'hidden'; ksField.name = 'Add-ons'; ksField.value = ''; fm.appendChild(ksField); }
+    ksChip.addEventListener('click', function(){ toggleKs(ksChip); });
     if (moreChip) moreChip.addEventListener('click', function(){ setMore(moreChip.getAttribute('aria-pressed') !== 'true'); });
   }
   function setMore(on){
@@ -384,6 +595,7 @@ window.Webflow.push(function(){
       var at = sel.indexOf(+b.getAttribute('data-i'));
       b.setAttribute('aria-pressed', at > -1 ? 'true' : 'false'); b.classList.toggle('is-main', at === 0 && sel.length > 1);
     });
+    syncKs();
     var field = $('[data-dest-field]');
     if (field) field.value = sel.map(function(k, n){ return DEST[k].name + (n === 0 && sel.length > 1 ? ' (main)' : ''); }).join(', ');
   }
@@ -392,7 +604,15 @@ window.Webflow.push(function(){
     var panel = $('.ab_launch_form'), rk = document.createElement('div'); rk.className = 'abp-rocket'; rk.setAttribute('aria-hidden', 'true');
     rk.innerHTML = '<svg viewBox="0 0 40 80"><path d="M20 2 C30 14 32 34 30 52 H10 C8 34 10 14 20 2 Z" fill="#F2F0EA"/><circle cx="20" cy="26" r="5" fill="#4C8DFF"/><path d="M10 44 L2 60 L10 56 Z M30 44 L38 60 L30 56 Z" fill="#8A8FA3"/><path d="M13 54 L20 78 L27 54 Z" fill="#FF6A3D"/></svg>';
     panel.appendChild(rk);
-    form.addEventListener('submit', function(){
+    // missing data: core/43-validate (inline line per field + a summary above the button); an invalid submit stops here,
+    // before Webflow's handler (delegated on document) ever sees it
+    var fq = function(n){ return form.querySelector('[name="' + n + '"]'); }, pBtn = $('[type="submit"]', form);
+    var chk = AB.formCheck && AB.formCheck(form, { btn: pBtn, at: pBtn, rules: [
+      { el: fq('Name'), name: 'name', need: 'Add your name so I know who’s calling.' },
+      { el: fq('Email'), name: 'email', need: 'I need an email to radio back.', bad: 'That email looks off. Mind checking it?' }
+    ] });
+    form.addEventListener('submit', function(e){
+      if (chk && !chk.ok()){ e.preventDefault(); e.stopPropagation(); return; }
       // let Webflow post it; the rocket is decoration
       var rocket = $('.abp-rocket'); if (!rocket || reduce || !hasGsap) return;
       gsap.timeline().set(rocket, { opacity: 1, y: 0 }).to(rocket, { y: -form.offsetHeight - 160, duration: 1.1, ease: 'power2.in' }).set(rocket, { opacity: 0 });

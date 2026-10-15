@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -18,6 +18,21 @@ window.Webflow.push(function(){
   // computed "rgb(r, g, b)" → "#rrggbb" (CMS Color fields reach the page as inline styles on hidden nodes)
   function rgbToHex(s){ var m = String(s || '').match(/\d+(\.\d+)?/g); if (!m || m.length < 3 || (m.length > 3 && +m[3] === 0)) return ''; return '#' + m.slice(0, 3).map(function(v){ var h = (+v | 0).toString(16); return h.length < 2 ? '0' + h : h; }).join(''); }
   function onView(el, fn, opts){ var io = new IntersectionObserver(function(es){ fn(es[0].isIntersecting); }, opts); io.observe(el); return io; }
+  // big display titles: if the widest line/word can't fit the box (long words on a phone), shrink the font until it does (never under min)
+  function fitWide(el, min){
+    if (!el || el.__fit) return; el.__fit = true;
+    function go(){
+      el.style.fontSize = '';
+      var cw = el.clientWidth, kids = el.children, w = 0, i;
+      for (i = 0; i < kids.length; i++) if (kids[i].tagName !== 'BR') w = Math.max(w, kids[i].offsetWidth);
+      w = Math.max(w, el.scrollWidth);
+      if (cw && w > cw + 1) el.style.fontSize = Math.max(min || 24, Math.floor(parseFloat(getComputedStyle(el).fontSize) * cw / w * .98)) + 'px';
+    }
+    go(); var lw = innerWidth;
+    addEventListener('resize', function(){ if (innerWidth !== lw){ lw = innerWidth; go(); } });
+    if (document.fonts) document.fonts.ready.then(go);
+  }
+  AB.fitWide = fitWide;
   if (hasGsap){
     var plugins = [window.ScrollTrigger, window.Draggable, window.InertiaPlugin, window.SplitText, window.ScrambleTextPlugin, window.Flip].filter(Boolean);
     gsap.registerPlugin.apply(gsap, plugins);
@@ -218,7 +233,7 @@ window.Webflow.push(function(){
       if (ds.label && el.hasAttribute('data-drag')){ el.setAttribute('role', 'img'); el.setAttribute('aria-label', 'Draggable planet: ' + ds.label); el.tabIndex = 0; }
       else el.setAttribute('aria-hidden', 'true');
     }
-    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; tex.style.backgroundImage = 'url(' + makeTexture(type, cols, seed, W) + ')'; requestAnimationFrame(function(){ tex.classList.add('on'); }); };
+    var paint = function(){ var W = sz > 160 ? 512 : sz > 70 ? 256 : 128; tex.style.setProperty('--tex', 'url(' + makeTexture(type, cols, seed, W) + ')'); requestAnimationFrame(function(){ tex.classList.add('on'); }); };
     if ('requestIdleCallback' in window) requestIdleCallback(paint, { timeout: 800 }); else setTimeout(paint, 30);
   }
   var planets = $$('.ab_planet[data-planet]');
@@ -384,7 +399,15 @@ window.Webflow.push(function(){
     if (flag && hasGsap && !reduce && flash){
       gsap.set(flash, { opacity: 1 }); sf.state.warp = 1;
       html.classList.remove('ab-warp-in');
-      gsap.timeline().to(flash, { opacity: 0, duration: .6, ease: 'power2.out' }, .05).to(sf.state, { warp: 0, duration: 1.1, ease: 'power2.out' }, 0);
+      // the first page of a visit (head script sets 'first') drops out of hyperspace slower: the stars hold at full streak, then settle
+      var first = flag === 'first';
+      var out = function(){ out = null; gsap.timeline().to(flash, { opacity: 0, duration: first ? 1.1 : .6, ease: 'power2.out' }, first ? .35 : .05).to(sf.state, { warp: 0, duration: first ? 2.4 : 1.1, ease: first ? 'expo.out' : 'power2.out' }, first ? .25 : 0); };
+      // arriving at an anchor (/#launch): the first jump lands short while late layout grows above the target, so the
+      // fade showed the sections in between (About → Home testimonials). Stay covered until 30-motion re-aims (AB.arrived)
+      var hid = location.hash.length > 1 ? location.hash.slice(1) : '', tgt = null;
+      try { tgt = hid && document.getElementById(decodeURIComponent(hid)); } catch (e){}
+      if (tgt){ AB.arrived = function(){ if (out) out(); }; setTimeout(AB.arrived, 1800); }
+      else out();
     } else html.classList.remove('ab-warp-in');
     // back/forward cache: a page restored mid-warp would keep its flash up
     addEventListener('pageshow', function(e){ if (e.persisted && flash){ if (hasGsap) gsap.set(flash, { opacity: 0 }); else flash.style.opacity = 0; flash.style.pointerEvents = ''; sf.state.warp = 0; } });
@@ -393,6 +416,20 @@ window.Webflow.push(function(){
   Object.assign(AB, { toast: toast, copyText: copyText, fmt: fmt, buildPlanet: buildPlanet, planets: planets, sf: sf, warp: warp, go: go, inject: inject });
 
   /* ===== core/20-ui.js ===== */
+
+  /* ---------- nav: you are here. Webflow marks exact matches (w--current); detail pages mark their parent section
+     (/work/x → Work, /services/x → Services, /observatory/x + /topics → Observatory), in the bar and the menu ---------- */
+  (function(){
+    var path = location.pathname.replace(/\/+$/, '') || '/', SEC = { work: '/work', services: '/services', observatory: '/observatory', topics: '/observatory' };
+    var top = path.split('/')[1] || '', parent = SEC[top];
+    if (!parent) return;
+    $$('.ab_nav_link, .ab_menu_link').forEach(function(a){
+      var h = (a.getAttribute('href') || '').replace(/\/+$/, '');
+      if (h !== parent) return;
+      a.classList.add('is-current');
+      if (!a.hasAttribute('aria-current')) a.setAttribute('aria-current', path === parent ? 'page' : 'true');
+    });
+  })();
 
   /* ---------- selection UI ([data-selectable]: Figma-style box, handles, name + size tags) ---------- */
   function addSel(el){
@@ -432,7 +469,13 @@ window.Webflow.push(function(){
 
   /* ---------- layout grid overlay (Shift+G, footer toggle) ---------- */
   var gbtn = $('#gridToggle');
-  function toggleGrid(){ var on = !lgrid.classList.contains('on'); lgrid.classList.toggle('on', on); if (gbtn) gbtn.setAttribute('aria-pressed', on); toast(on ? 'Layout grid on · 12 columns · 24px gutter' : 'Layout grid off'); }
+  // the toast reads the overlay's real numbers (columns shown at this width, gap, side margins, max width), so it never drifts from the CSS
+  function gridInfo(){
+    var inner = $('.ab_lgrid-inner', lgrid); if (!inner) return '';
+    var cs = getComputedStyle(inner), n = $$('i', inner).filter(function(i){ return getComputedStyle(i).display !== 'none'; }).length;
+    return ' · ' + n + ' columns · ' + Math.round(parseFloat(cs.columnGap)) + 'px gap · ' + Math.round(parseFloat(getComputedStyle(lgrid).paddingLeft)) + 'px margins · ' + Math.round(parseFloat(cs.maxWidth)) + 'px max';
+  }
+  function toggleGrid(){ var on = !lgrid.classList.contains('on'); lgrid.classList.toggle('on', on); if (gbtn) gbtn.setAttribute('aria-pressed', on); toast(on ? 'Layout grid on' + gridInfo() : 'Layout grid off'); }
   if (gbtn){
     if (!gbtn.hasAttribute('tabindex')) gbtn.tabIndex = 0;
     gbtn.setAttribute('aria-pressed', 'false');
@@ -505,6 +548,8 @@ window.Webflow.push(function(){
       var img = $('img', a); if (!img || $('.ab_logo-svg', a)) return;
       img.insertAdjacentHTML('beforebegin', svg()); img.style.display = 'none';
       var s = $('.ab_logo-svg', a);
+      // Home: the nav mark is signal orange (you're at base); other pages keep it white
+      if (location.pathname === '/' && !a.closest('footer, .ab_footer_brand')) a.classList.add('is-home');
       $$('path', s).forEach(function(p){ var L = p.getTotalLength ? Math.ceil(p.getTotalLength()) : 2000; p.style.setProperty('--len', L); });
       if (reduce) return;
       var inFooter = !!a.closest('footer, .ab_footer_brand');
@@ -763,7 +808,7 @@ window.Webflow.push(function(){
     if (!t) return;
     var touched = false, mark = function(){ touched = true; };
     ['wheel', 'touchmove', 'keydown'].forEach(function(ev){ addEventListener(ev, mark, { passive: true, once: true }); });
-    function aim(){ if (touched) return; if (window.ScrollTrigger) ScrollTrigger.refresh(); scrollToTarget(t); }
+    function aim(){ if (!touched){ if (window.ScrollTrigger) ScrollTrigger.refresh(); scrollToTarget(t); } if (AB.arrived) AB.arrived(); } // AB.arrived: lift the warp-in cover (10-space)
     function start(){ setTimeout(aim, 150); setTimeout(aim, 900); setTimeout(aim, 2000); }
     if (document.readyState === 'complete') start(); else addEventListener('load', start);
   })();
@@ -948,10 +993,12 @@ window.Webflow.push(function(){
     }
     /* ---------- light sections: dot field that reacts to the cursor ---------- */
     $$('.ab_light-bg').forEach(function(bg){
-      arcClip(bg); if (window.ResizeObserver) new ResizeObserver(function(){ arcClip(bg); }).observe(bg);
+      // the section can grow after load (CMS lists, scripts filling cards, fonts): re-measure the canvas with the clip,
+      // or the dot field stretches to the new box and the cursor ring lands off the pointer
+      arcClip(bg); if (window.ResizeObserver) new ResizeObserver(function(){ arcClip(bg); size(); }).observe(bg);
       var c = document.createElement('canvas'); bg.appendChild(c);
       var ctx = c.getContext('2d'), W, H, dots = [], GAP = 24, mx = -9999, my = -9999, vis = false, live = 0, ripples = [];
-      function size(){ W = bg.offsetWidth; H = bg.offsetHeight; c.width = W; c.height = H; dots = []; for (var y = GAP / 2; y < H; y += GAP) for (var x = GAP / 2; x < W; x += GAP) dots.push({ x: x, y: y, ox: 0, oy: 0, s: 0 }); draw(); }
+      function size(){ var w = bg.offsetWidth, h = bg.offsetHeight; if (w === W && h === H) return; W = w; H = h; c.width = W; c.height = H; dots = []; for (var y = GAP / 2; y < H; y += GAP) for (var x = GAP / 2; x < W; x += GAP) dots.push({ x: x, y: y, ox: 0, oy: 0, s: 0 }); draw(); }
       function draw(){
         ctx.clearRect(0, 0, W, H); var R = 170, moving = false, now = performance.now();
         ripples = ripples.filter(function(rp){ return now - rp.t < 1600; }); if (ripples.length) moving = true;
@@ -1225,6 +1272,7 @@ window.Webflow.push(function(){
         tt.innerHTML = esc(w.slice(0, cut).join(' ')) + '<br>' + esc(w.slice(cut).join(' '));
       }
     }
+    fitWide(tt, 26); // one long word (INTERACTIVE, INTEGRATIONS) must fit the card on a phone
     var NS = 'http://www.w3.org/2000/svg', planet = $('.ab_planet', card), go = $('.ab_next-card_go', card);
     card.insertAdjacentHTML('afterbegin', '<span class="nx-grid" aria-hidden="true"></span><span class="nx-c tl" aria-hidden="true"></span><span class="nx-c tr" aria-hidden="true"></span><span class="nx-c bl" aria-hidden="true"></span><span class="nx-c br" aria-hidden="true"></span>' +
       '<span class="nx-hud" aria-hidden="true"><span>RA <b>' + (4 + ci * 3) + 'h ' + (21 + ci * 7) + 'm</b></span><span>DEC <b>+' + (12 + ci * 5) + '°</b></span><span>ETA <b class="nx-eta">T−00:10</b></span></span>' +
@@ -1232,11 +1280,18 @@ window.Webflow.push(function(){
     var svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'nx-svg'); svg.setAttribute('aria-hidden', 'true');
     svg.innerHTML = '<path class="nx-path"/><path class="nx-done"/><g class="nx-ship"><path class="fl" d="M-11 -2.4 L-23 0 L-11 2.4 Z"/><rect x="-11" y="-4" width="16" height="8" fill="#F2F0EA"/><path d="M5 -4 L13 0 L5 4 Z" fill="#FF6A3D"/><path d="M-9.5 -4 L-6.4 -8.8 L-3.2 -4 Z M-9.5 4 L-6.4 8.8 L-3.2 4 Z" fill="#FF6A3D"/></g>';
     card.appendChild(svg);
-    var path = $('.nx-path', svg), done = $('.nx-done', svg), ship = $('.nx-ship', svg), eta = $('.nx-eta', card), L = 0, tw = null;
+    var path = $('.nx-path', svg), done = $('.nx-done', svg), ship = $('.nx-ship', svg), eta = $('.nx-eta', card), L = 0, tw = null, big = matchMedia('(min-width: 992px)');
+    // the planet keeps its Designer size in its own column on every width (the v0.31.0 oversized corner planet was
+    // rolled back: at its original size it reads in scale with the ship that flies into it)
+    function size(){ if (planet && planet.__built) planet.style.setProperty('--sz', planet.offsetWidth + 'px'); }
     function layout(){
       if (!go) return;
       var r = card.getBoundingClientRect(), g = go.getBoundingClientRect(), pr = planet ? planet.getBoundingClientRect() : { left: r.right - 120, top: r.top + 40, width: 80, height: 80 };
-      var x0 = g.right - r.left + 16, y0 = g.top - r.top + g.height / 2, x1 = pr.left - r.left + pr.width * .1, y1 = pr.top - r.top + pr.height * .5, dx = x1 - x0, d;
+      var x0 = g.right - r.left + 16, y0 = g.top - r.top + g.height / 2, x1 = pr.left - r.left + pr.width * .1, y1 = pr.top - r.top + pr.height * .5, dx, d;
+      var pcx = pr.left - r.left + pr.width / 2, pcy = pr.top - r.top + pr.height / 2;
+      // centre off the card (desktop corner planet): land on the visible upper-left of the sphere, not its hidden middle
+      if (pcx > r.width || pcy > r.height){ x1 = pcx - pr.width * .3; y1 = Math.max(40, pcy - pr.height * .3); }
+      dx = x1 - x0;
       svg.setAttribute('viewBox', '0 0 ' + r.width + ' ' + r.height);
       if (dx >= 140){
         // room to fly: launch beside the button, lift, then drop onto the planet (the swing scales with the distance)
@@ -1248,7 +1303,9 @@ window.Webflow.push(function(){
       }
       path.setAttribute('d', d); done.setAttribute('d', d); L = path.getTotalLength(); done.style.strokeDasharray = L + ' ' + (L + 20); done.style.strokeDashoffset = L;
     }
-    layout(); addEventListener('resize', layout); if (document.fonts) document.fonts.ready.then(layout);
+    // size only on load/resize/fonts: on hover the title slides 14px, which must not nudge the planet
+    function relayout(){ size(); layout(); }
+    relayout(); addEventListener('resize', relayout); if (document.fonts) document.fonts.ready.then(relayout);
     card.addEventListener('pointerenter', function(){
       layout(); if (!hasGsap || reduce) return;
       if (tw) tw.kill(); var o = { t: 0 };
@@ -1277,6 +1334,7 @@ window.Webflow.push(function(){
     });
   }
   $$('.ab_next-card').forEach(nextCard);
+  $$('.ab_dbh_title').forEach(function(t){ fitWide(t, 30); }); // hero titles (Launch / CONTROL) stay inside the screen
   AB.nextCard = nextCard; // page bundles call this for cards they build (Mission next-mission)
 
   /* ===== core/39-herodrag.js ===== */
@@ -1531,6 +1589,16 @@ window.Webflow.push(function(){
     }
     btn.addEventListener('click', function(){ if (isOpen) close(true); else open(); });
     links.forEach(function(a){ a.addEventListener('click', function(){ close(false); }); });
+    // HQ: a small home button above the destinations (the logo is the only other way home on phones); it stays small
+    // so the big destination links keep their size
+    var list = $('.ab_menu_links', menu);
+    if (list && !$('.ab_menu_hq', menu)){
+      var hq = document.createElement('a'); hq.className = 'ab_menu_hq'; hq.href = '/';
+      hq.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7.5L8 2.5l6 5M4 6.5V13.5h8V6.5M6.5 13.5V9.5h3v4"/></svg><b>HQ</b><span>Home</span>';
+      if (location.pathname.replace(/\/+$/, '') === '') hq.setAttribute('aria-current', 'page');
+      list.parentNode.insertBefore(hq, list);
+      hq.addEventListener('click', function(){ close(false); });
+    }
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && isOpen) close(true); });
     addEventListener('resize', function(){ if (innerWidth > 991 && isOpen) close(false); });
   })();
@@ -1543,5 +1611,220 @@ window.Webflow.push(function(){
   }
 
   AB.ready = true;
+
+  /* ===== core/41-forms.js ===== */
+  /* ---------- forms: success + failure without a layout jump (every native Webflow form) ----------
+     Webflow hides the <form> and shows .w-form-done with inline styles, so the page used to shrink by the difference
+     (Process: 783px form → 313px message). The done block now takes the form's height from the submit, centers its
+     copy and plays one shared reveal: a square signal beacon pings, a scan line sweeps down, the copy rises in.
+     Page scripts keep their extras (planner flight, Contact toast); their "send another" buttons hide the block,
+     which releases the lock. Never style .w-form-done's display in CSS (it beats Webflow's display:none): the flex
+     is set inline here, only while the block is shown. */
+  (function(){
+    $$('.w-form').forEach(function(w){
+      var form = $('form', w), done = $('.w-form-done', w), fail = $('.w-form-fail', w);
+      if (!form || !done) return;
+      var h = 0;
+      // capture phase: runs before any page handler, and again on a script's requestSubmit() second pass
+      form.addEventListener('submit', function(){ if (form.offsetHeight) h = form.offsetHeight; }, true);
+
+      // the copy to animate: the single inner wrapper's children (planner, Contact) or the block's own children
+      var kids = $$(':scope > *', done), box = kids.length === 1 && kids[0].children.length > 1 ? kids[0] : done;
+      var sig = document.createElement('span'); sig.className = 'abx-sig'; sig.setAttribute('aria-hidden', 'true');
+      sig.innerHTML = '<b></b><i></i><i></i>';
+      box.insertBefore(sig, box.firstChild);
+      var scan = document.createElement('span'); scan.className = 'abx-scan'; scan.setAttribute('aria-hidden', 'true');
+      done.appendChild(scan);
+
+      function shown(el){ return !!el.style.display && el.style.display !== 'none'; }
+      function reveal(){
+        if (h) done.style.minHeight = h + 'px';
+        done.style.display = 'flex';
+        done.classList.add('abx-sent');
+        requestAnimationFrame(function(){ done.classList.add('is-in'); });
+        var items = $$(':scope > *', box).filter(function(n){ return n !== sig && n !== scan; });
+        if (hasGsap && !reduce && items.length) gsap.fromTo(items, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .6, delay: .15, stagger: .08, ease: 'power3.out', clearProps: 'transform,opacity' });
+        try { done.focus({ preventScroll: true }); } catch (e){}
+        // same height, so nothing moved; only bring the message into view if the visitor had scrolled past it
+        var r = box.getBoundingClientRect();
+        if (r.bottom < 80 || r.top > window.innerHeight - 80){
+          if (AB.lenis && AB.lenis.scrollTo) AB.lenis.scrollTo(done, { offset: -120 });
+          else done.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        }
+      }
+      new MutationObserver(function(){
+        var on = shown(done);
+        if (on && !done.__abx){ done.__abx = true; reveal(); }
+        else if (!on && done.__abx){ done.__abx = false; done.classList.remove('abx-sent', 'is-in'); done.style.minHeight = ''; }
+      }).observe(done, { attributes: true, attributeFilter: ['style'] });
+
+      // failure: the form stays, the message slides in under it (only what's below moves, and only a line)
+      if (fail) new MutationObserver(function(){
+        var on = shown(fail);
+        if (on && !fail.__abx){
+          fail.__abx = true; fail.classList.add('abx-fail');
+          if (hasGsap && !reduce) gsap.fromTo(fail, { y: -6, opacity: 0 }, { y: 0, opacity: 1, duration: .35, ease: 'power2.out', clearProps: 'transform,opacity' });
+        } else if (!on) fail.__abx = false;
+      }).observe(fail, { attributes: true, attributeFilter: ['style'] });
+    });
+  })();
+
+  /* ===== core/42-top.js ===== */
+  /* ---------- back to top: a small probe in the bottom-right once the visitor is 1.5 screens down (pages over 2.5 screens).
+     Click fires its thruster and flies home (Lenis when it runs). Phones: it only shows while scrolling UP, so it never
+     sits on the copy while reading. Reduced motion: no thruster, instant jump ---------- */
+  (function(){
+    if ($('.ab_top')) return;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'ab_top'; b.setAttribute('aria-label', 'Return to orbit (back to the top of the page)');
+    b.innerHTML = '<span class="ab_top-craft" aria-hidden="true"><svg class="sat-ico ab_top-ico" viewBox="0 0 24 18"><path class="sa" d="M9.5 4l2.5-2.5 2.5 2.5"/><path class="sp" d="M1 9.5h6v5H1zM17 9.5h6v5h-6z"/><path class="sa" d="M7 12h3M14 12h3"/><rect class="sb" x="10" y="8.5" width="4" height="7"/></svg><i class="ab_top-fl"></i></span><span class="ab_top-lab" aria-hidden="true">Return to orbit</span>';
+    document.body.appendChild(b);
+    var html = document.documentElement, phone = matchMedia('(max-width: 767px)'), lastY = scrollY, shown = false, busy = false, raf = 0, tmo = 0, kb = false, inFoot = false, foot = $('.ab_footer_component');
+    function set(on){ if (on !== shown){ shown = on; b.classList.toggle('on', on); } }
+    function land(){
+      if (!busy) return; busy = false; clearTimeout(tmo); b.classList.remove('is-launch'); set(false);
+      // keyboard users land on the nav, not on a button that just vanished
+      if (kb){ var f = $('#nav a[href], #nav button'); if (f) f.focus({ preventScroll: true }); }
+    }
+    function check(){
+      raf = 0; var y = scrollY, vh = innerHeight, dy = y - lastY; lastY = y;
+      if (busy){ if (y < 4) land(); return; }
+      if (inFoot || y < vh * 1.5 || html.scrollHeight < vh * 2.5 || html.classList.contains('menu-open')) set(false);
+      else if (!phone.matches) set(true);
+      else if (dy < -4) set(true); else if (dy > 4) set(false);
+    }
+    addEventListener('scroll', function(){ if (!raf) raf = requestAnimationFrame(check); }, { passive: true });
+    addEventListener('resize', check);
+    // the footer has its own Return to orbit and draggable planets near the corner: step aside once it fills the lower half
+    if (foot) onView(foot, function(v){ inFoot = v; check(); }, { rootMargin: '0px 0px -50% 0px' });
+    b.addEventListener('click', function(e){
+      if (busy) return; busy = true; kb = e.detail === 0; var lenis = AB.lenis;
+      tmo = setTimeout(land, 3000); // a scroll that never arrives (blocked by an overlay) must not leave it stuck
+      if (reduce){ if (lenis) lenis.scrollTo(0, { immediate: true, force: true }); else scrollTo(0, 0); land(); return; }
+      // thruster lights and the probe climbs off while the site's warp covers the screen; the jump to the top happens
+      // under the flash, so the visitor comes out of the warp already home (same warp as the page transitions)
+      b.classList.add('is-launch');
+      var W = AB.warp || (typeof warp === 'function' ? warp : null);
+      function home(){ if (lenis) lenis.scrollTo(0, { immediate: true, force: true }); else scrollTo(0, 0); land(); }
+      if (W) setTimeout(function(){ W(home); }, 120); else setTimeout(function(){ if (lenis) lenis.scrollTo(0, { duration: 1.3, force: true }); else scrollTo({ top: 0, behavior: 'smooth' }); }, 160);
+    });
+    check();
+  })();
+
+  /* ===== core/43-validate.js ===== */
+  /* ---------- forms: missing-data checks (AB.formCheck, used by the Home planner, Contact and Process forms) ----------
+     One on-brand layer instead of native bubbles, toasts and silent no-ops. A page script builds a checker with its
+     rules and calls chk.ok() at the top of its submit handler; false = stop. A failed check marks every problem field
+     (aria-invalid + aria-describedby → an inline "◆ Missing" line under it), writes a one-line summary above the
+     submit ("2 systems not go: name, email", polite live region), shakes the problem groups and focuses the first one.
+     Each message clears as soon as its field is fixed; nothing shows before the first attempt.
+     Webflow's bot check (Turnstile) keeps the submit DISABLED until its token arrives, and a disabled button fires no
+     click, so pointerup on it (pointer events still fire) and Enter in a field run the same check, then say the
+     security check is still running instead of doing nothing. The form gets novalidate so browser bubbles don't
+     compete; `required` stays for semantics. Rules:
+       { el, name, box?, focus?, need, bad?, test?(el) → '' | 'need' | 'bad', email? }
+     el = the input, or the group element for chip rows (then pass test); box = what the message goes under. ---------- */
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/, chkN = 0;
+  function formCheck(form, o){
+    if (!form) return null;
+    o = o || {};
+    form.noValidate = true;
+    var btn = o.btn || $('[type="submit"]', form), tried = false, wrap = form.closest('.w-form') || form.parentNode;
+    var rules = (o.rules || []).filter(function(r){ return r && r.el; });
+    rules.forEach(function(r){
+      var isIn = /^(INPUT|TEXTAREA|SELECT)$/.test(r.el.tagName);
+      r.box = r.box || (isIn && r.el.closest('label')) || r.el;
+      r.focus = r.focus || (isIn ? r.el : $('button, input', r.el)) || r.el;
+      if (!r.test) r.test = function(el){ var v = (el.value || '').trim(); return !v ? 'need' : (r.email || el.type === 'email') && !EMAIL_RE.test(v) ? 'bad' : ''; };
+      // inside the field's <label> (a sibling would become a stray cell in grid rows like the planner's Name | Email);
+      // aria-hidden keeps it out of the label's name, aria-describedby still reads it
+      var m = r.msg = document.createElement('span'); m.className = 'abx-msg'; m.id = 'abx-m' + (++chkN); m.hidden = true;
+      if (r.box.tagName === 'LABEL'){ m.setAttribute('aria-hidden', 'true'); r.box.appendChild(m); }
+      else r.box.parentNode.insertBefore(m, r.box.nextSibling);
+      var ev = function(){ if (tried) setTimeout(function(){ check(r, false); summary(); }, 0); };
+      // fixed → the message goes at once; still wrong → the wording updates when the visitor leaves the field. Leaving
+      // never ADDS a message: blur fires on the submit's mousedown, and a new line above it would move the button out
+      // from under the pointer (the click is lost). New problems show on the next submit.
+      if (isIn){ r.el.addEventListener('input', ev); r.el.addEventListener('change', function(){ if (tried && r.state){ check(r, true); summary(); } }); }
+      else r.el.addEventListener('click', ev);
+    });
+    // the summary line sits right above the submit row
+    var sum = document.createElement('div'); sum.className = 'abx-sum'; sum.setAttribute('role', 'status'); sum.setAttribute('aria-live', 'polite'); sum.hidden = true;
+    var row = o.at || (btn && btn.parentNode !== form ? btn.parentNode : btn);
+    if (row && row.parentNode) row.parentNode.insertBefore(sum, row); else form.appendChild(sum);
+    sum.addEventListener('click', function(e){
+      var b = e.target.closest('[data-abx-go]'); if (!b) return;
+      var r = rules[+b.getAttribute('data-abx-go')]; if (r) go(r);
+    });
+
+    function tag(k){ return k === 'bad' ? (o.badTag || 'Signal check') : (o.needTag || 'Missing'); }
+    function mark(r, k){
+      var on = !!k; r.state = k;
+      r.el.setAttribute('aria-invalid', on ? 'true' : 'false');
+      r.box.classList.toggle('abx-bad', on);
+      var ids = (r.focus.getAttribute('aria-describedby') || '').split(' ').filter(function(x){ return x && x !== r.msg.id; });
+      if (on) ids.push(r.msg.id);
+      if (ids.length) r.focus.setAttribute('aria-describedby', ids.join(' ')); else r.focus.removeAttribute('aria-describedby');
+      if (r.focus !== r.el && r.el.getAttribute('role') === 'group'){ if (on) r.el.setAttribute('aria-describedby', r.msg.id); else r.el.removeAttribute('aria-describedby'); }
+      if (on) r.msg.innerHTML = '<span class="abx-k">◆ ' + esc(tag(k)) + '</span><span>' + esc(k === 'bad' && r.bad ? r.bad : r.need) + '</span>';
+      r.msg.hidden = !on;
+    }
+    // soft = while typing: only ever clears (a half-typed email isn't an error yet)
+    function check(r, full){
+      var k = r.test(r.el) || '';
+      if (!full && ((k === 'bad' && r.state !== 'bad') || (k === 'need' && !r.state))) k = '';
+      mark(r, k); return k;
+    }
+    function summary(extra){
+      var bad = rules.filter(function(r){ return r.state; });
+      sum.classList.remove('is-go', 'is-wait');
+      if (!tried){ sum.hidden = true; return; }
+      if (extra){ sum.classList.add('is-wait'); sum.innerHTML = '<span class="abx-k">◆ ' + esc(extra[0]) + '</span><span>' + esc(extra[1]) + '</span>'; sum.hidden = false; return; }
+      // "all systems go" only when every rule really passes (an unflagged field emptied after the check isn't go)
+      if (!bad.length && rules.some(function(r){ return r.test(r.el); })){ sum.hidden = true; return; }
+      if (!bad.length){ sum.classList.add('is-go'); sum.innerHTML = '<span class="abx-k">◆ All systems go</span><span>Ready when you are.</span>'; sum.hidden = false; return; }
+      sum.innerHTML = '<span class="abx-k">◆ ' + esc(o.holdTag || 'Hold launch') + '</span><span>' + bad.length + ' system' + (bad.length > 1 ? 's' : '') + ' not go: ' +
+        bad.map(function(r){ return '<button type="button" class="abx-go" data-abx-go="' + rules.indexOf(r) + '">' + esc(r.name) + '</button>'; }).join(', ') + '</span>';
+      sum.hidden = false;
+    }
+    function go(r){
+      try { r.focus.focus({ preventScroll: true }); } catch (e){ r.focus.focus(); }
+      var b = r.box.getBoundingClientRect();
+      if (b.top < 90 || b.bottom > innerHeight - 40){
+        if (AB.lenis && AB.lenis.scrollTo) AB.lenis.scrollTo(r.box, { offset: -140 });
+        else r.box.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+      }
+    }
+    function shake(el){ if (reduce) return; el.classList.remove('abx-shake'); void el.offsetWidth; el.classList.add('abx-shake'); }
+    function ok(){
+      tried = true;
+      var bad = rules.filter(function(r){ return check(r, true); });
+      summary();
+      if (!bad.length) return true;
+      bad.forEach(function(r){ shake(r.box); });
+      go(bad[0]);
+      return false;
+    }
+    // Turnstile still holding the button: check anyway, then say why it can't go yet
+    function blocked(){
+      if (!btn || !btn.disabled || form.classList.contains('is-sending') || form.classList.contains('is-flying')) return;
+      if (btn.getAttribute('data-wait') && btn.value === btn.getAttribute('data-wait')) return; // Webflow is posting it
+      if (!ok()) return;
+      summary(wrap && wrap.classList.contains('w-form-loading')
+        ? ['Pre-flight', 'Running a quick security check. Give it a second, then try again.']
+        : ['Pre-flight', 'The security check didn’t clear. Refresh the page and try again.']);
+    }
+    if (btn){
+      (btn.parentNode || form).addEventListener('pointerup', function(e){ if (e.button === 0 && (e.target === btn || btn.contains(e.target))) blocked(); });
+      // the token arrived: drop the pre-flight note
+      new MutationObserver(function(){ if (!btn.disabled && sum.classList.contains('is-wait')) summary(); }).observe(btn, { attributes: true, attributeFilter: ['disabled'] });
+    }
+    form.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && btn && btn.disabled && e.target.tagName === 'INPUT' && !/^(button|submit|checkbox|radio|range)$/.test(e.target.type)){ e.preventDefault(); blocked(); }
+    });
+    function reset(){ tried = false; rules.forEach(function(r){ mark(r, ''); r.box.classList.remove('abx-shake'); }); summary(); }
+    form.addEventListener('reset', function(){ setTimeout(reset, 0); });
+    return { ok: ok, reset: reset, email: EMAIL_RE };
+  }
+  AB.formCheck = formCheck;
 
 });

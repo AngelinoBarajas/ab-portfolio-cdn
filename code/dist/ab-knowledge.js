@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-knowledge v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-knowledge v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abKnowledgeInit) return;
@@ -34,6 +34,34 @@ window.Webflow.push(function(){
   // service accent colors (Color fields can't bind; same map as ab-process / ab-hub)
   var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', motion: '#0AE448', branding: '#FF6A3D', 'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', performance: '#ffd166' };
   var URL_T = '/topics/', URL_O = '/observatory/', URL_M = '/work/', URL_S = '/services/';
+
+  // hero title halves (topic + article pages): the Designer's 48px floor let one long word ("performance",
+  // "Micro-interaction") run off a phone column. Shrink a half only when its longest word is wider than the column;
+  // everything else keeps the Designer size. Same idea as the service hero (services JS v0.27.3).
+  function fitTitle(h1){
+    if (!h1) return;
+    var box = h1.closest('.container-large') || h1.parentNode, raf = 0;
+    function fit(){
+      raf = 0;
+      var room = box.getBoundingClientRect().right - h1.getBoundingClientRect().left;
+      if (room <= 0) return;
+      $$('.ab_dbh_word', h1).forEach(function(w){
+        w.style.fontSize = '';
+        var longest = 0;
+        // lines may break at spaces and after hyphens, so only the longest unbreakable piece has to fit
+        w.textContent.trim().replace(/-/g, '-\n').split(/\s+/).forEach(function(word){
+          var m = document.createElement('span');
+          m.className = w.className; m.textContent = word;
+          m.style.cssText = 'position:absolute;visibility:hidden;display:inline-block;white-space:nowrap;max-width:none';
+          w.parentNode.appendChild(m); longest = Math.max(longest, m.offsetWidth); m.parentNode.removeChild(m);
+        });
+        if (longest > room) w.style.fontSize = Math.floor(parseFloat(getComputedStyle(w).fontSize) * room / longest * .98) + 'px';
+      });
+    }
+    fit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    addEventListener('resize', function(){ if (!raf) raf = requestAnimationFrame(fit); });
+  }
 
   function txt(root, sel){ var n = sel ? $(sel, root) : root; return n ? n.textContent.replace(/\s+/g, ' ').trim() : ''; }
   function f(root, k){ return txt(root, '[data-f="' + k + '"]') || txt(root, '[data-field="' + k + '"]'); }
@@ -186,6 +214,11 @@ window.Webflow.push(function(){
     var gridEl = $('[data-ks-grid]'), cards = $$('[data-ks-card]'), items = cards.map(function(a){ return item(a); });
     var ask = $('[data-ks-ask]'), ctrl = $('[data-ks-ctrl]'), empty = $('[data-ks-empty]'), stats = $('[data-ks-hstats]');
     if (!gridEl || !cards.length) return;
+    // newest first: the CMS list arrives oldest first (Sort field), so flip it; the readout toggle flips it back.
+    // cards[] and items[] stay paired and in DOM order (apply() pairs them by index)
+    var newest = true, itemBox = items[0].parentNode;
+    function arrange(){ items.forEach(function(it){ itemBox.appendChild(it); }); }
+    cards.reverse(); items.reverse(); arrange();
     // featured first card when nothing is filtered
     var nBN = OBS.filter(function(o){ return o.themeKey === 'build-notes'; }).length;
     var used = {}; OBS.forEach(function(o){ o.topics.forEach(function(s){ used[s] = (used[s] || 0) + 1; }); });
@@ -200,7 +233,7 @@ window.Webflow.push(function(){
     if (ctrl) ctrl.innerHTML = '<div class="ab_ks-tabs" role="group" aria-label="Theme"><button type="button" data-theme="all" aria-pressed="true">All <b>' + OBS.length + '</b></button><button type="button" data-theme="build-notes" aria-pressed="false">Build notes <b>' + nBN + '</b></button><button type="button" data-theme="why-before-how" aria-pressed="false">Why before how <b>' + (OBS.length - nBN) + '</b></button></div>' +
       '<div class="ab_ks-chips" role="group" aria-label="Topic">' + usedList.map(function(s, i){ return '<button type="button" class="ab_ks-chip' + (i > 7 ? ' is-more' : '') + '" data-cat="' + TOPIC[s].cat + '" data-topic="' + s + '" aria-pressed="false">' + esc(TOPIC[s].name) + ' <b>' + used[s] + '</b></button>'; }).join('') +
         (usedList.length > 8 ? '<button type="button" class="ab_ks-chip is-morebtn" data-ks-more="" aria-expanded="false">+ ' + (usedList.length - 8) + ' more topics</button>' : '') + '</div>' +
-      '<div class="ab_ks-readout"><span>Showing <b data-ks-shown="">' + OBS.length + '</b> of ' + OBS.length + ' · filter <b data-ks-filt="">none</b></span><button type="button" data-ks-reset="" hidden>Clear filters ×</button></div>';
+      '<div class="ab_ks-readout"><span>Showing <b data-ks-shown="">' + OBS.length + '</b> of ' + OBS.length + ' · filter <b data-ks-filt="">none</b></span><span class="ab_ks-readout_r"><button type="button" data-ks-sort="" aria-label="Sort: newest first. Switch to oldest first">Newest first ↓</button><button type="button" data-ks-reset="" hidden>Clear filters ×</button></span></div>';
     if (empty) empty.innerHTML = '<b>No signal</b>Nothing observed on that yet. <button type="button" class="ab_ks-ask_x" data-ks-reset2="">Clear filters</button>';
 
     // search text per card: title, answer, topic names
@@ -209,13 +242,25 @@ window.Webflow.push(function(){
     var hasFlip = hasGsap && window.Flip && !reduce;
     function apply(){
       var state = hasFlip ? Flip.getState(items) : null, shown = 0, first = null, words = st.q.toLowerCase().split(/\s+/).filter(Boolean);
+      // Flip's absolute:true lifts every card out of flow, so the list collapsed to 0 for the whole tween and the
+      // section below jumped up, then snapped back. Hold the list at its old height and ease it to the new one.
+      // A quick second click lands mid-tween: the state above already caught the cards where they are, so finish the
+      // running flip (back in flow) before measuring, or the new height would read as 0.
+      var box = items[0].parentNode, h0 = box.offsetHeight;
+      if (hasFlip){ Flip.killFlipsOf(items, true); gsap.killTweensOf(box); box.style.height = ''; }
       cards.forEach(function(a, i){
         var ok = (st.theme === 'all' || a.__theme === st.theme) && (!st.topic || a.__topics.indexOf(st.topic) > -1) && words.every(function(w){ return a.__q.indexOf(w) > -1; });
         items[i].classList.toggle('is-hid', !ok); if (ok){ shown++; if (!first) first = a; }
       });
       var plain = st.theme === 'all' && !st.topic && !words.length;
       items.forEach(function(it, i){ it.classList.toggle('is-feat', plain && i === 0); });
+      // Growing: open to the new height at once (new cards fade in at their final spots, so an easing box let them sit over
+      // the section below). Shrinking: hold the old height until the cards have landed, then close the gap. Never clear it on the height tween's own clock: the stagger + enter/leave fades outlast it, and the list
+      // dropped to 0 for the tail of the flip (the light section below rode up over the cards).
+      var h1 = hasFlip ? box.offsetHeight : 0;
+      if (hasFlip) gsap.set(box, { height: Math.max(h0, h1) });
       if (hasFlip) Flip.from(state, { duration: .55, ease: 'power3.inOut', absolute: true, stagger: .02,
+        onComplete: function(){ gsap.killTweensOf(box); if (h1 < h0) gsap.fromTo(box, { height: h0 }, { height: h1, duration: .4, ease: 'power2.inOut', clearProps: 'height' }); else box.style.height = ''; },
         onEnter: function(els){ return gsap.fromTo(els, { opacity: 0, scale: .96 }, { opacity: 1, scale: 1, duration: .4 }); },
         onLeave: function(els){ return gsap.to(els, { opacity: 0, scale: .96, duration: .25 }); } });
       $$('[data-ks-shown], [data-ks-askn]').forEach(function(n){ n.textContent = shown; });
@@ -236,12 +281,123 @@ window.Webflow.push(function(){
     $$('.ab_ks-ask_q button').forEach(function(b){ b.addEventListener('click', function(){ q.value = b.getAttribute('data-q'); st.q = q.value; apply(); q.focus(); }); });
     function reset(){ st = { theme: 'all', topic: '', q: '' }; if (q) q.value = ''; $$('.ab_ks-tabs button').forEach(function(x, i){ x.setAttribute('aria-pressed', i === 0); }); $$('[data-topic]', ctrl).forEach(function(x){ x.setAttribute('aria-pressed', 'false'); }); apply(); }
     $$('[data-ks-reset], [data-ks-reset2], [data-ks-qx]').forEach(function(b){ b.addEventListener('click', reset); });
+    // sort toggle: newest / oldest first, cards glide to their new places (no absolute lift, so the list keeps its height)
+    var sortBtn = $('[data-ks-sort]');
+    if (sortBtn) sortBtn.addEventListener('click', function(){
+      var state = hasFlip ? Flip.getState(items) : null;
+      newest = !newest; cards.reverse(); items.reverse(); arrange();
+      var plain = st.theme === 'all' && !st.topic && !st.q.trim();
+      items.forEach(function(it, i){ it.classList.toggle('is-feat', plain && i === 0); });
+      sortBtn.textContent = newest ? 'Newest first ↓' : 'Oldest first ↑';
+      sortBtn.setAttribute('aria-label', 'Sort: ' + (newest ? 'newest' : 'oldest') + ' first. Switch to ' + (newest ? 'oldest' : 'newest') + ' first');
+      if (state) Flip.from(state, { duration: .6, ease: 'power3.inOut', stagger: .015 });
+    });
+    // random jump: warp to a note picked from what the filters show (or any note when nothing is showing)
+    if (ctrl){
+      var jump = document.createElement('button'); jump.type = 'button'; jump.className = 'ab_ks-jump';
+      jump.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z"/></svg>Hyperjump to a random note';
+      var tabs = $('.ab_ks-tabs', ctrl); (tabs ? tabs.parentNode : ctrl).insertBefore(jump, tabs ? tabs.nextSibling : ctrl.firstChild);
+      jump.addEventListener('click', function(){
+        var pool = cards.filter(function(a, i){ return !items[i].classList.contains('is-hid'); }); if (!pool.length) pool = cards;
+        var here = location.pathname, pick = pool[Math.floor(Math.random() * pool.length)];
+        if (pool.length > 1) while (pick.getAttribute('href') === here) pick = pool[Math.floor(Math.random() * pool.length)];
+        if (AB.toast) AB.toast('Plotting a hyperjump · ' + txt(pick, '.ab_ks-card_h'));
+        var go = function(){ if (AB.go) AB.go(pick.href); else location.href = pick.href; };
+        if (hasGsap && !reduce){ gsap.to(jump, { x: 6, duration: .08, yoyo: true, repeat: 5, onComplete: go }); } else go();
+      });
+    }
     apply();
     reveal(gridEl.parentNode);
   })();
 
   /* ---------- Home › Incoming signals: native cards, just reveal them ---------- */
   if (ROW === 'home') reveal($('[data-ks-row="home"]'));
+
+  /* ---------- /observatory hero: research drones. Every 7–12 s (never two readouts at once) a small satellite glides in on a curve, parks beside the
+     planet, beams a field note home (dashed beam + packets, a ring where they land, a mono readout with a real note code
+     and title), then drifts off. Max 2 at a time, transforms + opacity only, paused off screen / in a hidden tab,
+     none under reduced motion. The layer never takes a click. ---------- */
+  if (VIEW === 'library' && hasGsap && !reduce) (function(){
+    var hero = vEl, pl = $('.ab_planet.is-dbh', hero); if (!pl || !OBS.length) return;
+    var layer = document.createElement('div'); layer.className = 'ab_ks-drones'; layer.setAttribute('aria-hidden', 'true'); hero.appendChild(layer);
+    var SAT = '<svg class="sat-ico" viewBox="0 0 24 12"><path class="sp" d="M1 3.5h6v5H1zM17 3.5h6v5h-6z"/><path class="sa" d="M7 6h3M14 6h3"/><rect class="sb" x="10" y="2.5" width="4" height="7"/></svg>';
+    var live = [], next = null, onScreen = false, lastNote = -1, lastAng = 0, first = true;
+    function running(){ return onScreen && !document.hidden; }
+    function pick(){ var i; do { i = Math.floor(Math.random() * OBS.length); } while (OBS.length > 1 && i === lastNote); lastNote = i; return OBS[i]; }
+    function geo(){ var h = hero.getBoundingClientRect(), p = pl.getBoundingClientRect(); return { W: h.width, x: p.left - h.left + p.width / 2, y: p.top - h.top + p.height / 2, R: p.width / 2 }; }
+    function bez(a, c, b, t){ var u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
+    function el(cls, html){ var d = document.createElement('div'); d.className = cls; if (html) d.innerHTML = html; layer.appendChild(d); return d; }
+    function fly(){
+      if (live.length >= 2) return;
+      var G = geo(); if (G.R < 30) return;
+      // parking spot: on an arc left of the planet (the side facing the page), clear of the ring; two drones never share it.
+      // It's stored as an offset from the planet's centre, so the drone, its beam and the landing ring follow the planet
+      // every frame (it floats, and visitors can drag it).
+      var deg; do { deg = 175 + Math.random() * 55; } while (live.length && Math.abs(deg - lastAng) < 25); lastAng = deg;
+      var ang = deg * Math.PI / 180, rk = 1.6 + Math.random() * .3, off = [Math.cos(ang) * rk, Math.sin(ang) * rk];
+      function park(g){ return [g.x + off[0] * g.R, g.y + off[1] * g.R]; }
+      var P = park(G);
+      // in from the top or the right edge, out the other way, on gentle curves
+      var top = Math.random() < .5, rnd = Math.random();
+      var A = top ? [G.x - G.R * (.6 + rnd * 1.4), -60] : [G.W + 60, G.y + G.R * (.6 + rnd)];
+      var B = top ? [G.W + 60, G.y - G.R * (.4 + rnd * .6)] : [G.x - G.R * (1 + rnd * 1.2), -60];
+      var o = pick(), nm = o.name.length > 40 ? o.name.slice(0, 38).replace(/\s+\S*$/, '') + '…' : o.name;
+      var d = el('ab_ks-drone', '<span class="ab_ks-drone_b">' + SAT + '<i></i></span>');
+      var lb = el('ab_ks-drone_l', '<span><b>RX</b> · ' + esc(o.code || 'WB') + ' · field note received</span><span>' + esc(nm) + '</span>');
+      // beam: a wrapper rotated (from its drone end) toward the planet holds the dashed line + three packets
+      var bm = el('ab_ks-bm', '<span class="ab_ks-bm_l"></span><span class="ab_ks-pk"></span><span class="ab_ks-pk"></span><span class="ab_ks-pk"></span>');
+      var hit = el('ab_ks-hit'), line = bm.firstChild, pks = $$('.ab_ks-pk', bm);
+      gsap.set(bm, { transformOrigin: '0% 50%', opacity: 0 }); gsap.set(line, { scaleX: 0, transformOrigin: '0% 50%' });
+      gsap.set(hit, { scale: .3, opacity: 0 }); gsap.set(lb, { xPercent: -100, yPercent: -100, opacity: 0 });
+      gsap.set(pks, { left: '0%' });
+      // s.t = flight progress; s.leg: 0 flying in, 1 parked, 2 flying out; s.ly = readout lift (up-left of the drone, off the title)
+      var s = { t: 0, leg: 0, ly: -50 }, prev = A;
+      function frame(){
+        var g = geo(), Pn = park(g), q;
+        if (s.leg === 0) q = bez(A, [(A[0] + Pn[0]) / 2 - g.R * .5, (A[1] + Pn[1]) / 2 + g.R * .35], Pn, s.t);
+        else if (s.leg === 1) q = Pn;
+        else q = bez(Pn, [(Pn[0] + B[0]) / 2 - g.R * .3, (Pn[1] + B[1]) / 2 - g.R * .4], B, s.t);
+        var tilt = s.leg === 1 ? 0 : Math.max(-22, Math.min(22, (q[0] - prev[0]) * 1.4)); prev = q;
+        gsap.set(d, { x: q[0], y: q[1], rotation: s.leg === 1 ? '+=0' : tilt });
+        var dx = g.x - Pn[0], dy = g.y - Pn[1], full = Math.sqrt(dx * dx + dy * dy) || 1, dist = Math.max(0, full - g.R * .9);
+        gsap.set(bm, { x: Pn[0], y: Pn[1], rotation: Math.atan2(dy, dx) * 180 / Math.PI, width: dist });
+        gsap.set(hit, { x: Pn[0] + dx / full * dist, y: Pn[1] + dy / full * dist });
+        gsap.set(lb, { x: Pn[0] - 16, y: Pn[1] + s.ly });
+      }
+      gsap.set(d, { opacity: 0 }); frame();
+      gsap.ticker.add(frame);
+      var tl = gsap.timeline({ paused: !running(), onComplete: function(){ gsap.ticker.remove(frame); [d, lb, bm, hit].forEach(function(x){ layer.removeChild(x); }); live.splice(live.indexOf(tl), 1); } });
+      tl.to(d, { opacity: 1, duration: .4 }, 0)
+        .to(s, { t: 1, duration: 3, ease: 'power2.out' }, 0)
+        .add(function(){ s.leg = 1; }, 3)
+        .to(d, { rotation: 0, duration: .5, ease: 'power2.out' }, 3)
+        .add('tx', 3.1)
+        .to(bm, { opacity: 1, duration: .2 }, 'tx').to(line, { scaleX: 1, duration: .45, ease: 'power2.out' }, 'tx')
+        .to(lb, { opacity: 1, duration: .4, ease: 'power2.out' }, 'tx+=.3').to(s, { ly: -14, duration: .4, ease: 'power2.out' }, 'tx+=.3');
+      // three rounds of packets (they travel the beam as a % of its length, so they stay on it while the planet moves), each lighting a ring where it lands
+      for (var k = 0; k < 3; k++){
+        tl.fromTo(pks, { left: '0%', opacity: 0 }, { left: '100%', opacity: 1, duration: .7, ease: 'none', stagger: .16, immediateRender: false }, 'tx+=' + (.35 + k * .95))
+          .to(pks, { opacity: 0, duration: .12, stagger: .16 }, 'tx+=' + (.95 + k * .95))
+          .fromTo(hit, { scale: .3, opacity: .9 }, { scale: 1.7, opacity: 0, duration: .8, ease: 'power2.out', immediateRender: false }, 'tx+=' + (1 + k * .95));
+      }
+      tl.add('out', 'tx+=3.5')
+        .set(line, { transformOrigin: '100% 50%' }, 'out').to(line, { scaleX: 0, duration: .35, ease: 'power2.in' }, 'out').to(bm, { opacity: 0, duration: .2 }, 'out+=.3')
+        .to(lb, { opacity: 0, duration: .4 }, 'out+=.4').to(s, { ly: -20, duration: .4 }, 'out+=.4')
+        .add(function(){ s.t = 0; s.leg = 2; }, 'out+=.45')
+        .fromTo(s, { t: 0 }, { t: 1, duration: 3.2, ease: 'power2.in', immediateRender: false }, 'out+=.45')
+        .to(d, { opacity: 0, duration: .6 }, 'out+=3.05');
+      live.push(tl);
+    }
+    function schedule(){ if (next) next.kill(); next = gsap.delayedCall(first ? 1.8 : 7 + Math.random() * 5, function(){ next = null; first = false; fly(); schedule(); }); }
+    function sync(){
+      var on = running();
+      live.forEach(function(t){ t.paused(!on); });
+      if (on){ if (next) next.resume(); else schedule(); } else if (next) next.pause();
+    }
+    if ('IntersectionObserver' in window) new IntersectionObserver(function(es){ onScreen = es[0].isIntersecting; sync(); }).observe(hero);
+    else { onScreen = true; sync(); }
+    document.addEventListener('visibilitychange', sync);
+  })();
 
   /* ===== knowledge/20-article.js ===== */
   /* ---------- /observatory/[slug]: the article ---------- */
@@ -253,6 +409,7 @@ window.Webflow.push(function(){
     // title: "Smooth scroll without the stutter: Lenis + GSAP" → solid first half, outlined second half
     var h1 = $('[data-ks-title]');
     if (h1){ var m = h1.textContent.match(/^(.+?[:.?])\s+(.+)$/); h1.innerHTML = m ? '<span class="ab_dbh_word">' + esc(m[1]) + '</span> <span class="ab_dbh_word t-outline">' + esc(m[2]) + '</span>' : '<span class="ab_dbh_word">' + esc(h1.textContent) + '</span>'; }
+    fitTitle(h1);
     var ans = $('[data-ks-answer]'); if (ans && ans.textContent.indexOf('`') > -1) ans.innerHTML = ticks(ans.textContent);
     var achips = $('[data-ks-achips]'); if (achips) achips.innerHTML = X.topics.map(function(s){ return chip(s); }).join('');
 
@@ -312,25 +469,47 @@ window.Webflow.push(function(){
 
   /* ===== knowledge/30-chart.js ===== */
   /* ---------- star chart geometry (shared by /topics and the topic page mini-map) ---------- */
-  var CENTER = { who: [200, 200], what: [650, 180], how: [1090, 210], watch: [190, 590], ideas: [700, 600], known: [1130, 580] };
-  // hand-placed star slots per constellation: [dx, dy, label side]
-  var SHAPES = [[-120, -40, 'L'], [-10, -95, 'R'], [110, -30, 'R'], [80, 70, 'R'], [-30, 110, 'R'], [-130, 70, 'L']];
-  var POS = {}, SIDE = {};
+  var CENTER = { who: [200, 215], what: [650, 190], how: [1080, 225], watch: [205, 595], ideas: [690, 610], known: [1070, 590] };
+  // each constellation has its own figure: star slots [dx, dy] in the order topics fill them + the lines between slots.
+  // A line only draws when both of its stars exist, so a 3-star constellation still reads as its shape.
+  var FIG = {
+    who: { n: 'dipper', p: [[-10, -8], [108, -20], [118, 70], [0, 84], [-78, -44], [-148, -74]], e: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 4], [4, 5]], s: ['T', 'R', 'R', 'B', 'T', 'L'] },
+    what: { n: 'cassiopeia', p: [[-140, -45], [-72, 58], [-5, -22], [66, 66], [138, -52], [30, -100]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5]], s: ['L', 'B', 'R', 'B', 'R', 'R'] },
+    how: { n: 'cross', p: [[0, 0], [-128, -12], [122, -22], [4, -100], [-6, 104], [-150, 52]], e: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 5]], s: ['R', 'L', 'R', 'R', 'R', 'L'] },
+    watch: { n: 'zigzag', p: [[-160, 82], [-88, -58], [-22, 38], [40, -70], [100, 38], [150, -55]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]], s: ['B', 'T', 'B', 'T', 'B', 'T'] },
+    ideas: { n: 'loop', p: [[-128, 30], [-86, -62], [8, -92], [104, -54], [128, 40], [10, 92]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]], s: ['L', 'L', 'T', 'R', 'R', 'B'] },
+    known: { n: 'arrowhead', p: [[118, -4], [-2, -92], [8, 88], [-42, -2], [-148, 4], [-112, -64]], e: [[0, 1], [0, 2], [0, 3], [3, 4], [4, 5]], s: ['R', 'R', 'R', 'B', 'L', 'L'] }
+  };
+  // seeded jitter per constellation: hand-drawn feel, identical on every visit
+  var jsd = 11; function jr(){ jsd = (jsd * 16807) % 2147483647; return jsd / 2147483647 - .5; }
+  Object.keys(FIG).forEach(function(k){ FIG[k].p.forEach(function(s){ s[0] = Math.round(s[0] + jr() * 22); s[1] = Math.round(s[1] + jr() * 18); }); });
+  var POS = {}, SIDE = {}, SLOT = {};
   CATS.forEach(function(c){
+    var fg = FIG[c.key], cx = CENTER[c.key];
     TOPICS.filter(function(t){ return t.cat === c.key; }).forEach(function(t, i){
-      var s = SHAPES[i % 6], cx = CENTER[c.key]; POS[t.slug] = [cx[0] + s[0], cx[1] + s[1]];
-      SIDE[t.slug] = t.slug === 'philosophy-at-work' ? 'R' : s[2]; // one hand-tuned label (it collides with Reduced motion)
+      // more than six stars: extra ones sit just outside the figure (it never breaks, it just grows)
+      var s = fg.p[i % fg.p.length], ring = Math.floor(i / fg.p.length), k = 1 + ring * .35;
+      POS[t.slug] = [cx[0] + s[0] * k, cx[1] + s[1] * k]; SLOT[t.slug] = i;
+      SIDE[t.slug] = ring ? (s[0] < 0 ? 'L' : 'R') : fg.s[i]; // label side per slot: L / R / T(op) / B(ottom)
     });
   });
   var XL = [];
   OBS.forEach(function(x){ for (var i = 0; i < x.topics.length; i++) for (var j = i + 1; j < x.topics.length; j++){ var a = x.topics[i], b = x.topics[j]; if (!POS[a] || !POS[b]) continue; var k = a < b ? a + '|' + b : b + '|' + a; if (XL.indexOf(k) < 0) XL.push(k); } });
+  // label anchor for a star at x,y with radius r: [x, y, text-anchor]
+  function lbl(x, y, r, side, gap){ gap = gap || 9; return side === 'T' ? [x, y - r - gap + 1, 'middle'] : side === 'B' ? [x, y + r + gap + 9, 'middle'] : side === 'R' ? [x + r + gap, y + 4, 'start'] : [x - r - gap, y + 4, 'end']; }
   function starR(t){ return 3 + Math.sqrt(links(t)) * 1.7; }
-  function consPath(key, dx, dy){ var ts = TOPICS.filter(function(t){ return t.cat === key && POS[t.slug]; }); return ts.length ? 'M' + ts.map(function(t){ return (POS[t.slug][0] - (dx || 0)) + ' ' + (POS[t.slug][1] - (dy || 0)); }).join(' L') : ''; }
+  // the constellation's figure as one path (segments between the stars that exist), optionally re-centered
+  function consPath(key, dx, dy){
+    var ts = TOPICS.filter(function(t){ return t.cat === key && POS[t.slug]; }), at = {}, d = '';
+    ts.forEach(function(t){ at[SLOT[t.slug]] = POS[t.slug]; });
+    FIG[key].e.forEach(function(e){ var a = at[e[0]], b = at[e[1]]; if (a && b) d += 'M' + (a[0] - (dx || 0)) + ' ' + (a[1] - (dy || 0)) + ' L' + (b[0] - (dx || 0)) + ' ' + (b[1] - (dy || 0)) + ' '; });
+    return d.trim();
+  }
 
   if (VIEW === 'chart') (function(){
     var mount = $('[data-ks-chart]'); if (!mount || !TOPICS.length) return;
     // the grid is a tiling pattern over a huge rect, so it never ends when the view is panned past the chart
-    var g = '<defs><pattern id="abKsGrid" width="100" height="90" patternUnits="userSpaceOnUse"><path class="gp" d="M100 0H0V90"/></pattern></defs>' +
+    var g = '<defs><filter id="abKsGlow" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="5"/></filter><pattern id="abKsGrid" width="100" height="90" patternUnits="userSpaceOnUse"><path class="gp" d="M100 0H0V90"/></pattern></defs>' +
       '<g class="grid"><rect x="-5000" y="-4000" width="11400" height="8800" fill="url(#abKsGrid)"/><circle cx="660" cy="390" r="230"/><circle cx="660" cy="390" r="440"/><circle cx="660" cy="390" r="760"/>';
     // faint background stars across the whole pannable area (deterministic, so every visit looks the same)
     var sd = 7; function rnd(){ sd = (sd * 16807) % 2147483647; return sd / 2147483647; }
@@ -338,23 +517,34 @@ window.Webflow.push(function(){
     g += '</g>';
     var xl = XL.map(function(k){ var p = k.split('|'), a = POS[p[0]], b = POS[p[1]], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - 40;
       return '<path class="xl" data-a="' + p[0] + '" data-b="' + p[1] + '" d="M' + a.join(' ') + ' Q' + mx + ' ' + my + ' ' + b.join(' ') + '"/>'; }).join('');
+    // each constellation: a faint nebula in its color, the figure, then a title plate centered above it
+    // (mono code line with a diamond + star count, the name with a soft glow, bracket rule sized to the name after render)
     var cons = CATS.map(function(c){
-      var ys = TOPICS.filter(function(t){ return t.cat === c.key && POS[t.slug]; }).map(function(t){ return POS[t.slug][1]; }); if (!ys.length) return '';
-      var top = Math.min.apply(null, ys), cx = CENTER[c.key];
-      return '<g data-cat="' + c.key + '"><path class="cl" d="' + consPath(c.key) + '"/><text class="cc" x="' + (cx[0] - 150) + '" y="' + (top - 50) + '">' + c.code + ' · ' + pad2(c.i + 1) + '</text><text class="cn" x="' + (cx[0] - 150) + '" y="' + (top - 26) + '">' + esc(c.name) + '</text></g>';
+      var ts = TOPICS.filter(function(t){ return t.cat === c.key && POS[t.slug]; }); if (!ts.length) return '';
+      var ys = ts.map(function(t){ return POS[t.slug][1]; }), top = Math.min.apply(null, ys), cx = CENTER[c.key], ty = top - 40;
+      return '<g data-cat="' + c.key + '" data-fig="' + FIG[c.key].n + '"><path class="cl" d="' + consPath(c.key) + '"/>' +
+        '<g class="ct" transform="translate(' + cx[0] + ' ' + ty + ')"><path class="cb" d=""/><text class="cc" y="-32" text-anchor="middle">◆ ' + c.code + ' · ' + pad2(c.i + 1) + ' · ' + pad2(ts.length) + ' STARS</text>' +
+        '<text class="cn cn-g" text-anchor="middle" aria-hidden="true">' + esc(c.name) + '</text><text class="cn" text-anchor="middle">' + esc(c.name) + '</text></g></g>';
     }).join('');
+    // nebulae sit under everything (routes included); the gradient lives inside the group so its stops read --kc
+    var nebs = CATS.map(function(c){ var cx = CENTER[c.key], id = 'abKsNb-' + c.key;
+      return '<g class="nbg" data-cat="' + c.key + '"><radialGradient id="' + id + '"><stop class="nb0" offset="0"/><stop class="nb1" offset="1"/></radialGradient><ellipse class="nb" cx="' + cx[0] + '" cy="' + (cx[1] - 10) + '" rx="240" ry="170" fill="url(#' + id + ')"/></g>'; }).join('');
     var stars = TOPICS.filter(function(t){ return POS[t.slug]; }).map(function(t, i){
-      var p = POS[t.slug], r = starR(t), right = SIDE[t.slug] === 'R';
+      var p = POS[t.slug], r = starR(t), L = lbl(p[0], p[1], r, SIDE[t.slug]);
       return '<a href="' + URL_T + t.slug + '" data-cat="' + t.cat + '" data-slug="' + t.slug + '" aria-label="' + esc(t.name) + ', ' + links(t) + ' links">' +
         '<circle class="st-h" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r * 3.2) + '"/><circle class="st-r" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r + 5) + '"/>' +
         '<circle class="st' + (i % 3 ? '' : ' tw') + '" cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '"/>' +
-        '<text class="tl" x="' + (p[0] + (right ? r + 9 : -(r + 9))) + '" y="' + (p[1] + 4) + '" text-anchor="' + (right ? 'start' : 'end') + '">' + esc(t.name) + '</text></a>';
+        '<text class="tl" x="' + L[0] + '" y="' + L[1] + '" text-anchor="' + L[2] + '">' + esc(t.name) + '</text></a>';
     }).join('');
     mount.innerHTML = '<div class="ab_ks-chart" data-lenis-prevent-wheel=""><div class="ab_ks-chart_h"><span>Chart · ' + TOPICS.length + ' stars · ' + XL.length + ' shared-observation routes</span><span>Star size = <b>links</b> · dashed = <b>shares an observation</b></span></div>' +
-      '<div class="ab_ks-map" data-ks-map=""><svg viewBox="-110 20 1510 760" role="img" aria-label="Star chart of ' + TOPICS.length + ' topics in six constellations">' + g + xl + cons + stars + '</svg></div>' +
+      '<div class="ab_ks-map" data-ks-map=""><svg viewBox="-110 20 1510 760" role="img" aria-label="Star chart of ' + TOPICS.length + ' topics in six constellations">' + g + nebs + xl + cons + stars + '</svg></div>' +
       '<div class="ab_ks-read" data-ks-read="" data-lenis-prevent="" aria-live="polite"></div>' +
       '<div class="ab_ks-chart_f" role="group" aria-label="Fly to a constellation"><span class="ab_ks-chart_fl">Fly to</span>' + CATS.map(function(c){ return '<button type="button" class="ab_ks-chip is-cons" data-cat="' + c.key + '" aria-pressed="false"><b>' + c.code + '</b>' + esc(c.name) + '</button>'; }).join('') + '</div></div>';
 
+    // size each title's brackets to its name (again once the display font lands, it's much wider than the fallback)
+    function brackets(){ $$('.ct', mount).forEach(function(g){ var n = $('.cn:not(.cn-g)', g), hw = 0; try { hw = n.getComputedTextLength() / 2; } catch (x) {} if (!hw) return;
+      $('.cb', g).setAttribute('d', 'M' + (-hw - 8) + ' -19H' + (-hw - 16) + 'V6H' + (-hw - 8) + 'M' + (hw + 8) + ' -19H' + (hw + 16) + 'V6H' + (hw + 8)); }); }
+    brackets(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(brackets);
     var map = $('[data-ks-map]', mount), read = $('[data-ks-read]', mount), links_ = $$('a', map), xls = $$('.xl', map), sel = null, lastType = 'mouse';
     function show(a){
       if (sel === a) return; sel = a;
@@ -475,15 +665,16 @@ window.Webflow.push(function(){
     var eb = $('[data-ks-eyebrow]'); if (eb) eb.textContent = C.code + ' · ' + C.name + ' · constellation ' + pad2(C.i + 1) + ' of 06';
     var h1 = $('[data-ks-title]');
     if (h1){ var w = h1.textContent.trim().split(' '); h1.innerHTML = w.length > 1 ? '<span class="ab_dbh_word">' + esc(w.slice(0, -1).join(' ')) + '</span> <span class="ab_dbh_word t-outline">' + esc(w[w.length - 1]) + '</span>' : '<span class="ab_dbh_word">' + esc(w[0]) + '</span>'; }
+    fitTitle(h1);
 
     // mini constellation: this category only, re-centered on its center
     var mini = $('[data-ks-mini]'), cx0 = CENTER[T.cat];
     if (mini && POS[T.slug]){
       mini.setAttribute('data-cat', T.cat);
       mini.innerHTML = '<svg viewBox="-250 -130 480 270" aria-hidden="true"><path class="cl" d="' + consPath(T.cat, cx0[0], cx0[1]) + '"/>' +
-        sibs.map(function(t){ var p = POS[t.slug]; if (!p) return ''; var x = p[0] - cx0[0], y = p[1] - cx0[1], on = t === T, r = starR(t), R = SIDE[t.slug] === 'R';
+        sibs.map(function(t){ var p = POS[t.slug]; if (!p) return ''; var x = p[0] - cx0[0], y = p[1] - cx0[1], on = t === T, r = starR(t), L = lbl(x, y, r, SIDE[t.slug], 7);
           return '<g class="' + (on ? 'is-on' : '') + '">' + (on ? '<circle class="st-p" cx="' + x + '" cy="' + y + '" r="' + r + '"/><circle class="st-r" cx="' + x + '" cy="' + y + '" r="' + (r + 5) + '"/>' : '') +
-            '<circle class="st" cx="' + x + '" cy="' + y + '" r="' + r + '"/><text class="tl" x="' + (R ? x + r + 7 : x - r - 7) + '" y="' + (y + 3) + '" text-anchor="' + (R ? 'start' : 'end') + '">' + esc(t.name) + '</text></g>'; }).join('') + '</svg>';
+            '<circle class="st" cx="' + x + '" cy="' + y + '" r="' + r + '"/><text class="tl" x="' + L[0] + '" y="' + (L[1] - 1) + '" text-anchor="' + L[2] + '">' + esc(t.name) + '</text></g>'; }).join('') + '</svg>';
     }
     var stats = $('[data-ks-tstats]');
     if (stats) stats.innerHTML = [['Observations', tNotes.length, '#notes'], ['Missions', tMis.length, '#practice'], ['Services', SVC.length, '#services'], ['Questions', tFaq.length, '#questions']]

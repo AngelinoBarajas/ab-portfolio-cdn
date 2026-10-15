@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-mission v0.26.1 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-mission v0.32.0 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abMissionInit) return;
@@ -179,8 +179,8 @@ window.Webflow.push(function(){
   MOCKS['ab-identity'] = { accent: '#FF6A3D', sketch: true, vector: true };
   // Knowledge System: seven coded scenes (21-knowledge.js), generic example content
   MOCKS['knowledge-system'] = { accent: '#a597ff', graph: true, library: true, voice: true, setup: true, video: true, schema: true, portable: true };
-  // CKS: the product site for the Knowledge System. Five coded demos (22-cks.js, key `cks`) plus the website trio
-  // (figma / phone / flow). `live`: once getcks.io answers (its favicon loads), the live channels show the real page.
+  // CKS: the product site for the Knowledge System. Six coded scenes (22-cks.js, key `cks`, incl. its own woven site plan)
+  // plus figma + phone. `live`: once getcks.io answers (its favicon loads), the live channels show the real page.
   (function(){
     // the hero loom, redrawn as SVG: warp lines plus eight bands of weft threads in the four thread colors
     function loom(w, h, n){
@@ -193,7 +193,8 @@ window.Webflow.push(function(){
       return s + '</svg>';
     }
     var LOGO = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;display:block" aria-hidden="true"><rect x="2.5" y="6" width="19" height="5" rx="1.2" fill="#EF5B3F"/><rect x="2.5" y="13" width="19" height="5" rx="1.2" fill="#139E8A"/><rect x="6" y="2.5" width="5" height="19" rx="1.2" fill="#F2A93B" stroke="#fff" stroke-width="1.4"/><rect x="13" y="2.5" width="5" height="19" rx="1.2" fill="#2F5BEA" stroke="#fff" stroke-width="1.4"/><rect x="12.3" y="6" width="6.4" height="5" fill="#EF5B3F"/><path d="M12.3 6V11M18.7 6V11" stroke="#fff" stroke-width="1.4"/><rect x="5.3" y="13" width="6.4" height="5" fill="#139E8A"/><path d="M5.3 13V18M11.7 13V18" stroke="#fff" stroke-width="1.4"/></svg>';
-    var F = '"Schibsted Grotesk",Inter,sans-serif';
+    // unquoted on purpose: these go inside style="..." attributes, where a double quote would end the attribute
+    var F = 'Schibsted Grotesk,Inter,sans-serif';
     function chip(t, c){ return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;border:1px solid rgba(11,27,43,.14);font:600 8px ' + F + '"><i style="width:6px;height:6px;border-radius:50%;background:' + c + '"></i>' + t + '</span>'; }
     MOCKS.cks = {
       accent: '#EF5B3F', cks: true,
@@ -255,16 +256,114 @@ window.Webflow.push(function(){
           { note: 3, scroll: '.m-map', off: 120, hold: 2.2 },
           { note: -1, scroll: 0, remove: 'woven', hold: .6 }
         ]
+      }
+    };
+  })();
+  // kip: a concept baby log (kip-site/kip). Figma frame = the home hero; phone = the Today screen and the shift handoff,
+  // copy taken from the site's app screens. Image channels are recorded loops of the real site, served from this repo on
+  // jsDelivr (`img`: channel id → [loop, still]); the loop plays unless reduced motion or Save-Data asks for the still.
+  (function(){
+    // the six characters, from the site's press-kit SVGs (kip-site/kip/img/kit)
+    var KC = {
+      ari: '<path d="M60 10C86 10 104 36 106 64c2 30-16 50-46 50S12 94 14 64C16 36 34 10 60 10Z" fill="#FF7A45"/><path d="M58 11c-4-9 4-15 12-11" fill="none" stroke="#FF7A45" stroke-width="7" stroke-linecap="round"/><ellipse cx="40" cy="72" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="80" cy="72" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="47" cy="62" r="4.6" fill="#1E1B2E"/><circle cx="73" cy="62" r="4.6" fill="#1E1B2E"/><path d="M53 75 Q60 82 67 75" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/>',
+      sam: '<rect x="24" y="8" width="72" height="108" rx="36" fill="#6FA8FF"/><path d="M52 10c2-8 12-8 14-2" fill="none" stroke="#6FA8FF" stroke-width="6" stroke-linecap="round"/><path d="M44 44h10M66 44h10" stroke="#1E1B2E" stroke-width="3.2" stroke-linecap="round"/><ellipse cx="42" cy="66" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="78" cy="66" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="49" cy="56" r="4.6" fill="#1E1B2E"/><circle cx="71" cy="56" r="4.6" fill="#1E1B2E"/><path d="M52 67 Q60 79 68 67 Z" fill="#1E1B2E"/>',
+      nana: '<circle cx="60" cy="22" r="13" fill="#FFC94A"/><path d="M8 114C8 58 28 32 60 32s52 26 52 82Z" fill="#FFC94A"/><ellipse cx="38" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="82" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="45" cy="72" r="4.6" fill="#1E1B2E"/><circle cx="75" cy="72" r="4.6" fill="#1E1B2E"/><path d="M53 85 Q60 92 67 85" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/><circle cx="45" cy="72" r="10" fill="none" stroke="#1E1B2E" stroke-width="2.8"/><circle cx="75" cy="72" r="10" fill="none" stroke="#1E1B2E" stroke-width="2.8"/><path d="M55 72h10" stroke="#1E1B2E" stroke-width="2.8"/>',
+      rosa: '<path d="M60 24c-6-12 0-20 10-22 2 10-2 18-10 22Z" fill="#2E9E76"/><path d="M60 24c-4-10-14-12-22-8 4 8 12 11 22 8Z" fill="#5FD3A8"/><path d="M20 58c0-24 14-34 40-34s40 10 40 34v20c0 26-14 36-40 36S20 104 20 78Z" fill="#5FD3A8"/><ellipse cx="40" cy="76" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="80" cy="76" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><circle cx="47" cy="66" r="4.6" fill="#1E1B2E"/><circle cx="73" cy="66" r="4.6" fill="#1E1B2E"/><path d="M53 79 Q60 86 67 79" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/>',
+      jo: '<g fill="#FF8FA3"><circle cx="38" cy="44" r="24"/><circle cx="82" cy="44" r="24"/><circle cx="60" cy="32" r="24"/><circle cx="30" cy="80" r="26"/><circle cx="90" cy="80" r="26"/><rect x="28" y="40" width="64" height="74" rx="30"/></g><ellipse cx="40" cy="76" rx="6" ry="3.6" fill="#FF7A45" opacity=".55"/><ellipse cx="80" cy="76" rx="6" ry="3.6" fill="#FF7A45" opacity=".55"/><path d="M42 68 Q47 61 52 68" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/><path d="M68 68 Q73 61 78 68" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/><path d="M53 79 Q60 86 67 79" fill="none" stroke="#1E1B2E" stroke-width="3.6" stroke-linecap="round"/>',
+      june: '<path d="M60 26c30 0 48 22 48 48s-18 40-48 40-48-14-48-40 18-48 48-48Z" fill="#FFF4E6" stroke="#1E1B2E" stroke-width="4"/><path d="M58 27c-8-10 0-20 10-16 6 3 2 10-3 8" fill="none" stroke="#1E1B2E" stroke-width="4" stroke-linecap="round"/><ellipse cx="39" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="81" cy="82" rx="6" ry="3.6" fill="#FF8FA3" opacity=".55"/><path d="M41 71 Q46 76 51 71" fill="none" stroke="#1E1B2E" stroke-width="3.2" stroke-linecap="round"/><path d="M69 71 Q74 76 79 71" fill="none" stroke="#1E1B2E" stroke-width="3.2" stroke-linecap="round"/><ellipse cx="60" cy="86" rx="3.2" ry="3.8" fill="#1E1B2E"/>'
+    };
+    function ch(n, s){ return '<svg viewBox="0 0 120 120" style="width:' + s + 'px;height:' + s + 'px;display:block;flex:none" aria-hidden="true">' + KC[n] + '</svg>'; }
+    var MARK = '<svg viewBox="0 0 64 64" style="width:15px;height:15px;display:block" aria-hidden="true"><path d="M32 4C50 4 60 18 60 34S50 60 32 60 4 50 4 34 14 4 32 4Z" fill="#FF7A45"/><path d="M38 16a14 14 0 1 0 12 22 11 11 0 1 1-12-22Z" fill="#FFF4E6"/><circle cx="24" cy="40" r="3" fill="#1E1B2E"/></svg>';
+    // unquoted on purpose: these go inside style="..." attributes
+    // "Baloo 2" must be quoted: an unquoted family name with a bare number is invalid CSS and drops the whole font shorthand
+    var H = "'Baloo 2','Arial Rounded MT Bold',ui-rounded,sans-serif", B = 'Nunito Sans,system-ui,sans-serif';
+    var INK = '#1E1B2E', TAN = '#FF7A45', CREAM = '#FFF4E6', BUTTER = '#FFC94A', MINT = '#5FD3A8', SKY = '#6FA8FF', ROSE = '#FF8FA3';
+    var LOOP = 'https://cdn.jsdelivr.net/gh/AngelinoBarajas/ab-portfolio@v0.28.0/prototypes/img/';
+    // one log entry, as on the site: face, icon tint, what, who and when
+    function entry(who, name, tint, what, when, cls){
+      return '<div class="kxe' + (cls ? ' ' + cls : '') + '" style="display:flex;align-items:center;gap:8px;background:#fff;border:2px solid ' + INK + ';border-radius:14px;padding:6px 9px;margin-bottom:6px">' + ch(who, 26) +
+        '<span style="display:flex;flex-direction:column;min-width:0"><b style="font:800 10.5px/1.2 ' + B + ';color:' + INK + '"><i style="display:inline-block;width:8px;height:8px;border-radius:3px;background:' + tint + ';margin-right:5px"></i>' + what + '</b><span style="font:400 8.5px/1.3 ' + B + ';color:#4A4560">logged by <b>' + name + '</b> · ' + when + '</span></span></div>';
+    }
+    var LOG = entry('nana', 'Nana', MINT, 'Diaper · wet', '1:52 pm') + entry('rosa', 'Rosa', '#14204F', 'Nap · 1h 40m', '11:30 am') + entry('sam', 'Sam', TAN, 'Breast · L 12m, R 9m', '11:05 am') + entry('ari', 'Ari', ROSE, 'Vitamin D · as directed', '9:02 am');
+    MOCKS.kip = {
+      accent: TAN,
+      fontCss: 'https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito+Sans:wght@400;700;800&display=swap',
+      img: {
+        story: [LOOP + 'kip-ch-story-anim.webp', LOOP + 'kip-ch-story.webp'],
+        roles: [LOOP + 'kip-ch-roles-anim.webp', LOOP + 'kip-ch-roles.webp'],
+        night: [LOOP + 'kip-ch-night-anim.webp', LOOP + 'kip-ch-night.webp'],
+        report: [LOOP + 'kip-ch-report-anim.webp', LOOP + 'kip-ch-report.webp'],
+        cast: [LOOP + 'kip-ch-cast-anim.webp', LOOP + 'kip-ch-cast.webp'],
+        'try': [LOOP + 'kip-ch-try-anim.webp', LOOP + 'kip-ch-try.webp']
       },
-      flow: { file: 'CKS — Site plan', fg: '#F7F5F0', accent: '#F2A93B',
-        groups: [
-          { name: 'Plan', steps: ['One link that sells', 'Example vocabulary'], solid: '<path d="M22 8h16v10H22zM8 42h14v10H8zM38 42h14v10H38zM30 18v12M15 42V30h30v12"/>',
-            copy: ['A product site that explains, demonstrates and prices the Knowledge System, so a proposal needs one link.', 'Six categories of example vocabulary, reused by the story, the map and the sketch tool.'] },
-          { name: 'Design', steps: ['The loom', 'Five personalities'], solid: '<path d="M8 12h44M8 24h44M8 36h44M8 48h44M16 6v48M28 6v48M40 6v48"/>',
-            copy: ['A woven hero in four thread colors. The mark, the loom and the map all share them.', 'Every component reads the same design tokens, so five sample sites can wear one set of markup.'] },
-          { name: 'Build', steps: ['Plain HTML, CSS, JS', 'GitHub → Hostinger'], solid: '<path d="M22 18L10 31l12 13M38 18l12 13-12 13M34 12l-8 38"/>',
-            copy: ['Pages generated from templates by one Python script, and each demo loads only on its own page.', 'Pushed to GitHub, checked, then deployed to Hostinger over FTPS by GitHub Actions.'] }
-        ] }
+      file: 'kip — Product site', page: 'Home', frame: 'Desktop · Hero', url: 'kip (concept)',
+      bg: TAN, hover: 'cta',
+      comment: { on: 'phone', by: 'Review', text: 'A Tylenol dose for an 8-week-old in the sample log reads like dosing advice.', reply: 'Every example dose is now vitamin D, as directed. The site shows patterns, never doses.' },
+      els: [
+        { id: 'blob', name: 'Shape / butter blob', icon: 'img', type: 'Vector', x: 590, y: 150, w: 360, h: 475, wire: 'img',
+          props: { fill: BUTTER },
+          html: '<div style="position:absolute;inset:0;background:' + BUTTER + ';border-radius:46% 54% 50% 50% / 55% 50% 50% 45%"></div>' },
+        { id: 'nav', name: 'Nav / header', icon: 'comp', type: 'Component', x: 0, y: 0, w: 1000, h: 46, wire: 'nav',
+          props: { fill: CREAM },
+          html: '<div style="height:100%;background:' + CREAM + ';border-bottom:2px solid ' + INK + ';display:flex;align-items:center;gap:16px;padding:0 20px 0 26px;font:700 9px ' + B + ';color:' + INK + '">' + MARK + '<b style="font:800 15px ' + H + ';margin-left:-10px">kip</b><span style="margin-left:auto;background:' + BUTTER + ';border:2px solid ' + INK + ';border-radius:999px;padding:3px 9px">Home</span><span>Village</span><span>Insights</span><span>Try it</span><span>Pricing</span><span style="border:2px solid ' + INK + ';border-radius:999px;padding:3px 9px;font-weight:400">Search · Ctrl K</span><span style="background:' + INK + ';color:' + CREAM + ';border-radius:999px;padding:6px 11px">Try it yourself</span></div>' },
+        { id: 'heading', name: 'H1 / One little log', icon: 'text', type: 'Text', x: 48, y: 96, w: 500, h: 204, wire: 'lines:3:big',
+          props: { fill: INK, font: 'Baloo 2', weight: 'ExtraBold', size: '112', lh: '90%', ls: '-2.5%' },
+          html: '<div style="font:800 64px/.92 ' + H + ';letter-spacing:-.025em;color:' + INK + '"><div>One little log.</div><div>The whole village</div><div>in it.</div></div>' },
+        { id: 'lede', name: 'Lede / what kip does', icon: 'text', type: 'Text', x: 48, y: 320, w: 440, h: 74, wire: 'lines:4',
+          props: { fill: INK, font: 'Nunito Sans', weight: 'Regular', size: '21', lh: '150%' },
+          html: '<p style="margin:0;font:400 13px/1.5 ' + B + ';color:' + INK + '">kip keeps track of June’s feeds, naps, diapers and meds, with everyone who looks after her writing in the same place. So nobody has to text “did she eat?” at 2pm ever again.</p>' },
+        { id: 'cta', name: 'Buttons / hero', icon: 'comp', type: 'Component', x: 48, y: 414, w: 330, h: 42, wire: 'btn',
+          props: { fill: CREAM, font: 'Nunito Sans', weight: 'ExtraBold', size: '17' },
+          html: '<div style="display:flex;gap:10px;height:100%"><span class="hv" style="flex:1;border-radius:999px;background:' + CREAM + ';color:' + INK + ';border:2px solid ' + INK + ';box-shadow:0 4px 0 ' + INK + ';font:800 10.5px ' + B + ';display:flex;align-items:center;justify-content:center">▶ Try it yourself</span><span style="flex:1;border-radius:999px;background:' + INK + ';color:' + CREAM + ';font:800 10.5px ' + B + ';display:flex;align-items:center;justify-content:center">Join early access</span></div>' },
+        { id: 'note', name: 'Note / this is a concept', icon: 'text', type: 'Text', x: 48, y: 480, w: 440, h: 44, wire: 'lines:2',
+          props: { fill: INK, font: 'Nunito Sans', weight: 'Bold', size: '15' },
+          html: '<div style="display:flex;gap:9px;align-items:center;font:700 9.5px/1.4 ' + B + ';color:' + INK + '">' + ch('june', 30) + '<span>kip is a concept. There’s no app to download, just this site and a baby named June, who is 8 weeks old and made up.</span></div>' },
+        { id: 'phone', name: 'Phone / Today screen', icon: 'comp', type: 'Component', x: 646, y: 84, w: 248, h: 541, wire: 'img',
+          props: { fill: CREAM },
+          html: '<div style="position:absolute;inset:0;background:' + INK + ';border-radius:38px 38px 0 0;padding:9px 9px 0"><div style="height:100%;background:' + CREAM + ';border-radius:30px 30px 0 0;padding:26px 12px 0;overflow:hidden">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' + ch('june', 32) + '<span><b style="display:block;font:800 15px/1 ' + H + ';color:' + INK + '">June</b><span style="font:400 8.5px ' + B + ';color:#4A4560">8 weeks, 2 days</span></span><span style="margin-left:auto;display:flex">' + ch('ari', 20) + ch('sam', 20) + ch('rosa', 20) + '</span></div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">' + [[TAN, 'Feed'], ['#14204F', 'Sleep'], [MINT, 'Diaper'], [ROSE, 'Med']].map(function(q){ return '<span style="text-align:center;font:800 7.5px ' + B + ';color:' + INK + '"><i style="display:block;height:30px;border-radius:10px;border:2px solid ' + INK + ';background:' + q[0] + ';margin-bottom:3px"></i>' + q[1] + '</span>'; }).join('') + '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><b style="font:800 12px ' + H + ';color:' + INK + '">Today</b><span style="font:400 8px ' + B + ';color:#4A4560">9 entries from 4 people</span></div>' +
+            entry('nana', 'Nana', TAN, 'Bottle · 4 oz', '2:14 pm') + LOG + '</div></div>' }
+      ],
+      mobile: {
+        bg: CREAM, statusFg: INK,
+        html: '<style>' +
+          '.kxm .kxe.kx-in{max-height:0;margin:0;padding-top:0;padding-bottom:0;border-width:0;opacity:0;overflow:hidden;transition:max-height .5s,margin .5s,padding .5s,opacity .4s}' +
+          '.ph.kx-new .kxm .kxe.kx-in{max-height:60px;margin-bottom:6px;padding:6px 9px;border-width:2px;opacity:1}' +
+          '.kxm .kx-ban{position:absolute;left:10px;right:10px;top:44px;z-index:5;transform:translateY(-140%);transition:transform .45s cubic-bezier(.3,1.4,.5,1)}' +
+          '.ph.kx-banner .kxm .kx-ban{transform:none}' +
+          '.kxm .kx-ho{position:absolute;inset:0;z-index:6;background:' + CREAM + ';padding:62px 16px 0;transform:translateY(100%);transition:transform .55s cubic-bezier(.2,.8,.2,1)}' +
+          '.ph.kx-ho .kxm .kx-ho{transform:none}' +
+          '</style>' +
+          '<div class="kxm" style="padding:56px 14px 30px;font-family:' + B + ';color:' + INK + '">' +
+            '<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">' + ch('june', 40) + '<span><b style="display:block;font:800 19px/1 ' + H + '">June</b><span style="font:400 10px ' + B + ';color:#4A4560">8 weeks, 2 days</span></span><span style="margin-left:auto;display:flex">' + ch('ari', 24) + ch('sam', 24) + ch('rosa', 24) + '</span></div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">' + [[TAN, 'Feed'], ['#14204F', 'Sleep'], [MINT, 'Diaper'], [ROSE, 'Med']].map(function(q){ return '<span style="text-align:center;font:800 9px ' + B + '"><i style="display:block;height:44px;border-radius:14px;border:2px solid ' + INK + ';background:' + q[0] + ';margin-bottom:4px"></i>' + q[1] + '</span>'; }).join('') + '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font:800 15px ' + H + '">Today</b><span style="font:400 9.5px ' + B + ';color:#4A4560">entries from 4 people</span></div>' +
+            entry('nana', 'Nana', TAN, 'Bottle · 4 oz', '2:14 pm', 'kx-in') + LOG +
+          '</div>',
+        nav: '<div class="kxm"><div class="kx-ban" style="background:' + INK + ';color:' + CREAM + ';border-radius:16px;padding:9px 11px;display:flex;align-items:center;gap:9px;box-shadow:0 10px 24px rgba(30,27,46,.35);font-family:' + B + '">' + ch('rosa', 28) + '<span><b style="display:block;font:800 11px ' + B + '">Rosa started her shift</b><span style="font:400 9px ' + B + ';opacity:.8">Here’s what you missed. Tap to hand over.</span></span></div>' +
+          '<div class="kx-ho">' +
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' + ch('rosa', 44) + '<b style="font:800 19px/1.1 ' + H + ';color:' + INK + '">Hi Rosa. Since you left:</b></div>' +
+            '<p style="margin:0 0 12px;font:400 10px ' + B + ';color:#4A4560">Monday 6:10 pm to now, logged by Ari, Sam and Jo</p>' +
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">' + [['2', 'feeds', TAN], ['1', 'nap', SKY], ['3', 'diapers', MINT]].map(function(s){ return '<div style="border:2px solid ' + INK + ';border-radius:14px;background:' + s[2] + ';padding:10px 8px;text-align:center;color:' + INK + '"><b style="display:block;font:800 24px/1 ' + H + '">' + s[0] + '</b><span style="font:700 9.5px ' + B + '">' + s[1] + '</span></div>'; }).join('') + '</div>' +
+            '<div style="border:2px solid ' + INK + ';border-radius:14px;background:#fff;padding:10px 12px;margin-bottom:16px;font:400 10px ' + B + ';color:' + INK + '"><b style="display:block;font:800 11px ' + B + '">Last feed</b>11:05 by Sam</div>' +
+            '<div class="kx-go" style="background:' + INK + ';color:' + CREAM + ';border-radius:999px;padding:13px;text-align:center;font:800 12px ' + B + '">Start my shift</div>' +
+          '</div></div>',
+        notes: [
+          { t: 'One shared log', d: 'Every feed, nap and diaper carries the face of whoever logged it.' },
+          { t: 'Someone else logged it', d: 'Nana’s bottle lands at the top of the same list everyone sees.' },
+          { t: 'The handoff', d: 'When Rosa starts her shift, one tap shows everything since she left.' },
+          { t: 'Start informed', d: 'She taps Start my shift and she’s caught up, with no phone call.' }
+        ],
+        steps: [
+          { note: 0, hold: 1.8 },
+          { note: 1, add: 'kx-new', hold: 2 },
+          { note: 2, add: 'kx-banner', hold: 1.1 }, { tap: '.kx-ban', add: 'kx-ho', hold: 2.6 },
+          { note: 3, tap: '.kx-go', remove: 'kx-ho', hold: .3 }, { remove: 'kx-banner', hold: 1.6 },
+          { note: -1, remove: 'kx-new', hold: .6 }
+        ]
+      }
     };
   })();
   MOCKS['daniel-aguirre-law'].cms = {
@@ -323,6 +422,8 @@ window.Webflow.push(function(){
       var w = mk('div', 'stg-w'); sc.stg = mk('div', 'stg' + (sc.portrait ? ' is-p' : '') + ' stg-' + sc.kind);
       sc.stg.style.width = sc.SW + 'px'; sc.stg.style.height = sc.SH + 'px';
       sc.stg.style.setProperty('--acc', sc.M.mock.accent || '#FF6A3D');
+      // a mission can bring its own typefaces for its mock scenes (kip: Baloo 2 + Nunito Sans), loaded once
+      if (sc.M.mock.fontCss && !document.getElementById('mk-fonts')){ var fl = document.createElement('link'); fl.id = 'mk-fonts'; fl.rel = 'stylesheet'; fl.href = sc.M.mock.fontCss; document.head.appendChild(fl); }
       w.appendChild(sc.stg); v.appendChild(w);
       (EXT[sc.kind] || ({ figma: buildFigma, phone: buildPhone, flow: buildFlow, exploded: buildExplode, cms: buildCms, sketch: buildSketch, vector: buildVector })[sc.kind])(sc);
       fit(sc);
@@ -1481,7 +1582,7 @@ window.Webflow.push(function(){
       if (!FP) FP = new Promise(function(done){
         function res(){ FONTS_OK = true; done(); }
         var l = document.createElement('link'); l.id = 'cx-fonts'; l.rel = 'stylesheet';
-        l.href = 'https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital@1&family=Lora:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@400;600&family=Fredoka:wght@500;700&family=Nunito+Sans:wght@400;700;800&family=Archivo+Narrow:wght@400;500&family=IBM+Plex+Mono&display=swap';
+        l.href = 'https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital@1&family=Lora:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@400;600&family=Fredoka:wght@500;700&family=Nunito+Sans:wght@400;700;800&family=Archivo+Narrow:wght@400;500&family=IBM+Plex+Mono&family=Caveat:wght@500;700&display=swap';
         l.onload = function(){ (document.fonts ? document.fonts.load('700 12px "Schibsted Grotesk"') : Promise.resolve()).then(res, res); };
         l.onerror = function(){ res(); };
         document.head.appendChild(l);
@@ -1711,7 +1812,7 @@ window.Webflow.push(function(){
           '<span class="cx-tally"><b>12</b> pages · <b>26</b> links</span><button type="button" class="cx-growb" aria-pressed="false">+ Grow the map</button></div>' +
         '<form class="cx-grow" novalidate><label>New insight<input type="text" maxlength="60" autocomplete="off" placeholder="What’s the idea, in your words?"></label><fieldset><legend>Tag it with</legend>' +
           TOP.map(function(t){ return '<button type="button" class="cx-tc" data-t="' + t + '" aria-pressed="false" style="--c:' + GT[t][1] + '">' + esc(GT[t][0]) + '</button>'; }).join('') +
-          '</fieldset><div class="cx-gogo"><button type="submit" class="cx-add">Add to the map</button><span class="cx-note">Adds to this monitor only. Nothing is saved.</span></div></form>' +
+          '</fieldset><div class="cx-gogo"><button type="submit" class="cx-add">Add to the map</button><span class="cx-note" role="status" aria-live="polite">Adds to this monitor only. Nothing is saved.</span></div></form>' +
         '<div class="cx-gx" style="left:' + MA.x + 'px;top:' + MA.y + 'px;width:' + MA.w + 'px;height:' + MA.h + 'px"><div class="cx-gin"><svg class="cx-gthr" viewBox="0 0 ' + MA.w + ' ' + MA.h + '" aria-hidden="true"></svg>' +
           TOP.map(function(t){ return node(t, 'is-t', ' style="--c:' + GT[t][1] + '"><span class="k"></span>' + esc(GT[t][0])); }).join('') +
           Object.keys(GP).map(function(id){ return node(id, '', ' data-kind="' + GP[id][0] + '"><span class="k">' + GICO[GP[id][0]] + '</span>' + esc(GP[id][1])); }).join('') +
@@ -1816,7 +1917,14 @@ window.Webflow.push(function(){
       function growMine(){
         var tags = chips.filter(function(c){ return c.getAttribute('aria-pressed') === 'true'; }).map(function(c){ return c.getAttribute('data-t'); });
         var tt = (title.value || '').trim().slice(0, 60);
-        if (!tt || !tags.length){ q(form, '.cx-note').textContent = !tt ? 'Give it a title first.' : 'Pick at least one topic.'; return; }
+        // missing bits: say which (both at once), flag the field, focus the first gap (the demo's own ink, not AB orange)
+        var note = q(form, '.cx-note'), fs = q(form, 'fieldset');
+        title.setAttribute('aria-invalid', tt ? 'false' : 'true'); fs.classList.toggle('is-err', !tags.length);
+        if (!tt || !tags.length){
+          note.textContent = !tt && !tags.length ? 'Give it a title and pick at least one topic.' : !tt ? 'Give it a title first.' : 'Pick at least one topic.';
+          note.classList.add('is-err'); (tt ? chips[0] : title).focus(); return;
+        }
+        note.classList.remove('is-err');
         var id = 'm' + (mine.length + 1), b = document.createElement('button');
         b.type = 'button'; b.className = 'cx-gn is-new is-mine'; b.setAttribute('data-id', id); b.setAttribute('data-kind', 'Insight');
         b.innerHTML = '<span class="k">' + GICO.Insight + '</span>' + esc(tt); gin.appendChild(b); N[id] = b; bind(id);
@@ -1848,7 +1956,8 @@ window.Webflow.push(function(){
       inp.addEventListener('input', function(){ search(inp.value); });
       tap(growB, function(){ if (sc.hold) sc.hold(); openForm(!form.classList.contains('on')); if (form.classList.contains('on')) title.focus(); });
       title.addEventListener('focus', function(){ if (sc.hold) sc.hold(); });
-      chips.forEach(function(c){ tap(c, function(){ if (sc.hold) sc.hold(); c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); }); });
+      chips.forEach(function(c){ tap(c, function(){ if (sc.hold) sc.hold(); c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); q(form, 'fieldset').classList.remove('is-err'); }); });
+      title.addEventListener('input', function(){ if (title.value.trim()) title.setAttribute('aria-invalid', 'false'); });
       form.addEventListener('submit', function(e){ e.preventDefault(); if (sc.hold) sc.hold(); growMine(); });
       // drag to pan
       var pan = { x: 0, y: 0 }, drag = null;
@@ -1861,6 +1970,7 @@ window.Webflow.push(function(){
         clearMine(); pan.x = pan.y = 0; gin.style.transform = '';
         setGrown(false); inp.value = ''; title.value = ''; found.textContent = ''; gx.classList.remove('is-search'); openForm(false);
         chips.forEach(function(c){ c.setAttribute('aria-pressed', 'false'); }); q(form, '.cx-note').textContent = 'Adds to this monitor only. Nothing is saved.';
+        q(form, '.cx-note').classList.remove('is-err'); q(form, 'fieldset').classList.remove('is-err'); title.setAttribute('aria-invalid', 'false');
         unfocus(); setTally(12, 26);
       });
       var tl = R.tl;
@@ -2114,6 +2224,96 @@ window.Webflow.push(function(){
       tps.forEach(function(b){ tap(b, function(){ if (sc.hold) sc.hold(); b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); }); });
       tap(pub, function(){ tl.seek(tl.labels.publish + .5); if (sc.onSeek) sc.onSeek(); if (sc.resume) sc.resume(); });
     });
+
+    /* ---------------- 6 · SITE PLAN: a FigJam board on CKS paper, four threads woven through every decision ---------------- */
+    // lanes of stickies (Plan / Design / Build); each thread is an idea that runs through one sticky per lane
+    var PL = [
+      ['Plan', 'ideation: what the site has to do', '#FFE68A', [['One link that sells the install', 'Proposals get a single URL that explains, demos and prices it.'], ['A six-category vocabulary', 'Reused by the story, the map and the sketch tool.'], ['Show it, don’t claim it', 'Every promise becomes a demo you can touch.'], ['No fake numbers', 'No logos, reviews or rankings. One real stat or none.']]],
+      ['Design', 'wireframes, then the look', '#FFC9BB', [['The loom = connecting what you know', 'A woven hero instead of another gradient blob.'], ['Four thread colors, four ideas', 'Saffron, coral, teal, cobalt: the mark, the loom and the map share them.'], ['Five personalities, one set', 'The same components wear a law firm, a bakery, a studio…'], ['Every demo says it’s a demo', 'Simulations are labeled in the interface, not a footnote.']]],
+      ['Build', 'coded by hand from the wireframes', '#BFEBDF', [['Plain HTML, CSS, JS', 'No framework. GitHub Actions ships it to Hostinger.'], ['Each demo loads on its own page', 'Small scripts, nothing shared that isn’t needed.'], ['⌘K search that never drifts', 'The index reads every page’s sections.'], ['The demo form says so', 'It sends nothing, and tells you before you type.']]]
+    ];
+    // [name, color, sticky column per lane]
+    var TH = [['One link', COB, [0, 0, 0]], ['Vocabulary', SAF, [1, 1, 2]], ['Show, don’t claim', COR, [2, 2, 1]], ['Honesty', TEA, [3, 3, 3]]];
+    SCENE.add('cks-plan', function(sc){
+      fonts(sc);
+      var P = sc.portrait, st = sc.stg;
+      var L = P ? { x: 16, w: 608, top: 96, h: 222, gap: 12, sw: 138, sh: 150, sx: 10, sy: 48, step: 148 } : { x: 36, w: 1128, top: 62, h: 198, gap: 18, sw: 214, sh: 132, sx: 64, sy: 52, step: 272 };
+      function laneY(i){ return L.top + i * (L.h + L.gap); }
+      function stick(li, ci){ return { x: L.x + L.sx + ci * L.step, y: laneY(li) + L.sy }; }
+      // threads run down each note's left edge, so a stitch over the note never crosses its text
+      function center(li, ci){ var p = stick(li, ci); return { x: p.x + 11, y: p.y + L.sh / 2 }; }
+      var html = '<div class="cx-bg is-paper"></div><div class="cx-fj-file"><b>#</b> CKS — Site plan <em>FigJam</em></div>' +
+        '<div class="cx-fj-tools"><i class="on"></i><i></i><i></i><i></i><i></i></div>' +
+        '<svg class="cx-fj-thr" viewBox="0 0 ' + sc.SW + ' ' + sc.SH + '" aria-hidden="true"></svg>';
+      PL.forEach(function(ln, li){
+        html += '<div class="cx-fj-lane" style="left:' + L.x + 'px;top:' + laneY(li) + 'px;width:' + L.w + 'px;height:' + L.h + 'px;--c:' + ln[2] + '"><span><b>0' + (li + 1) + ' · ' + ln[0] + '</b> ' + esc(ln[1]) + '</span></div>';
+        ln[3].forEach(function(n, ci){
+          var p = stick(li, ci), th = TH.filter(function(t){ return t[2][li] === ci; }).map(function(t){ return TH.indexOf(t); });
+          html += '<div class="cx-fj-st" data-l="' + li + '" data-th="' + th.join(' ') + '" style="left:' + p.x + 'px;top:' + p.y + 'px;width:' + L.sw + 'px;height:' + L.sh + 'px;--c:' + ln[2] + ';--r:' + ((li * 4 + ci) % 3 - 1) * 1.4 + 'deg"><b data-t="' + esc(n[0]) + '"></b><p>' + esc(n[1]) + '</p><em>Angelino</em></div>';
+        });
+      });
+      html += '<svg class="cx-fj-over" viewBox="0 0 ' + sc.SW + ' ' + sc.SH + '" aria-hidden="true"></svg>' +
+        '<div class="cx-fj-leg">' + TH.map(function(t, i){ return '<button type="button" data-th="' + i + '" style="--c:' + t[1] + '"><i></i>' + esc(t[0]) + '</button>'; }).join('') + '</div>' +
+        '<div class="cx-fj-cap">Four threads run through every decision.</div>' + cursor('a', 'Angelino') + '<div class="fg-fade"></div>';
+      st.innerHTML = html;
+      var svg = q(st, '.cx-fj-thr'), over = q(st, '.cx-fj-over'), lanes = qa(st, '.cx-fj-lane'), sts = qa(st, '.cx-fj-st'), leg = qa(st, '.cx-fj-leg button'), cap = q(st, '.cx-fj-cap'), cur = q(st, '.cur.a');
+      // each thread: in from the top, through its three stickies (swaying as it goes), out at the bottom
+      var paths = [], stitches = [];
+      TH.forEach(function(t, ti){
+        var pts = [{ x: center(0, t[2][0]).x + (ti % 2 ? 26 : -26), y: L.top - 14 }].concat(t[2].map(function(c, li){ return center(li, c); }));
+        var last = pts[pts.length - 1]; pts.push({ x: last.x + (ti % 2 ? -26 : 26), y: laneY(2) + L.h + 12 });
+        var d = 'M' + pts[0].x + ' ' + pts[0].y;
+        for (var k = 1; k < pts.length; k++){ var a = pts[k - 1], b = pts[k], my = (a.y + b.y) / 2, sw = (k % 2 ? 1 : -1) * (ti % 2 ? 22 : -22); d += 'C' + (a.x + sw) + ' ' + my + ' ' + (b.x - sw) + ' ' + my + ' ' + b.x + ' ' + b.y; }
+        var p = pth(svg, d, 'cx-fj-t'); p.style.stroke = t[1]; p.setAttribute('data-th', ti); paths.push(p);
+        // over / under: on alternate stickies the thread is stitched across the face of the note
+        t[2].forEach(function(c, li){ if ((li + ti) % 2) return; var m = center(li, c), s = pth(over, 'M' + m.x + ' ' + (m.y - L.sh / 2 - 8) + 'L' + m.x + ' ' + (m.y + L.sh / 2 + 8), 'cx-fj-t is-over'); s.style.stroke = t[1]; s.setAttribute('data-th', ti); stitches.push(s); });
+      });
+      function light(k){
+        st.classList.toggle('fj-hl', k != null);
+        qa(st, '[data-th]').forEach(function(e){ var ks = (e.getAttribute('data-th') || '').split(' '); e.classList.toggle('hl', k != null && ks.indexOf(String(k)) > -1); });
+      }
+      leg.forEach(function(b){
+        b.addEventListener('pointerenter', function(){ light(+b.getAttribute('data-th')); });
+        b.addEventListener('pointerleave', function(){ if (!sc.paused) light(null); });
+        tap(b, function(){ if (sc.hold) sc.hold(); light(+b.getAttribute('data-th')); });
+      });
+      sts.forEach(function(s){
+        s.addEventListener('pointerenter', function(){ var k = s.getAttribute('data-th'); if (k) light(+k.split(' ')[0]); });
+        s.addEventListener('pointerleave', function(){ light(null); });
+        tap(s, function(){ if (sc.hold) sc.hold(); var on = !s.classList.contains('big'); sts.forEach(function(o){ o.classList.remove('big'); }); s.classList.toggle('big', on); });
+      });
+      var R = run(sc, function(){ light(null); sts.forEach(function(s){ s.classList.remove('big'); }); paths.concat(stitches).forEach(function(p){ p.classList.remove('woven'); }); }), tl = R.tl;
+      tl.set(q(st, '.fg-fade'), { autoAlpha: 0 }, 0).set(cur, { autoAlpha: 0, x: sc.SW * .5, y: sc.SH + 30 }, 0).set(sts.concat(leg, [cap], lanes), { autoAlpha: 0 }, 0);
+      paths.concat(stitches).forEach(function(p){ hide(R, p); });
+      tl.to(cur, { autoAlpha: 1, duration: .2 }, .3);
+      var t = .3, names = ['plan', 'design', 'build'];
+      PL.forEach(function(ln, li){
+        tl.addLabel(names[li], t);
+        tl.fromTo(lanes[li], { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .4, immediateRender: false }, t);
+        t += .3;
+        sts.filter(function(s){ return +s.getAttribute('data-l') === li; }).forEach(function(s, ci){
+          var p = stick(li, ci);
+          move(R, cur, { x: p.x + L.sw * .5, y: p.y + L.sh * .45 }, t, .45);
+          tl.fromTo(s, { autoAlpha: 0, scale: .7, rotation: -6 }, { autoAlpha: 1, scale: 1, rotation: 0, duration: .35, ease: 'back.out(2)', immediateRender: false }, t + .4);
+          var b = q(s, 'b'); type(R, b, b.getAttribute('data-t'), t + .55, .55);
+          t += P ? .75 : .85;
+        });
+        t += .25;
+      });
+      tl.addLabel('weave', t);
+      tl.to(cur, { autoAlpha: 0, duration: .3 }, t);
+      paths.forEach(function(p, i){
+        draw(R, p, t + i * .7, 1.1);
+        stitches.filter(function(s){ return s.getAttribute('data-th') === String(i); }).forEach(function(s){ draw(R, s, t + i * .7 + .8, .3); });
+        tl.fromTo(leg[i], { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .3, immediateRender: false }, t + i * .7 + .3);
+      });
+      t += paths.length * .7 + 1.2;
+      R.at(t, function(){ paths.concat(stitches).forEach(function(p){ p.classList.add('woven'); }); });
+      tl.fromTo(cap, { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: .4, immediateRender: false }, t);
+      [0, 1, 2, 3].forEach(function(k, i){ R.at(t + .8 + i * 1.1, function(){ light(k); }); });
+      R.at(t + 5.2, function(){ light(null); });
+      end(sc, R, t + 6.4, t + .6, [{ t: 'Plan', at: 'plan' }, { t: 'Design', at: 'design' }, { t: 'Build', at: 'build' }, { t: 'Weave', at: 'weave' }]);
+    });
   })();
 
   /* ===== mission/30-mission.js ===== */
@@ -2152,7 +2352,8 @@ window.Webflow.push(function(){
   // "Test flight" (a proof of concept) is a status, not a discipline: badge its chip, keep it out of the discipline counts
   var TEST = AB.testFlight ? AB.testFlight($$('[data-meta-types] .ab_meta_chip')) : false;
   TYPES = TYPES.filter(function(t){ return !/^test flight$/i.test(t); });
-  var isLogo = TYPES.indexOf('Logo') > -1 || TYPES.indexOf('Branding') > -1;
+  // an identity mission: logo/branding work with no website or app of its own (kip is branded, but it's a site + app)
+  var isLogo = (TYPES.indexOf('Logo') > -1 || TYPES.indexOf('Branding') > -1) && TYPES.indexOf('Website') < 0 && TYPES.indexOf('App') < 0;
   // a system mission (content system with no website of its own, e.g. the Knowledge System add-on)
   var isSystem = !isLogo && TYPES.indexOf('Content system') > -1 && TYPES.indexOf('Website') < 0;
 
@@ -2165,6 +2366,13 @@ window.Webflow.push(function(){
     return { id: cid, kind: (/^cks-/.test(cid) ? cid : ({ sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable' })[cid]) || (it.getAttribute('data-kind') || 'img').toLowerCase(), mode: (it.getAttribute('data-mode') || '').toLowerCase(),
       label: it.getAttribute('data-label') || ('Channel ' + (i + 1)), caption: it.getAttribute('data-caption') || '', src: imgs[0] || '', before: imgs[0] || '', after: imgs[1] || imgs[0] || '' };
   });
+  // image channels whose loops live in the repo (MOCKS[slug].img: id → [loop, still], on jsDelivr, so Webflow can't flatten
+  // an animated WebP); reduced motion or Save-Data shows the still. A CMS image, when set, still wins.
+  (function(){
+    var MI = MOCKS[SLUG] && MOCKS[SLUG].img; if (!MI) return;
+    var still = reduce || !!(navigator.connection && navigator.connection.saveData);
+    CH.forEach(function(c){ var L = MI[c.id]; if (!L || c.src) return; c.src = still ? (L[1] || L[0]) : L[0]; c.before = c.src; c.after = L[1] || L[0]; c.loop = !still; });
+  })();
   var PINS = $$('[data-pins-source] .w-dyn-item').map(function(item){
     var it = $('[data-pin]', item) || item;
     var im = $('img', it), src = im && im.getAttribute('src');
@@ -2303,6 +2511,16 @@ window.Webflow.push(function(){
     ul.innerHTML = PARAMS.map(function(p, i){ return '<li><span>P-' + pad2(i + 1) + '</span><span class="ab_param_t">' + esc(p) + '</span></li>'; }).join('');
   })();
 
+  /* ---------- briefing: benefits for the people using it (one per line, no numbers; optional field) ---------- */
+  (function(){
+    var src = $('[data-field="benefits"]'), ul = $('#params');
+    var B = src ? src.textContent.split(/\n+/).map(function(s){ return s.trim(); }).filter(Boolean) : [];
+    if (!B.length || !ul) return;
+    // reuses the parameters' own Designer classes (eyebrow + list), so it needs no stylesheet release
+    ul.insertAdjacentHTML('afterend', '<div class="ab_benefits" style="margin-top:32px"><div class="text-style-eyebrow ab_brief_params-h">Benefits for the people using it</div><ul class="ab_params ab_benefits_l" role="list">' +
+      B.map(function(b, i){ var k = b.indexOf(':'); return '<li><span>B-' + pad2(i + 1) + '</span><span class="ab_param_t">' + (k > 0 ? '<b style="color:var(--star);font-weight:600">' + esc(b.slice(0, k)) + '</b>' + esc(b.slice(k)) : esc(b)) + '</span></li>'; }).join('') + '</ul></div>');
+  })();
+
   var codeBlock = AB.codeBlock;
   function showBtn(id, label){ return '<button type="button" class="button is-ghost ab_mc-show" data-show="' + esc(id) + '"><span class="ab_button-label">' + label + '</span><span class="ab_button-arrow" aria-hidden="true">↑</span></button>'; }
   function hasCh(id){ return CH.some(function(c){ return c.id === id; }); }
@@ -2353,8 +2571,19 @@ window.Webflow.push(function(){
   $$('#tel .ab_tel_item').forEach(function(t){
     var n = $('.ab_tel_n', t), v = n && n.getAttribute('data-count'), suf = txt('[data-field="suffix"]', t);
     if (!n || v == null) return;
-    n.setAttribute('data-suffix', suf || '');
+    var word = suf && /^[a-z]/i.test(suf);
+    n.setAttribute('data-suffix', word ? '' : (suf || ''));
     if (v === '' || isNaN(+v)){ n.removeAttribute('data-count'); n.textContent = suf || '∞'; n.classList.remove('w-dyn-bind-empty'); t.classList.add('is-symbol'); }
+    else if (word){
+      // a word unit (hrs, min) sits small beside the number so big values fit their column; this bundle counts it up
+      // itself (core's counter skips an element once data-count is gone)
+      var unit = '<small class="ab_tel_u">' + esc(suf) + '</small>', target = +v;
+      n.removeAttribute('data-count'); n.innerHTML = target + unit;
+      if (!reduce && hasGsap && window.ScrollTrigger){
+        var o = { v: 0 }; n.innerHTML = '0' + unit;
+        ScrollTrigger.create({ trigger: n, start: 'top 90%', once: true, onEnter: function(){ gsap.to(o, { v: target, duration: 1.6, ease: 'power3.out', onUpdate: function(){ n.innerHTML = Math.round(o.v) + unit; } }); } });
+      }
+    }
     else n.textContent = v + (suf || '');
   });
 
@@ -2415,8 +2644,41 @@ window.Webflow.push(function(){
       [/schema|structured|json/i, '<span class="kx-json"><b>{</b> <em>"@type"</em>: <i>"Article"</i> <b>}</b></span>']
     ];
     function art(p){ var L = isSystem ? SART : ART; for (var i = 0; i < L.length; i++) if (L[i][0].test(p)) return L[i][1]; return ''; }
+    // website missions: every tile draws a tiny version of its page (a hero, a grid, three price tiers, dated rows…),
+    // in one of three looks per mission: build (wireframe fills in with the brand's colors), woven (CKS paper, a thread
+    // stitched tile to tile) or blueprint (the fallback)
+    var TSTYLE = {
+      '510-visuals': ['build', '#1c1e24', '#d0e0e3', '#5eead4', 'linear-gradient(135deg,#5a8a94,#1c2227)', '#4a5a60'],
+      'daniel-aguirre-law': ['build', '#FCF6EC', '#1a2840', '#891E2D', 'linear-gradient(135deg,#A88B5C,#efe2c8)', '#c9bda8'],
+      'cks': ['woven', '#F7F5F0', '#0B1B2B', '#EF5B3F', 'linear-gradient(135deg,#2F5BEA,#139E8A)', '#C9CED4'],
+      'kip': ['build', '#FFF4E6', '#1E1B2E', '#FF7A45', 'linear-gradient(135deg,#FFC94A,#5FD3A8)', '#E6D3BD']
+    };
+    var TS = TSTYLE[SLUG] || ['blueprint'], THREADS = ['#F2A93B', '#EF5B3F', '#139E8A', '#2F5BEA'];
+    function g(c, l, t, w, h){ return '<i class="' + c + '" style="left:' + l + '%;top:' + t + '%;width:' + w + '%;height:' + h + '%"></i>'; }
+    function glyph(p){
+      var s = g('m', 5, 8, 90, 7);
+      if (/home|landing/i.test(p)) return s + g('f', 6, 26, 42, 9) + g('f', 6, 40, 32, 9) + g('m', 6, 56, 26, 6) + g('a', 6, 70, 18, 11) + g('img', 55, 24, 39, 62);
+      if (/about|team|crew|pilot/i.test(p)) return s + g('img r', 7, 26, 22, 56) + g('f', 36, 30, 54, 8) + g('m', 36, 46, 46, 6) + g('m', 36, 58, 40, 6) + g('a', 36, 72, 16, 9);
+      if (/pric|plan|package/i.test(p)) return s + [6, 37, 68].map(function(l, i){ return g(i === 1 ? 'a' : 'o', l, 22, 26, 68) + g('f', l + 4, 34, 18, 7) + g('m', l + 4, 50, 14, 5) + g('m', l + 4, 60, 16, 5); }).join('');
+      if (/contact|book|call|form/i.test(p)) return s + g('o', 22, 24, 56, 11) + g('o', 22, 40, 56, 11) + g('o', 22, 56, 56, 11) + g('a', 22, 74, 22, 12);
+      if (/blog|insight|news|what.s new|changelog|observ|article/i.test(p)) return s + [24, 45, 66].map(function(t){ return g('a', 6, t, 10, 8) + g('f', 20, t, 64, 8) + g('m', 20, t + 10, 40, 5); }).join('');
+      // (before the grid rule, so 'How it works' isn't read as work)
+      if (/how|process|service|install|guide|expertise|practice|hub/i.test(p)) return s + [8, 40, 72].map(function(l, i){ return g('r ' + (i ? 'f' : 'a'), l, 26, 13, 28) + g('m', l - 2, 64, 22, 6) + g('m', l - 2, 76, 16, 5); }).join('');
+      if (/project|work|portfolio|result|case|inspiration|gallery/i.test(p)) return s + [6, 37, 68].map(function(l, i){ return g(i % 2 ? 'a' : 'img', l, 22, 26, 30) + g('img', l, 58, 26, 30); }).join('');
+      if (/template|detail/i.test(p)) return s + g('img', 6, 20, 88, 36) + g('f', 6, 62, 64, 8) + g('m', 6, 76, 50, 6);
+      if (/style|token|brand|color/i.test(p)) return s + [0, 1, 2, 3, 4].map(function(i){ return g(['a', 'f', 'img', 'm', 'o'][i], 6 + i * 18, 28, 14, 56); }).join('');
+      if (/voice|audio|podcast/i.test(p)) return s + [30, 60, 85, 45, 95, 70, 40, 80, 55, 35, 65, 50].map(function(h, i){ return g(i % 3 ? 'f' : 'a', 8 + i * 7.3, 60 - h * .4, 4, h * .6); }).join('');
+      if (/sketch|idea|board/i.test(p)) return s + g('a', 8, 26, 24, 38) + g('img', 38, 30, 24, 38) + g('f', 68, 24, 24, 38) + g('m', 8, 78, 80, 5);
+      if (/review|testimonial|quote/i.test(p)) return s + g('a', 8, 24, 10, 22) + g('f', 22, 28, 64, 8) + g('f', 22, 42, 56, 8) + g('m', 22, 60, 30, 6);
+      if (/space|bny|studio|map/i.test(p)) return s + g('img', 6, 20, 88, 70) + g('a', 10, 70, 20, 10);
+      return s + g('f', 6, 28, 70, 9) + g('f', 6, 44, 56, 9) + g('m', 6, 60, 40, 6) + g('a', 70, 72, 22, 12);
+    }
+    if (site && !isLogo && !isSystem){
+      site.setAttribute('data-style', TS[0]);
+      if (TS[1]) ['--tb', '--tf', '--ta', '--ti', '--tm'].forEach(function(k, i){ site.style.setProperty(k, TS[i + 1]); });
+    }
     if (site){
-      site.innerHTML = pages.map(function(p, i){ var ax = isLogo || isSystem ? art(p) : ''; return '<div class="vs-t' + (ax ? ' is-art' : '') + '" style="--d:' + (i * .12) + 's" data-p="' + esc(p) + '">' + (ax ? '<div class="vs-w is-art">' + ax + '</div>' : '<div class="vs-w"><i></i><i></i><i class="s"></i><b></b></div>') + '<span>' + esc(p) + '</span><em>✓</em></div>'; }).join('') +
+      site.innerHTML = pages.map(function(p, i){ var ax = isLogo || isSystem ? art(p) : ''; return '<div class="vs-t' + (ax ? ' is-art' : '') + '" style="--d:' + (i * .12) + 's;--th:' + THREADS[i % 4] + '" data-p="' + esc(p) + '">' + (ax ? '<div class="vs-w is-art">' + ax + '</div>' : '<div class="vs-w g">' + glyph(p) + '</div>') + '<span>' + esc(p) + '</span><em>✓</em></div>'; }).join('') +
         '<span class="vs-cur" aria-hidden="true"><svg viewBox="0 0 16 20"><path d="M1.5 1.5v15.5l4.4-4.1 2.9 6.3 2.6-1.2-2.9-6.2 6-.3z"/></svg></span>';
     }
     var plEl = $('[data-mf="planet"]', sec), ptype = HERO_PLANET.getAttribute('data-planet') || 'planet';
@@ -2430,7 +2692,28 @@ window.Webflow.push(function(){
     set('params-title', 'All ' + PARAMS.length + ' met');
     var ck = $('[data-mf="params"]', sec); if (ck) ck.innerHTML = PARAMS.map(function(p){ return '<li>' + esc(p) + '</li>'; }).join('');
     set('status', txt('#hero [data-field="status"]') || 'Shipped');
-    var stc = $('.ab_mf_status', sec); if (stc) stc.insertAdjacentHTML('afterbegin', '<svg class="mf-radar" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="30"/><circle cx="100" cy="100" r="60"/><circle cx="100" cy="100" r="90"/><path d="M100 10v180M10 100h180"/><g class="sweep"><path d="M100 100L100 10A90 90 0 0 1 163.6 36.4Z"/></g><rect class="blip" x="136" y="58" width="6" height="6"/></svg>');
+    var stc = $('.ab_mf_status', sec); if (stc) orbitCard(stc, (txt('#hero [data-field="status"]') || '').toLowerCase());
+    // the status card's orbit: the mission's own planet, a probe on a tilted orbit that passes behind it.
+    // in orbit = circling · live = circling and transmitting · shipped = flag planted on the surface, the probe drifts slowly
+    function orbitCard(card, status){
+      var cols = (HERO_PLANET.getAttribute('data-colors') || '#2a2263,#5b4bd6,#a597ff').split(',').map(function(c){ return c.trim(); });
+      var mode = /live/.test(status) ? 'live' : /ship|done|landed/.test(status) ? 'shipped' : 'orbit';
+      var id = 'mfp' + Math.round(Math.random() * 1e6), stars = '';
+      for (var k = 0; k < 16; k++) stars += '<circle class="mfo-st" cx="' + (10 + (k * 53) % 240) + '" cy="' + (8 + (k * 37) % 180) + '" r="' + (k % 3 ? .7 : 1.1) + '"/>';
+      var O = 'transform="translate(168 112) rotate(-9)"';
+      card.insertAdjacentHTML('afterbegin', '<svg class="mf-orbit is-' + mode + '" viewBox="0 0 260 200" aria-hidden="true"><defs><radialGradient id="' + id + '" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="' + cols[cols.length - 2 >= 0 ? cols.length - 2 : 0] + '"/><stop offset=".55" stop-color="' + cols[1 % cols.length] + '"/><stop offset="1" stop-color="' + cols[0] + '"/></radialGradient></defs>' + stars +
+        '<g ' + O + '><path class="mfo-orb" d="M-86 0A86 22 0 0 1 86 0"/><g class="mfo-back"></g></g>' +
+        '<circle class="mfo-pl" cx="168" cy="112" r="30" fill="url(#' + id + ')"/><path class="mfo-plsh" d="M168 82a30 30 0 0 1 0 60a38 38 0 0 0 0-60z"/>' +
+        (mode === 'shipped' ? '<g class="mfo-flag"><path d="M160 84V64"/><path class="mfo-fl" d="M160 64h14l-4 5 4 5h-14z"/></g>' : '') +
+        '<g ' + O + '><path class="mfo-orb mfo-fr" d="M86 0A86 22 0 0 1 -86 0"/><g class="mfo-front"><g class="mfo-sat"><rect x="-3" y="-3" width="6" height="6" rx="1"/><path class="mfo-pn" d="M-12 -2h7v4h-7zM5 -2h7v4h-7z"/>' +
+          (mode === 'live' ? '<circle class="mfo-sig" r="6"/><circle class="mfo-sig mfo-s2" r="6"/><circle class="mfo-sig mfo-s3" r="6"/>' : '') + '</g></g></g></svg>');
+      var svg = $('.mf-orbit', card), sat = $('.mfo-sat', svg), back = $('.mfo-back', svg), front = $('.mfo-front', svg), a = mode === 'shipped' ? 1.1 : .4, on = false;
+      function place(){ var x = Math.cos(a) * 86, y = Math.sin(a) * 22; sat.setAttribute('transform', 'translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ')'); var host = y < 0 ? back : front; if (sat.parentNode !== host) host.appendChild(sat); }
+      place();
+      if (reduce || !hasGsap) return;
+      new IntersectionObserver(function(es){ on = es[0].isIntersecting; }).observe(card);
+      gsap.ticker.add(function(t, dt){ if (!on) return; a += dt / 1000 * (mode === 'live' ? .9 : mode === 'shipped' ? .2 : .6); place(); });
+    }
     // pages tick in, counter, a cursor that tours the tiles
     $$('.ab_mf_site, .ab_mf_db, .ab_mf_chk', sec).forEach(function(v){
       if (reduce){ v.classList.add('on'); return; }
@@ -2510,7 +2793,8 @@ window.Webflow.push(function(){
     function markSVG(mode){ return AB.markSVG({ grid: mode !== 'light' && mode !== 'plain', dims: mode === 'grid' }); }
     function smallMark(color){ var M = AB.MARK; return '<svg viewBox="0 0 490.16 241.75" aria-hidden="true"><g fill="' + color + '"><path d="' + M.a + '"/><path d="' + M.planet + '"/><path d="' + M.b + '"/></g></svg>'; }
     function channelView(c){
-      var v = '<div class="view ' + c.kind + (c.mode === 'light' ? ' light' : '') + '" data-ch="' + esc(c.id) + '" data-kind="' + c.kind + '" role="tabpanel" aria-label="' + esc(c.label) + '">';
+      // (a mobile still/loop centers its phone inline too, so it doesn't wait on a stylesheet release)
+      var v = '<div class="view ' + c.kind + (c.mode === 'light' ? ' light' : '') + '" data-ch="' + esc(c.id) + '" data-kind="' + c.kind + '" role="tabpanel" aria-label="' + esc(c.label) + '"' + (c.kind === 'mobile' ? ' style="display:grid;place-items:center"' : '') + '>';
       if (c.kind === 'img') v += c.src ? '<img class="full" src="' + esc(c.src) + '" alt="' + esc(c.caption) + '" loading="lazy">' : '';
       else if (c.kind === 'mobile') v += '<div class="phone-f"><div><img src="' + esc(c.src) + '" alt="' + esc(c.caption) + '" loading="lazy"></div></div>';
       else if (c.kind === 'wipe') v += '<div class="wipe"><img src="' + esc(c.before) + '" alt="Design file"><img class="aft" src="' + esc(c.after) + '" alt="Built site"><span class="hdl"><i>⇆</i></span><span class="lab l">Design</span><span class="lab r">Build</span></div>';
@@ -2524,17 +2808,20 @@ window.Webflow.push(function(){
       return v + '</div>';
     }
     var TYPE = { 'live-globe': 'Live', 'live-map': 'Live', 'wipe': 'Compare', 'mobile': 'Phone', 'img': 'Still', 'logo': 'Vector', 'apps': 'Mockups', 'figma': 'Build', 'phone': 'Phone', 'flow': 'Plan', 'exploded': 'Layers', 'cms': 'CMS', 'sketch': 'Sketch', 'vector': 'Vector', 'graph': 'Graph', 'library': 'Library', 'voice': 'AI + you', 'setup': 'CMS', 'video': 'Video', 'schema': 'Schema', 'portable': 'Model',
-      'cks-styles': 'Try it', 'cks-story': 'Scroll', 'cks-map': 'Explore', 'cks-sketch': 'Try it', 'cks-publish': 'Demo' };
+      'cks-styles': 'Try it', 'cks-story': 'Scroll', 'cks-map': 'Explore', 'cks-sketch': 'Try it', 'cks-publish': 'Demo', 'cks-plan': 'Plan' };
     var KIND = { 'live-globe': 'LIVE · three.js r128', 'live-map': 'LIVE · d3 v7', 'wipe': 'COMPARE · figma ↔ webflow', 'figma': 'MOCKUP · figma → webflow', 'phone': 'MOCKUP · mobile', 'flow': 'MOCKUP · figjam → build', 'exploded': 'BREAKDOWN · layers', 'cms': 'MOCKUP · cms → site', 'mobile': 'STILL · mobile', 'img': 'STILL', 'logo': 'VECTOR · svg', 'apps': 'MOCKUPS', 'sketch': 'SKETCH · pen + paper', 'vector': 'MOCKUP · illustrator', 'graph': 'MOCKUP · knowledge graph', 'library': 'MOCKUP · insights library', 'voice': 'MOCKUP · voice kit → review', 'setup': 'MOCKUP · cms → site', 'video': 'MOCKUP · video + chapters', 'schema': 'MOCKUP · json-ld → search + ai', 'portable': 'MOCKUP · content model',
-      'cks-styles': 'DEMO · design tokens, live', 'cks-story': 'DEMO · scroll story', 'cks-map': 'DEMO · knowledge map', 'cks-sketch': 'DEMO · sketch tool', 'cks-publish': 'DEMO · cms → site + json-ld' };
+      'cks-styles': 'DEMO · design tokens, live', 'cks-story': 'DEMO · scroll story', 'cks-map': 'DEMO · knowledge map', 'cks-sketch': 'DEMO · sketch tool', 'cks-publish': 'DEMO · cms → site + json-ld', 'cks-plan': 'FIGJAM · ideation → wireframes → build' };
     screen.innerHTML = CH.map(channelView).join('') + '<div class="scan"></div><div class="roll"></div><div class="vig"></div><canvas class="noise" id="noise" width="160" height="100"></canvas>' +
       '<i class="brk tl"></i><i class="brk tr"></i><i class="brk bl"></i><i class="brk br"></i><div class="osd" id="osd">CH 1</div>';
-    chans.innerHTML = CH.map(function(c, i){ return '<button type="button" role="tab" data-ch="' + esc(c.id) + '" aria-selected="' + (i ? 'false' : 'true') + '"><span class="k">' + (i + 1) + '</span><span>' + esc(c.label) + '</span><span class="t">' + (TYPE[c.kind] || '') + '</span></button>'; }).join('');
+    // a recorded loop of the real site (MOCKS[slug].img) is labeled as a recording, not a still
+    CH.forEach(function(c){ if (c.loop){ TYPE['loop-' + c.kind] = 'Loop'; KIND['loop-' + c.kind] = 'LOOP · recorded from the site' + (c.kind === 'mobile' ? ' · phone' : ''); } });
+    function tk(c){ return c.loop ? 'loop-' + c.kind : c.kind; }
+    chans.innerHTML = CH.map(function(c, i){ return '<button type="button" role="tab" data-ch="' + esc(c.id) + '" aria-selected="' + (i ? 'false' : 'true') + '"><span class="k">' + (i + 1) + '</span><span>' + esc(c.label) + '</span><span class="t">' + (TYPE[tk(c)] || '') + '</span></button>'; }).join('');
     chans.style.setProperty('--n', CH.length);
     var views = $$('.view', screen), chBtns = $$('button', chans), osd = $('#osd'), monLabel = $('#monLabel'), monCap = $('#monCap'), monKind = $('#monKind');
     // coded scenes need this mission's mockup spec for that kind; one broken scene never stops the monitor
     var NEED = { figma: 'els', phone: 'mobile', flow: 'flow', exploded: 'explode', cms: 'cms', sketch: 'sketch', vector: 'vector', graph: 'graph', library: 'library', voice: 'voice', setup: 'setup', video: 'video', schema: 'schema', portable: 'portable',
-      'cks-styles': 'cks', 'cks-story': 'cks', 'cks-map': 'cks', 'cks-sketch': 'cks', 'cks-publish': 'cks' };
+      'cks-styles': 'cks', 'cks-story': 'cks', 'cks-map': 'cks', 'cks-sketch': 'cks', 'cks-publish': 'cks', 'cks-plan': 'cks' };
     views.forEach(function(v, k){
       var c = CH[k], key = NEED[c.kind]; if (!key) return;
       if (!(M.mock && M.mock[key])){ v.innerHTML = '<div class="boot">Mockup coming soon</div>'; return; }
@@ -2554,9 +2841,9 @@ window.Webflow.push(function(){
       seenCh[i] = true; if (CH.length > 1 && Object.keys(seenCh).length >= CH.length && AB.quest) AB.quest('channels');
       views.forEach(function(v, k){ v.classList.toggle('on', k === i); });
       chBtns.forEach(function(b, k){ b.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
-      monLabel.textContent = c.label; monCap.textContent = c.caption; monKind.textContent = KIND[c.kind] || '';
+      monLabel.textContent = c.label; monCap.textContent = c.caption; monKind.textContent = KIND[tk(c)] || '';
       $('#tCh').textContent = (i + 1) + ' / ' + CH.length;
-      $('#tSrc').textContent = c.kind.indexOf('live') === 0 ? 'Live code' : liveOn(c) ? 'Live site' : /^cks-/.test(c.kind) ? 'Coded demo' : c.kind === 'wipe' ? 'Figma + site' : /^(figma|phone|flow|exploded|cms|sketch|vector|graph|library|voice|setup|video|schema|portable)$/.test(c.kind) ? 'Mockup' : c.kind === 'logo' || c.kind === 'apps' ? 'Vector' : 'Screenshot';
+      $('#tSrc').textContent = c.kind.indexOf('live') === 0 ? 'Live code' : liveOn(c) ? 'Live site' : c.loop ? 'Recording' : /^cks-/.test(c.kind) ? 'Coded demo' : c.kind === 'wipe' ? 'Figma + site' : /^(figma|phone|flow|exploded|cms|sketch|vector|graph|library|voice|setup|video|schema|portable)$/.test(c.kind) ? 'Mockup' : c.kind === 'logo' || c.kind === 'apps' ? 'Vector' : 'Screenshot';
       if (liveOn(c)){ monKind.textContent = 'LIVE · ' + LIVE.host; chBtns[i].querySelector('.t').textContent = 'Live'; }
       osd.textContent = 'CH ' + (i + 1) + ' · ' + c.label;
       if (!silent){ staticBurst(); if (!reduce && hasGsap) gsap.fromTo(osd, { opacity: 0 }, { opacity: 1, duration: .1, repeat: 3, yoyo: true }); }
