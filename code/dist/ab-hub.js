@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-hub v0.33.71 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-hub v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHubInit) return;
@@ -20,7 +20,7 @@ window.Webflow.push(function(){
   if (!page) return;
   var SVC = '/services/', MIS = '/work/', WORK = '/work', PROC = '/process', HOME = '/';
   // service colors (Color fields can't bind to text/attributes); unknown slugs fall back to signal
-  var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', motion: '#0AE448', branding: '#FF6A3D', 'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', performance: '#ffd166' };
+  var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', motion: '#0AE448', branding: '#FF6A3D', 'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', performance: '#ffd166', dashboards: '#5BD0FF' };
   function txt(n){ return n ? n.textContent.trim() : ''; }
   // a field of this item, not of a nested list inside it
   function own(root, k){ var ns = $$('[data-field="' + k + '"]', root); for (var i = 0; i < ns.length; i++) if (!ns[i].closest('[data-list]')) return txt(ns[i]); return ''; }
@@ -74,7 +74,7 @@ window.Webflow.push(function(){
   });
 
   // stations on the trajectory map (% of the map box), laid out so the transfer orbits don't tangle; new services get a free spot
-  var PORT = { 'webflow-development': [40, 46], 'webgl-data': [70, 16], motion: [52, 80], branding: [18, 74], 'custom-deploys': [90, 44], 'cms-integrations': [66, 52], 'design-systems': [24, 18], performance: [82, 82] };
+  var PORT = { 'webflow-development': [40, 46], 'webgl-data': [70, 16], motion: [52, 80], branding: [18, 74], 'custom-deploys': [90, 44], 'cms-integrations': [66, 52], 'design-systems': [24, 18], performance: [82, 82], dashboards: [80, 30] };
   var SPARE = [[30, 88], [88, 18], [12, 30], [60, 30], [48, 14], [34, 60]];
   HUB.forEach(function(s){ if (!PORT[s.slug]) PORT[s.slug] = SPARE.shift() || [50, 50]; });
 

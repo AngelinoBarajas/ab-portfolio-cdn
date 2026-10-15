@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-knowledge v0.33.39 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-knowledge v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abKnowledgeInit) return;
@@ -32,7 +32,7 @@ window.Webflow.push(function(){
   var CAT = {}; CATS.forEach(function(c, i){ c.i = i; CAT[c.key] = c; CAT[c.name.toLowerCase()] = c; });
   function catKey(v){ var c = CAT[String(v || '').trim().toLowerCase()]; return c ? c.key : 'what'; }
   // service accent colors (Color fields can't bind; same map as ab-process / ab-hub)
-  var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', motion: '#0AE448', branding: '#FF6A3D', 'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', performance: '#ffd166' };
+  var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', motion: '#0AE448', branding: '#FF6A3D', 'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', performance: '#ffd166', dashboards: '#5BD0FF' };
   var URL_T = '/topics/', URL_O = '/observatory/', URL_M = '/work/', URL_S = '/services/';
 
   // hero title halves (topic + article pages): the Designer's 48px floor let one long word ("performance",

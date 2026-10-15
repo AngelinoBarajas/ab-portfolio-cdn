@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.33.71 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -2619,11 +2619,13 @@ window.Webflow.push(function(){
        Performance never changes the tier and is included with every tier, the coded track, and any 3D or motion work.
      - Custom deploys (or "Web app") = the coded-build track from $8,000 + add-ons.
      - No website picked = the services' own starting prices added up (work on an existing site).
+     - Custom dashboards (decided 2026-10-11, docs/dashboards-service-plan.md): Console from $9,500 on its own, or a
+       "+ Custom dashboard" line on any site/coded estimate; the full client + owner Mission Control starts at $18,000.
      Slugs are the Services collection slugs. Change prices here and in the pricing doc together. */
   (function(){
-    var PRICE = { branding: 3500, motion: 1500, 'webgl-data': 4500, 'cms-integrations': 2500, 'design-systems': 3000, performance: 1500 };
+    var PRICE = { branding: 3500, motion: 1500, 'webgl-data': 4500, 'cms-integrations': 2500, 'design-systems': 3000, performance: 1500, dashboards: 9500 };
     var NAME = { 'webflow-development': 'Website', branding: 'Brand identity', motion: 'Signature motion', 'webgl-data': 'Interactive 3D piece',
-      'cms-integrations': 'CMS integration', 'design-systems': 'Design system', performance: 'Performance pass', 'custom-deploys': 'Coded build' };
+      'cms-integrations': 'CMS integration', 'design-systems': 'Design system', performance: 'Performance pass', 'custom-deploys': 'Coded build', dashboards: 'Custom dashboard' };
     var BANDS = [6500, 12000, 22000, 40000]; // Under $6.5k · $6.5–12k · $12–22k · $22–40k · $40k+ (same order as the forms)
     function money(n){ return '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
     function estimate(slugs){
@@ -2647,12 +2649,17 @@ window.Webflow.push(function(){
           ['webgl-data', 'cms-integrations'].forEach(function(s){ if (has[s]) add(s); });
         }
         if (has.branding) add('branding');
+      } else if (has.dashboards){
+        r.track = 'dashboard'; r.tier = 'Console'; r.from = 9500; r.total = 9500;
+        ['branding', 'motion', 'webgl-data', 'cms-integrations', 'design-systems', 'performance'].forEach(function(s){ if (has[s]) add(s); });
       } else {
         r.track = 'existing'; r.tier = '';
         ['branding', 'motion', 'webgl-data', 'cms-integrations', 'design-systems'].forEach(function(s){ if (has[s]) add(s); });
         // a performance pass comes with any 3D or motion work; on its own it's the audit + fixes
         if (has.performance){ if (has.motion || has['webgl-data']) r.included.push(NAME.performance); else add('performance'); }
       }
+      if (has.dashboards && r.track !== 'dashboard') add('dashboards');
+      r.mc = !!has.dashboards;
       r.band = 4; for (var i = 0; i < BANDS.length; i++) if (r.total < BANDS[i]){ r.band = i; break; }
       return r;
     }
@@ -2664,6 +2671,7 @@ window.Webflow.push(function(){
       else h += '<p class="ab_est_tier"><b>Services on their own</b> (no new site)</p>';
       if (r.included.length) h += '<p class="ab_est_line">Includes ' + AB.esc(r.included.join(', ')) + '</p>';
       if (r.addons.length) h += '<ul class="ab_est_adds">' + r.addons.map(function(a){ return '<li><span>' + (r.tier ? '+ ' : '') + AB.esc(a.name) + '</span><span>' + money(a.price) + '</span></li>'; }).join('') + '</ul>';
+      if (r.mc) h += '<p class="ab_est_line">A full client and owner Mission Control starts at ' + money(18000) + '.</p>';
       h += '<p class="ab_est_total">Estimate from <b>' + money(r.total) + '</b></p>';
       if (o.note !== false) h += '<p class="ab_est_note">Estimates only. Your quote is fixed once we scope the project together.</p>';
       return h + '</div>';

@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-process v0.33.71 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-process v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abProcessInit) return;
@@ -20,7 +20,7 @@ window.Webflow.push(function(){
   if (!page) return;
   var root = document.documentElement;
   // rail/chip colors per service (Color fields can't bind to text/attributes); unknown slugs fall back to signal
-  var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', motion: '#0AE448', branding: '#FF6A3D', 'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', performance: '#ffd166' };
+  var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', motion: '#0AE448', branding: '#FF6A3D', 'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', performance: '#ffd166', dashboards: '#5BD0FF' };
 
   /* ---------- destinations from the CMS ---------- */
   // missions switched to "Hide from site" (hidden list [data-hidden-missions]) never show as a "flown before" example

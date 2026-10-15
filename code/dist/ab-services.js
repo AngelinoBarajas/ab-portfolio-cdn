@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-services v0.33.74 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-services v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abServicesInit) return;
@@ -29,7 +29,7 @@ window.Webflow.push(function(){
   // rail dot colors: the CMS "Rail dot color" is a Color field the API can't bind; a hidden
   // [data-field=dot] node (Designer: Background color = Rail dot color) wins when present
   var DOT = { 'webflow-development': '#146EF5', 'webgl-data': '#5eead4', 'motion': '#0AE448', 'branding': '#FF6A3D',
-    'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', 'performance': '#ffd166' };
+    'custom-deploys': '#C9C7C0', 'cms-integrations': '#8fb1ff', 'design-systems': '#7c5cff', 'performance': '#ffd166', 'dashboards': '#5BD0FF' };
 
   /* ---------- hero: title lines (Title line 1 + outline line 2), numbers, rail ---------- */
   var NAME = txt('#heroTitle');
@@ -295,7 +295,7 @@ window.Webflow.push(function(){
   var sec = $('#hood'); if (!sec || !hasGsap) return;
   var HERO = $('[data-service-planet]');
   var SLUG = (HERO && HERO.getAttribute('data-slug')) || location.pathname.split('/').pop().replace('.html', '');
-  var CODE = { 'webflow-development': 'WFD', 'webgl-data': 'I3D', 'motion': 'MTN', 'branding': 'BRD', 'custom-deploys': 'BYD', 'cms-integrations': 'CMS', 'design-systems': 'DSY', 'performance': 'PRF' };
+  var CODE = { 'webflow-development': 'WFD', 'webgl-data': 'I3D', 'motion': 'MTN', 'branding': 'BRD', 'custom-deploys': 'BYD', 'cms-integrations': 'CMS', 'design-systems': 'DSY', 'performance': 'PRF', 'dashboards': 'DSH' };
 
   /* ---------- highlighter (same token rules as core/37-code.js) ---------- */
   function lang(c){ var t = c.trim(); if (t.charAt(0) === '<') return 'html'; if (/^(\/\*|:root|[.#@a-z][^{(=]*\{)/i.test(t) && !/function|var |=>/.test(t)) return 'css'; return 'js'; }
@@ -697,6 +697,63 @@ window.Webflow.push(function(){
     }
   };
 
+  /* ---------- dashboards · the request desk's "Needs you" filter, run on a board of demo tickets ---------- */
+  var TICKETS = [
+    { no: 'REQ-1041', t: 'Swap the hero photo', st: 'received' },
+    { no: 'REQ-1038', t: 'Contact form not sending', st: 'progress', urgent: true },
+    { no: 'REQ-1035', t: 'New team bio', st: 'waiting', replied: true },
+    { no: 'REQ-1032', t: 'Fix a typo in the menu', st: 'done' },
+    { no: 'REQ-1029', t: 'Holiday hours banner', st: 'waiting' },
+    { no: 'REQ-1027', t: 'Update the price list', st: 'progress' }
+  ];
+  var ST = { received: 'New', progress: 'In progress', waiting: 'Waiting', done: 'Done' };
+  // which rule catches a ticket (first match wins, same order as the code)
+  function rule(t){ if (t.urgent && t.st !== 'done') return 'urgent'; if (t.st === 'waiting') return t.replied ? 'replied' : ''; return t.st === 'received' ? 'new' : ''; }
+  P.needs = {
+    flow: true, // phones: the stage grows with its content
+    label: 'Needs you', cap: 'mission control · needs you',
+    code: "const needsYou = tickets.filter(function (t) { // @all Every ticket on the board goes through one filter...\n" +
+      "  if (t.urgency === 'urgent' && t.status !== 'done') return true; // @urgent ...anything urgent and not done needs you now,\n" +
+      "  if (t.status === 'waiting') return t.updated_at > t.waiting_since; // @replied a client who answered your question comes back up,\n" +
+      "  return t.status === 'received'; // @new and new requests wait for a first look. Everything else stays off your plate.\n});",
+    tools: [{ k: 'reply', label: '↩ Client replies on REQ-1029', act: true }],
+    build: function(st, fc){
+      st.innerHTML = '<div class="nd"><div class="nd-col"><div class="nd-cap">Board · <b>' + TICKETS.length + '</b></div><div class="nd-list nd-all"></div></div>' +
+        '<div class="nd-col"><div class="nd-cap">Needs you · <b class="n">0</b></div><div class="nd-list nd-you"></div></div></div>';
+      var all = $('.nd-all', st), you = $('.nd-you', st), n = $('.nd-cap .n', st);
+      function row(t, tag){
+        var chip = tag === 'urgent' ? '<em class="is-urgent">Urgent</em>' : tag === 'replied' ? '<em class="is-replied">↩ Replied</em>' : tag === 'new' ? '<em class="is-new">New</em>' : '<em>' + ST[t.st] + '</em>';
+        return '<div class="nd-t"><b>' + t.no + '</b><span>' + esc(t.t) + '</span>' + chip + '</div>';
+      }
+      function reset(){
+        gsap.killTweensOf($$('.nd-t', st));
+        all.innerHTML = TICKETS.map(function(t){ return row(t, t.urgent ? 'urgent' : t.replied ? 'replied' : ''); }).join('');
+        you.innerHTML = ''; n.textContent = '0';
+      }
+      reset();
+      return {
+        reset: reset,
+        act: function(k, b){ var t = TICKETS[4]; t.replied = !t.replied; b.innerHTML = t.replied ? '↩ Undo the reply on REQ-1029' : '↩ Client replies on REQ-1029'; fc.run(); },
+        play: function(){
+          var tl = gsap.timeline(), rows = $$('.nd-t', all), count = 0;
+          tl.call(fc.cue, ['all']).call(function(){ rows.forEach(function(r, i){ setTimeout(function(){ r.classList.add('lit'); }, i * 110); }); }).to({}, { duration: 1.3 });
+          ['urgent', 'replied', 'new'].forEach(function(k){
+            tl.call(fc.cue, [k]).call(function(){
+              TICKETS.forEach(function(t, i){
+                if (rule(t) !== k) return;
+                rows[i].classList.add('hit');
+                you.insertAdjacentHTML('beforeend', row(t, k)); n.textContent = ++count;
+                gsap.from(you.lastChild, { opacity: 0, x: -14, duration: .35 });
+              });
+            }).to({}, { duration: 1.5 });
+          });
+          tl.call(function(){ TICKETS.forEach(function(t, i){ if (!rule(t)) rows[i].classList.add('off'); }); }).to({}, { duration: .6 });
+          return tl;
+        }
+      };
+    }
+  };
+
   /* ---------- performance · a heavy scene that loads late and rests off screen ---------- */
   P.lazy = {
     flow: true, // phones: the stage grows with its content
@@ -782,7 +839,7 @@ window.Webflow.push(function(){
     }
   };
 
-  var BY_SLUG = { motion: ['reveal', 'ease'], 'webgl-data': ['pins'], 'design-systems': ['tokens'], 'webflow-development': ['struct'], 'custom-deploys': ['deploy'], 'cms-integrations': ['sync'], 'performance': ['lazy'], 'branding': ['brand'] };
+  var BY_SLUG = { motion: ['reveal', 'ease'], 'webgl-data': ['pins'], 'design-systems': ['tokens'], 'webflow-development': ['struct'], 'custom-deploys': ['deploy'], 'cms-integrations': ['sync'], 'performance': ['lazy'], 'branding': ['brand'], 'dashboards': ['needs'] };
   var LIST = (BY_SLUG[SLUG] || []).map(function(k){ return P[k]; });
   if (!LIST.length) return;
 

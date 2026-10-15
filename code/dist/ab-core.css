@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core.css v0.33.75 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core.css v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
 /* body font fallback sized to Geist (Arial measured against it: 102.47% wide), so text keeps its line breaks when Geist
    swaps in and the heroes don't jump (About CLS 0.24 on desktop). Re-declares the Webflow variable: if the body font is
    changed in the Designer, change it here too. Android (no Arial) falls through to plain sans-serif. */
@@ -1143,62 +1143,31 @@ div.abx-bad,fieldset.abx-bad{outline:1px dashed color-mix(in srgb,var(--_color--
 .v-traj-stars i{position:absolute;border-radius:50%;background:#F2F0EA}
 /* narrow phones: the big menu links scale with the screen so the longest one (OBSERVATORY) fits; wider screens keep 45px */
 @media (max-width:479px){.ab_menu_link{font-size:min(45px,9vw)}}
-/* Home bento: two mini cards stacked in one slot, each with its own look: a light booking card with the quarter's
-   months, and a signal-orange reply card with a typing bubble */
-.ab_bento_cell.is-minis{display:flex;flex-direction:column;gap:16px}
-.ab_bento-card.is-mini{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:clamp(18px,1.6vw,26px)}
-.ab_bento-card.is-mini .ab_bento-card_title{margin:0;font-size:clamp(22px,1.9vw,30px)}
-.ab_bento-card.is-mini .mini-k{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--_typography---font--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase}
-.ab_bento-card.is-mini .mini-k > span:first-child{display:inline-flex;align-items:center;gap:8px}
-.ab_bento-card.is-mini .mini-p{margin:0;padding-right:44px;font-size:14px;line-height:1.45}
-/* booking: light card, months strip */
-.ab_bento-card.is-book{background:#FBFAF6;border-color:rgba(11,12,20,.12);color:#0B0C14}
-.ab_bento-card.is-book .ab_bento-card_title{color:#0B0C14}
-.ab_bento-card.is-book .mini-k{color:rgba(11,12,20,.55)}
-.ab_bento-card.is-book .mini-p{color:rgba(11,12,20,.68)}
-.ab_bento-card.is-book .ab_bento-card_link{color:#0B0C14;border-color:rgba(11,12,20,.3)}
-.mini-dot{width:8px;height:8px;border-radius:50%;background:#1fc07c;animation:mini-pulse 2s ease-out infinite}
-@keyframes mini-pulse{0%{box-shadow:0 0 0 0 rgba(31,192,124,.55)}70%{box-shadow:0 0 0 9px rgba(31,192,124,0)}100%{box-shadow:0 0 0 0 rgba(31,192,124,0)}}
-.mini-months{display:inline-flex;gap:4px}
-.mini-m{padding:3px 6px;border:1px solid rgba(11,12,20,.18);font-size:9.5px;letter-spacing:.1em;color:rgba(11,12,20,.6)}
-.mini-m.is-past{opacity:.4;text-decoration:line-through}
-.mini-m.is-next{border-color:#1fc07c;color:#0f8f58}
-.mini-m.is-now{background:#1fc07c;border-color:#1fc07c;color:#0B0C14;animation:mini-glow 2.4s ease-in-out infinite}
-@keyframes mini-glow{50%{box-shadow:0 0 0 3px rgba(31,192,124,.25)}}
-/* reply: signal orange, typing bubble */
-.ab_bento-card.is-reply{background:var(--_color---brand--signal);border-color:var(--_color---brand--signal);color:#0B0C14}
-.ab_bento-card.is-reply .ab_bento-card_title{color:#0B0C14}
-.ab_bento-card.is-reply .mini-k{color:rgba(11,12,20,.7)}
-.ab_bento-card.is-reply .mini-p{color:rgba(11,12,20,.82)}
-.ab_bento-card.is-reply .ab_bento-card_link{color:#0B0C14;border-color:rgba(11,12,20,.45)}
-.ab_bento-card.is-reply::before{background:radial-gradient(280px circle at var(--mx) var(--my),rgba(255,255,255,.22),transparent 70%)}
-.mini-bubble{display:inline-flex;align-items:center;gap:4px;padding:7px 10px;background:#0B0C14;border-radius:12px 12px 12px 2px}
-.mini-bubble i{width:5px;height:5px;border-radius:50%;background:#F2F0EA;animation:mini-type 1.2s ease-in-out infinite}
-.mini-bubble i:nth-child(2){animation-delay:.15s}.mini-bubble i:nth-child(3){animation-delay:.3s}
-@keyframes mini-type{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
-@media (prefers-reduced-motion:reduce){.mini-dot,.mini-m.is-now,.mini-bubble i{animation:none}}
-:where(html.ab-calm) .mini-dot,:where(html.ab-calm) .mini-m.is-now,:where(html.ab-calm) .mini-bubble i{animation:none}
-
-/* phones: the minis stack, so let each grow to its content (flex:1 1 0 squeezed them and the centered content ran into the edges) */
-@media (max-width:767px){.ab_bento-card.is-mini{flex:0 0 auto;padding:22px}}
 /* Home planner: Earth moved in from the corner so the route sits centered (50-planner.js draws from 110,138) */
 .ab_planner_viz .ab_planet.is-planner-earth{left:16.07%;top:62.1%}
-/* Reply time mini: a slow-turning signal gradient (a rotated conic layer, compositor only) + twinkling four-point sparks */
-.ab_bento-card.is-reply{overflow:hidden;isolation:isolate}
-.ab_bento-card.is-reply .mini-k,.ab_bento-card.is-reply .ab_bento-card_title,.ab_bento-card.is-reply .mini-p{position:relative;z-index:1}
-.ab_bento-card.is-reply .ab_bento-card_link{z-index:2}
-.mini-aura{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.mini-aura i{position:absolute;left:-60%;top:-110%;width:220%;height:320%;background:conic-gradient(from 0deg,#FF6A3D,#FF8C5E 18%,#FFB48E 34%,#FFD6B8 50%,#FF9A6E 66%,#FFC2A0 82%,#FF6A3D);filter:blur(28px);will-change:transform;animation:mini-aura 16s linear infinite}
-.mini-aura::after{content:"";position:absolute;inset:0;background:radial-gradient(90% 70% at 100% 0,rgba(255,238,222,.55),transparent 60%),radial-gradient(80% 90% at 0 100%,rgba(255,106,61,.35),transparent 62%)}
-.mini-sparks{position:absolute;inset:0;z-index:0;pointer-events:none}
-.mini-sparks b{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;background:#FFF8EC;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);filter:drop-shadow(0 0 3px rgba(255,106,61,.95)) drop-shadow(0 0 6px #fff);opacity:0;transform:scale(0);animation:mini-tw 3.2s ease-in-out var(--d,0s) infinite}
-.ab_bento-card.is-reply:hover .mini-sparks b{animation-duration:1.6s}
-@keyframes mini-aura{to{transform:rotate(360deg)}}
-@keyframes mini-tw{0%,100%{opacity:0;transform:scale(0) rotate(0)}45%{opacity:1;transform:scale(var(--s,1)) rotate(45deg)}70%{opacity:.2;transform:scale(calc(var(--s,1)*.4)) rotate(90deg)}}
-@media (prefers-reduced-motion:reduce){.mini-aura i{animation:none}.mini-sparks b{animation:none;opacity:.8;transform:scale(var(--s,1))}}
-:where(html.ab-calm) .mini-aura i{animation:none}
-:where(html.ab-calm) .mini-sparks b{animation:none;opacity:.8;transform:scale(var(--s,1))}
+/* mini request tracker (home/08-tracker.js): Custom dashboards bento card (light) + Mission Control board frame (dark).
+   Rows update in place; the meter moves with a transform, not width */
+.v-trk{width:100%;height:100%;display:flex;flex-direction:column;gap:6px;padding:12px;font-family:var(--_typography---font--mono);font-size:10.5px;color:#0B0C14;--tl:rgba(11,12,20,.55);--tb:rgba(11,12,20,.1);--tr:#fff}
+.v-trk.is-dark{color:#F2F0EA;--tl:rgba(242,240,234,.55);--tb:rgba(242,240,234,.14);--tr:rgba(255,255,255,.04);padding:0}
+.v-trk-h{display:flex;justify-content:space-between;align-items:center;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--tl)}
+.v-trk-h b{font-weight:400;margin-left:4px;padding:1px 6px;background:var(--_color---brand--signal);color:#0B0C14}
+.v-trk-r{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--tb);background:var(--tr)}
+.v-trk-r b{font-weight:400;font-size:9.5px;color:var(--tl)}
+.v-trk-r span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v-trk-r em{font-style:normal;font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border:1px solid currentColor;white-space:nowrap}
+.v-trk-r em[data-s=new]{color:#2f6fe4}.v-trk-r em[data-s=prog]{color:#a87400}.v-trk-r em[data-s=wait]{color:#e0521f}.v-trk-r em[data-s=done]{color:#0f8f58}
+.v-trk.is-dark .v-trk-r em[data-s=new]{color:#8fb1ff}.v-trk.is-dark .v-trk-r em[data-s=prog]{color:#ffd166}.v-trk.is-dark .v-trk-r em[data-s=wait]{color:#FF6A3D}.v-trk.is-dark .v-trk-r em[data-s=done]{color:#3BE38A}
+.v-trk-r.is-hit{animation:v-trk-hit 1.1s ease-out}
+@keyframes v-trk-hit{0%{border-color:var(--_color---brand--signal)}100%{border-color:var(--tb)}}
+.v-trk-m{margin-top:auto;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tl)}
+.v-trk-m i{display:block;height:6px;background:var(--tb);overflow:hidden}
+.v-trk-m i::after{content:"";display:block;height:100%;background:#1fc07c;transform-origin:0 50%;transform:scaleX(var(--v,.3));transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){.v-trk-r.is-hit{animation:none}.v-trk-m i::after{transition:none}}
+:where(html.ab-calm) .v-trk-r.is-hit{animation:none}
+:where(html.ab-calm) .v-trk-m i::after{transition:none}
 
+.ab_board_trk{position:absolute;right:22px;top:24px;width:min(270px,60%)}
+.is-deck .ab_board_trk{left:50%;right:auto;top:16%;transform:translateX(-50%);width:80%}
 .ab_nav_logo.is-home{color:var(--_color---brand--signal);--mark-planet:var(--_color---text--primary)}
 /* Home transmission: the receiving dish beside the quote (wide screens only; home/40-stack.js) */
 .abt-dish{display:none}

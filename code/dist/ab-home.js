@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.71 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.79 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -136,6 +136,55 @@ window.Webflow.push(function(){
     });
     if (!$('.ab_quotes .ab_quote', sec)) sec.style.display = 'none';
   })();
+
+  });
+  __steps.push(function(){
+  /* ===== home/08-tracker.js ===== */
+
+  /* ---------- mini request tracker (2026-10-11): the Mission Control desk in miniature. Demo tickets move
+     New → In progress → Done (some wait on the client first), done ones leave and a new request arrives at the top,
+     the hours meter fills. Used by the Mission Control frame on the work board (dark) and the Custom dashboards
+     bento card (light). Rows are updated in place, so the box never changes height. Demo data only. ---------- */
+  function trackerViz(box, o){
+    o = o || {};
+    var ROWS = o.rows || 4, PLAN = 5;
+    var POOL = ['Swap the hero photo', 'Holiday hours banner', 'New team bio', 'Update the price list', 'Add the fall menu PDF', 'Fix a broken link',
+      'Post the new article', 'Contact form not sending', 'Replace the logo file', 'New staff photo', 'Add a FAQ answer', 'Event date change'];
+    var LBL = ['New', 'In progress', 'Waiting', 'Done'], KEY = ['new', 'prog', 'wait', 'done'];
+    var no = 1041, top = no, pi = 0, hrs = 1.5, list = [], vis = false;
+    for (var i = 0; i < ROWS; i++) list.push({ no: no - i, t: POOL[pi++ % POOL.length], s: [0, 1, 2, 1][i % 4] });
+    box.innerHTML = '<div class="v-trk' + (o.dark ? ' is-dark' : '') + '"><div class="v-trk-h"><span>Requests</span><span>Needs you <b>0</b></span></div>' +
+      list.map(function(){ return '<div class="v-trk-r"><b></b><span></span><em></em></div>'; }).join('') +
+      (o.meter === false ? '' : '<div class="v-trk-m"><span>Hours</span><i></i><span class="v"></span></div>') + '</div>';
+    var rows = $$('.v-trk-r', box), need = $('.v-trk-h b', box), bar = $('.v-trk-m i', box), hv = $('.v-trk-m .v', box);
+    function paint(){
+      list.forEach(function(t, k){
+        var r = rows[k]; r.children[0].textContent = 'REQ-' + t.no; r.children[1].textContent = t.t;
+        r.children[2].textContent = LBL[t.s]; r.children[2].setAttribute('data-s', KEY[t.s]);
+      });
+      need.textContent = list.filter(function(t){ return t.s === 0 || t.s === 2; }).length;
+      if (bar){ bar.style.setProperty('--v', (hrs / PLAN).toFixed(3)); hv.textContent = hrs.toFixed(1).replace('.0', '') + ' / ' + PLAN; }
+    }
+    function flash(k){ var r = rows[k]; r.classList.remove('is-hit'); void r.offsetWidth; r.classList.add('is-hit'); }
+    function step(){
+      var d = -1; list.forEach(function(t, k){ if (t.s === 3) d = k; });
+      if (d > -1){
+        // the finished request leaves; a new one arrives at the top and the plan hours tick up (a new month resets them)
+        list.splice(d, 1); list.unshift({ no: ++top, t: POOL[pi++ % POOL.length], s: 0 });
+        hrs += .5; if (hrs > PLAN) hrs = .5;
+        paint(); flash(0); return;
+      }
+      var open = []; list.forEach(function(t, k){ if (t.s !== 3) open.push(k); });
+      var k = open[Math.floor(Math.random() * open.length)], t = list[k];
+      t.s = t.s === 0 ? 1 : t.s === 2 ? 1 : (Math.random() < .3 ? 2 : 3); // in progress → done, or a question to the client first
+      paint(); flash(k);
+    }
+    paint();
+    if (reduce) return;
+    onView(box, function(x){ vis = x; });
+    setInterval(function(){ if (vis && !document.hidden) step(); }, o.every || 1600);
+  }
+  AB.trackerViz = trackerViz; // 08-tracker is its own split step: other modules call AB.trackerViz
 
   });
   __steps.push(function(){
@@ -316,6 +365,11 @@ window.Webflow.push(function(){
           place(); if (mq.addEventListener) mq.addEventListener('change', place);
           inner.appendChild(ar); f.__hop = ar;
         }
+        else if (slug === 'mission-control'){
+          // Mission Control: the request desk in miniature, tickets moving on a loop (08-tracker.js)
+          var tk = document.createElement('div'); tk.className = 'pv ab_board_trk'; tk.setAttribute('aria-hidden', 'true');
+          inner.appendChild(tk); f.__trk = tk;
+        }
         else if (slug === 'knowledge-system'){
           // a tiny knowledge graph: one entry in the middle, its tags and the pages they link, lines drawing on a loop
           var kg = document.createElement('div'); kg.className = 'pv ab_kg'; kg.setAttribute('aria-hidden', 'true');
@@ -331,6 +385,7 @@ window.Webflow.push(function(){
         if (f.__loom || f.__hop){ [t, sb, op].forEach(function(n){ n.style.position = n === op ? 'absolute' : 'relative'; n.style.zIndex = '1'; }); }
         if (f.__loom) twLoom(f.__loom, f);
         if (f.__hop) hop(f.__hop, f);
+        if (f.__trk && AB.trackerViz) AB.trackerViz(f.__trk, { dark: true, rows: 3, meter: false });
       }
       if (f.__sel) $('.sel-tag', f.__sel).textContent = 'Frame / ' + slug;
     });
@@ -576,8 +631,16 @@ window.Webflow.push(function(){
      Custom deploys, so auto-placement keeps every row full. A native Designer card ([data-visual="observatory"])
      wins: then the script only draws its visual. ---------- */
   // services lede (Designer text): the new line until it's edited in the Designer (docs/designer-steps.md › J2)
-  $$('#capabilities .ab_section-lede').forEach(function(p){ if (/one planet you can throw/i.test(p.textContent)) p.textContent = 'Eight services, one orbit: everything a site needs to launch, grow and keep working long after day one.'; });
+  $$('#capabilities .ab_section-lede').forEach(function(p){ if (/one planet you can throw/i.test(p.textContent)) p.textContent = 'Nine services, one orbit: everything a site needs to launch, grow and keep working long after day one.'; else if (/^\s*Eight services/.test(p.textContent)) p.textContent = p.textContent.replace(/Eight services/, 'Nine services'); });
 
+  // the same selection frame core gives every [data-selectable] (core ran before this bundle)
+  function selFrame(card, tag){
+    var s = document.createElement('div'); s.className = 'sel'; s.setAttribute('aria-hidden', 'true');
+    s.innerHTML = '<i class="tl"></i><i class="tc"></i><i class="tr"></i><i class="ml"></i><i class="mr"></i><i class="bl"></i><i class="bc"></i><i class="br"></i><span class="sel-tag">' + tag + '</span><span class="sel-size"></span>';
+    card.appendChild(s); card.__sel = s;
+    card.addEventListener('mouseenter', function(){ $('.sel-size', s).textContent = Math.round(card.offsetWidth) + ' × ' + Math.round(card.offsetHeight); });
+    if (AB.cardFx) AB.cardFx(card);
+  }
   (function(){
     var grid = $('#capabilities .ab_bento_grid'); if (!grid) return;
     var brand = $('[data-name="Card / branding"]', grid), deploys = $('[data-name="Card / deploys"]', grid);
@@ -608,19 +671,11 @@ window.Webflow.push(function(){
     cell.classList.add('is-wide');
     deploys.parentNode.parentNode.insertBefore(cell, deploys.parentNode.nextSibling);
     selFrame(cell.firstChild, 'Card / observatory');
-    // the same selection frame core gives every [data-selectable] (core ran before this bundle)
-    function selFrame(card, tag){
-      var s = document.createElement('div'); s.className = 'sel'; s.setAttribute('aria-hidden', 'true');
-      s.innerHTML = '<i class="tl"></i><i class="tc"></i><i class="tr"></i><i class="ml"></i><i class="mr"></i><i class="bl"></i><i class="bc"></i><i class="br"></i><span class="sel-tag">' + tag + '</span><span class="sel-size"></span>';
-      card.appendChild(s); card.__sel = s;
-      card.addEventListener('mouseenter', function(){ $('.sel-size', s).textContent = Math.round(card.offsetWidth) + ' × ' + Math.round(card.offsetHeight); });
-      if (AB.cardFx) AB.cardFx(card);
-    }
   })();
 
   /* ---------- bento layout (6 tracks, dense): tall and wide cards zig-zag so every row is full
        Webflow (4×2) · 3D (2×2)
-       Custom deploys · Motion · Planet / two minis (availability + reply time) · Brand · Trajectory
+       Custom deploys · Motion · Planet / Custom dashboards · Brand · Trajectory
        (dark cards on the outside columns, the light ones make a middle spine)
        Field notes (4) · CMS
        Systems · Performance (4)
@@ -628,30 +683,24 @@ window.Webflow.push(function(){
   (function(){
     var grid = $('#capabilities .ab_bento_grid'); if (!grid) return;
     function cell(n){ var c = $('[data-name="Card / ' + n + '"]', grid); return c && c.closest('.ab_bento_cell'); }
-    // two mini cards share the slot under Custom deploys (stacked, together as tall as the Motion card): quick,
-    // useful signals with a small effect. Availability reads the nav's CMS-bound line so it never goes stale
-    var minis = cell('availability');
-    if (!minis){
-      var av = $('[data-bind="availability"]'), when = av ? av.textContent.replace(/^\s*available\s*/i, '').trim() : '';
-      minis = document.createElement('div'); minis.className = 'ab_bento_cell is-minis';
-      // the quarter as three months (Q4 → OCT NOV DEC); this month is lit, earlier ones are spent
-      var qm = /Q([1-4])\s*(\d{4})?/i.exec(when), MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'], now = new Date(), months = '';
-      if (qm){ var q0 = (+qm[1] - 1) * 3, yr = +(qm[2] || now.getFullYear()); for (var mi = 0; mi < 3; mi++){ var m = q0 + mi, st = (yr === now.getFullYear() && m === now.getMonth()) ? ' is-now' : (yr < now.getFullYear() || (yr === now.getFullYear() && m < now.getMonth())) ? ' is-past' : ''; months += '<span class="mini-m' + st + '">' + MON[m] + '</span>'; }
-        if (months.indexOf('is-now') < 0 && months.indexOf('is-past') < 0) months = months.replace('class="mini-m"', 'class="mini-m is-next"'); }
-      minis.innerHTML =
-        '<article data-name="Card / availability" data-selectable="" class="ab_bento-card is-mini is-book"><div class="mini-k"><span><i class="mini-dot" aria-hidden="true"></i>Now booking</span>' + (months ? '<span class="mini-months" aria-hidden="true">' + months + '</span>' : '') + '</div>' +
-          '<h3 class="ab_bento-card_title">' + esc(when || 'New missions') + '</h3><p class="mini-p">Taking on new missions. Discovery calls are 30 minutes.</p>' +
-          '<a class="ab_bento-card_link" href="/contact#call" aria-label="Book a discovery call">↗</a></article>' +
-        '<article data-name="Card / reply" data-selectable="" class="ab_bento-card is-mini is-reply"><span class="mini-aura" aria-hidden="true"><i></i></span><span class="mini-sparks" aria-hidden="true"><b style="left:62%;top:18%;--d:0s;--s:1"></b><b style="left:84%;top:34%;--d:0.9s;--s:0.7"></b><b style="left:74%;top:62%;--d:1.7s;--s:0.55"></b><b style="left:90%;top:78%;--d:0.4s;--s:0.85"></b><b style="left:48%;top:12%;--d:2.3s;--s:0.5"></b><b style="left:34%;top:82%;--d:1.2s;--s:0.6"></b><b style="left:12%;top:20%;--d:2.8s;--s:0.45"></b></span><div class="mini-k"><span>Reply time</span><span class="mini-bubble" aria-hidden="true"><i></i><i></i><i></i></span></div>' +
-          '<h3 class="ab_bento-card_title">&lt; 1 business day</h3><p class="mini-p">A real person on the other end, not a ticket queue.</p>' +
-          '<a class="ab_bento-card_link" href="/contact" aria-label="Send a message">↗</a></article>';
-      $$('.ab_bento-card', minis).forEach(function(c){ if (AB.cardFx) AB.cardFx(c); });
+    // Custom dashboards (2026-10-11, replaced the two mini cards): one light card in the slot under Custom deploys, the
+    // request tracker running in it. A native Designer card ([data-name="Card / dashboards"]) wins
+    var dash = cell('dashboards');
+    if (!dash){
+      dash = document.createElement('div'); dash.className = 'ab_bento_cell';
+      dash.innerHTML = '<article data-name="Card / dashboards" data-selectable="" data-visual="tracker" class="ab_bento-card is-dash" style="background:#FBFAF6;border-color:rgba(11,12,20,.12);color:#0B0C14">' +
+        '<div class="ab_bento-card_viz" style="background:#F2F0EA;border-color:rgba(11,12,20,.1)"></div>' +
+        '<div class="ab_bento-card_copy"><div class="ab_bento-card_label text-style-mono" style="color:rgba(11,12,20,.55)">Custom dashboards</div>' +
+        '<h3 class="ab_bento-card_title" style="color:#0B0C14">Mission control for your work</h3>' +
+        '<p class="ab_bento-card_text" style="color:rgba(11,12,20,.7)">Requests, clients and hours on one board, with a side for your clients. From $9,500.</p></div>' +
+        '<a aria-label="Custom dashboards: Mission Control systems" href="/services/dashboards" class="ab_bento-card_link" style="color:#0B0C14;border-color:rgba(11,12,20,.3)">↗</a></article>';
+      selFrame(dash.firstChild, 'Card / dashboards');
     }
-    var order = ['deploys', 'motion', 'specimen', 'availability', 'branding', 'trajectory', 'observatory', 'cms-integrations', 'systems', 'performance'].map(function(n){ return n === 'availability' ? minis : cell(n); });
+    var order = ['deploys', 'motion', 'specimen', 'dashboards', 'branding', 'trajectory', 'observatory', 'cms-integrations', 'systems', 'performance'].map(function(n){ return n === 'dashboards' ? dash : cell(n); });
     if (order.some(function(c){ return !c; })) return;
     var set = { observatory: 'is-wide', performance: 'is-wide' };
-    ['deploys', 'motion', 'specimen', 'availability', 'branding', 'trajectory', 'observatory', 'cms-integrations', 'systems', 'performance'].forEach(function(n, i){
-      var c = order[i]; if (n !== 'availability') c.classList.remove('is-tall', 'is-wide', 'is-half');
+    ['deploys', 'motion', 'specimen', 'dashboards', 'branding', 'trajectory', 'observatory', 'cms-integrations', 'systems', 'performance'].forEach(function(n, i){
+      var c = order[i]; c.classList.remove('is-tall', 'is-wide', 'is-half');
       if (set[n]) c.classList.add(set[n]);
       grid.appendChild(c);
     });
@@ -1267,6 +1316,7 @@ window.Webflow.push(function(){
       onView(v, function(x){ x ? tl.play() : tl.pause(); });
       var card = v.closest('.ab_bento-card'); if (card) card.addEventListener('pointerenter', function(){ tl.timeScale(1.8); }); if (card) card.addEventListener('pointerleave', function(){ tl.timeScale(1); });
     },
+    tracker: function(v){ if (AB.trackerViz) AB.trackerViz(v, { rows: 4 }); },
     meters: function(v){
       // six readings (two columns when the card is wide): loading, stability, response, motion, audit, access
       var M = [['LCP', .72, '&lt; 2.5 s'], ['CLS', .9, '&lt; 0.1'], ['INP', .84, '&lt; 200 ms'], ['Motion', 1, '60 fps'], ['Lighthouse', .98, '98 / 100'], ['A11y', 1, '100 / 100']];
