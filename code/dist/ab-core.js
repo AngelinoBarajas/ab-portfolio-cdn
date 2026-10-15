@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.33.80 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.83 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -1069,6 +1069,11 @@ window.Webflow.push(function(){
   // Hover shows (hover devices), focus shows, tap toggles (touch; not on links, buttons or draggables). One tip at a time.
   var tipEl = document.createElement('div'); tipEl.className = 'gl-tip'; tipEl.id = 'abTip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl);
   var TERMS = {}, ASIDES = [], tipCur = null, tipT = 0;
+  // Topic links (Topicweave term links): field-note rich text links a vocabulary word to /topics/<slug> at its first
+  // mention (a real <a> written into the CMS, never added by script). Hover / focus / first tap shows the topic's
+  // definition in the same tip; a second tap follows the link
+  var TOPIC_SEL = '.w-richtext a[href^="/topics/"]', TOPIC = {};
+  function topicSlug(a){ var m = /^\/topics\/([^\/?#]+)/.exec(a.getAttribute('href') || ''); return m ? m[1] : ''; }
   function tipData(){
     TERMS = {}; ASIDES = []; passEls = null;
     (AB.gloss || []).forEach(function(g){
@@ -1083,11 +1088,14 @@ window.Webflow.push(function(){
     tipEl.style.left = Math.round(Math.max(12, Math.min(innerWidth - w - 12, x))) + 'px';
     tipEl.style.top = Math.round(Math.max(8, y)) + 'px';
   }
-  function tipShow(el, title, text, aside){
+  function tipShow(el, title, text, aside, topic){
     if (aside && AB.quest) AB.quest('aside');
     clearTimeout(tipT);
-    tipEl.innerHTML = '<b>' + (aside ? '<i aria-hidden="true">✦</i> ' : '') + esc(title) + '</b>' + esc(text);
+    tipEl.innerHTML = topic
+      ? '<span class="gl-tip_eb">Observatory vocabulary</span><b>' + esc(title) + '</b>' + esc(text) + '<span class="gl-tip_more">Read more: ' + esc(title) + ' →</span>'
+      : '<b>' + (aside ? '<i aria-hidden="true">✦</i> ' : '') + esc(title) + '</b>' + esc(text);
     tipEl.classList.toggle('is-aside', !!aside);
+    tipEl.classList.toggle('is-topic', !!topic);
     tipPlace(el); tipEl.classList.add('show'); tipCur = el;
     if (el.matches && el.matches('button,a,[tabindex]')) el.setAttribute('aria-describedby', 'abTip');
   }
@@ -1095,12 +1103,14 @@ window.Webflow.push(function(){
   // what a pointer/focus target shows: a term button, or the nearest element an aside targets
   function tipFor(t){
     if (!t || !t.closest) return null;
+    var ta = t.closest(TOPIC_SEL);
+    if (ta){ var tp = TOPIC[topicSlug(ta)]; return tp ? { el: ta, title: tp.n, text: tp.d, topic: true } : null; }
     var b = t.closest('.gl');
     if (b){ var term = b.getAttribute('data-term'); return TERMS[term] ? { el: b, title: term, text: TERMS[term] } : null; }
     for (var i = 0; i < ASIDES.length; i++){ var m = t.closest(ASIDES[i].t); if (m) return { el: m, title: ASIDES[i].n, text: ASIDES[i].d, aside: true }; }
     return null;
   }
-  function tipOpen(f){ if (f) tipShow(f.el, f.title, f.text, f.aside); }
+  function tipOpen(f){ if (f) tipShow(f.el, f.title, f.text, f.aside, f.topic); }
   if (!coarse){
     document.addEventListener('mouseover', function(e){
       var f = tipFor(e.target); if (!f){ return; } if (f.el === tipCur) return;
@@ -1136,13 +1146,21 @@ window.Webflow.push(function(){
       else if (tipCur && tipCur.__pass !== false){ for (var j = 0; j < passEls.length; j++){ if (passEls[j].el === tipCur){ tipHide(); break; } } }
     }, { passive: true });
   }
-  document.addEventListener('focusin', function(e){ var f = tipFor(e.target); if (f && f.el === e.target) tipOpen(f); });
+  // a tap focuses the link too (Android): that focus must not count as the first tap, or the click would follow the link
+  var tipPtrAt = 0;
+  document.addEventListener('pointerdown', function(){ tipPtrAt = Date.now(); }, true);
+  document.addEventListener('focusin', function(e){ var f = tipFor(e.target); if (f && f.el === e.target && !(f.topic && coarse && Date.now() - tipPtrAt < 800)) tipOpen(f); });
   document.addEventListener('focusout', function(){ tipHide(); });
   // grabbing a draggable (planet, black hole) or tapping elsewhere closes the tip
-  document.addEventListener('pointerdown', function(e){ if (tipCur && !(e.target.closest && e.target.closest('.gl'))) tipHide(); }, true);
+  document.addEventListener('pointerdown', function(e){ if (tipCur && !(e.target.closest && e.target.closest('.gl,' + TOPIC_SEL))) tipHide(); }, true);
+  document.addEventListener('keydown', function(e){ if (tipCur && (e.key === 'Escape' || e.key === 'Esc')) tipHide(); });
   document.addEventListener('click', function(e){
     var b = e.target.closest && e.target.closest('.gl');
     if (b){ e.stopPropagation(); if (tipCur === b) tipHide(); else tipOpen(tipFor(b)); return; }
+    // topic link on touch: the first tap shows the definition (and stops the warp in 30-motion, which skips
+    // prevented clicks); a second tap on the same link follows it
+    var ta = coarse && e.target.closest && e.target.closest(TOPIC_SEL);
+    if (ta){ var tf = tipFor(ta); if (tf && tipCur !== ta){ e.preventDefault(); tipOpen(tf); } return; }
     if (!coarse) return;
     var f = tipFor(e.target);
     if (!f || (e.target.closest && e.target.closest('a,button,input,select,textarea,[data-drag],.is-drag'))) { tipHide(); return; }
@@ -1181,6 +1199,31 @@ window.Webflow.push(function(){
     });
   }
   tipData();
+  // topic definitions: the page's own Topics records if they carry one, else a cached copy of /topics (localStorage
+  // ab:topics, refreshed after a day), else one fetch of /topics. Pages without topic links do nothing
+  (function(){
+    var links = $$(TOPIC_SEL); if (!links.length) return;
+    function read(root){
+      var o = {};
+      $$('[data-ks-t][data-slug]', root).forEach(function(r){
+        var n = $('[data-field="name"],[data-f="name"]', r), d = $('[data-field="definition"],[data-f="definition"]', r);
+        if (n && d && d.textContent.trim()) o[r.getAttribute('data-slug')] = { n: n.textContent.trim(), d: d.textContent.trim() };
+      });
+      return o;
+    }
+    function add(o){ for (var k in o) TOPIC[k] = o[k]; }
+    add(read(document));
+    var c = null;
+    try { c = JSON.parse(localStorage.getItem('ab:topics') || 'null'); } catch (e){}
+    if (c && c.t) add(c.t);
+    var missing = links.some(function(a){ return !TOPIC[topicSlug(a)]; });
+    if ((!missing && c && Date.now() - c.at < 864e5) || !window.fetch || !window.DOMParser) return;
+    fetch('/topics', { credentials: 'same-origin' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(html){
+      if (!html) return;
+      var o = read(new DOMParser().parseFromString(html, 'text/html')); add(o);
+      try { localStorage.setItem('ab:topics', JSON.stringify({ at: Date.now(), t: o })); } catch (e){}
+    })['catch'](function(){});
+  })();
   AB.tip = {
     show: function(el){ for (var i = 0; i < ASIDES.length; i++){ if (el.matches && el.matches(ASIDES[i].t)){ tipShow(el, ASIDES[i].n, ASIDES[i].d, true); return; } } },
     hide: function(el){ if (!el || tipCur === el) tipHide(); },

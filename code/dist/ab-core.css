@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core.css v0.33.80 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core.css v0.33.83 · github.com/AngelinoBarajas/ab-portfolio */
 /* body font fallback sized to Geist (Arial measured against it: 102.47% wide), so text keeps its line breaks when Geist
    swaps in and the heroes don't jump (About CLS 0.24 on desktop). Re-declares the Webflow variable: if the body font is
    changed in the Designer, change it here too. Android (no Arial) falls through to plain sans-serif. */
@@ -1053,6 +1053,10 @@ section:hover > .ab_frame-label{color:var(--_color---ui--select)}
 @media (prefers-reduced-motion:reduce){.gl-tip,.gl-tip.show{transition:none;transform:none}}
 :where(html.ab-calm) .gl-tip,:where(html.ab-calm) .gl-tip.show{transition:none;transform:none}
 
+/* topic links (Topicweave term links) in field-note copy: dotted underline in the accent; the tip adds an eyebrow and a Read more line */
+.ab_ks-prose .w-richtext a[href^="/topics/"]{text-decoration-style:dotted}
+.gl-tip_eb{display:block;margin-bottom:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--_color---text--secondary)}
+.gl-tip_more{display:block;margin-top:8px;color:var(--_color---brand--signal)}
 
 /* ---------- mission-control monitor (Mission debrief channels, Services hub manifest): frame screws, REC, CRT decor ---------- */
 .ab_mon::before,.ab_mon::after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:#2a2e44;box-shadow:inset 0 1px 1px rgba(0,0,0,.6);top:6px}
