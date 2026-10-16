@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-knowledge v0.33.86 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-knowledge v0.33.87 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abKnowledgeInit) return;
@@ -726,6 +726,25 @@ window.Webflow.push(function(){
      v0.33.85: native first (Topicweave rule: every related link is a real href in the HTML). When the template carries the
      native lists ([data-ks-nchips] chips, [data-ks-card] cards, [data-ks-nmore] remaining notes) this only polishes them:
      category keys, the "Filed under" label, reveals, hiding empty parts. Without them it falls back to building the row. */
+  // v0.33.87 "This project demonstrates" (Topicweave pattern B337): the case study's native topic chips regrouped into
+  // one row per vocabulary category, in star-chart order. The heading is a Designer element ([data-ks-demo-h]) so it is
+  // in the raw HTML; without it the script adds the same words. Chips move with their list items, hrefs untouched
+  function demoRows(filed, chips){
+    filed.classList.add('is-demo');
+    var h = $('[data-ks-demo-h]', filed);
+    if (!h){ h = document.createElement('h3'); h.className = 'ab_ks-demo_h'; h.textContent = 'This project demonstrates'; filed.insertBefore(h, filed.firstChild); }
+    var rows = document.createElement('div'); rows.className = 'ab_ks-demo';
+    CATS.forEach(function(c){
+      var mine = chips.filter(function(a){ return a.getAttribute('data-cat') === c.key; });
+      if (!mine.length) return;
+      var row = document.createElement('div'); row.className = 'ab_ks-demo_row'; row.setAttribute('data-cat', c.key);
+      row.innerHTML = '<span class="ab_ks-demo_l">' + esc(c.name) + '</span><div class="ab_ks-demo_chips" role="list"></div>';
+      var list = row.lastChild;
+      mine.forEach(function(a){ list.appendChild(a.closest('.w-dyn-item') || a); });
+      rows.appendChild(row);
+    });
+    filed.appendChild(rows);
+  }
   if (ROW === 'mission' || ROW === 'service') (function(){
     var sec = $('[data-ks-row]'), filed = $('[data-ks-filed]'), mount = $('[data-ks-rownotes]');
     var nChips = $('[data-ks-nchips]', sec), nCards = mount ? $$('[data-ks-card]', mount) : [], nMore = mount ? $('[data-ks-nmore]', mount) : null;
@@ -737,6 +756,7 @@ window.Webflow.push(function(){
       });
       if (filed){
         if (!chips.length) filed.style.display = 'none';
+        else if (ROW === 'mission') demoRows(filed, chips);
         else if (!$('.ab_ks-filed_l', filed)){
           var l = document.createElement('span'); l.className = 'ab_ks-filed_l'; l.textContent = ROW === 'mission' ? 'Filed under' : 'Topics';
           filed.insertBefore(l, filed.firstChild);

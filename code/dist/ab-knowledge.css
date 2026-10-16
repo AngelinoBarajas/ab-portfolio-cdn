@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-knowledge.css v0.33.86 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-knowledge.css v0.33.87 · github.com/AngelinoBarajas/ab-portfolio */
 /* =========================================================
    KNOWLEDGE SYSTEM · the Observatory (/observatory, /observatory/*, /topics, /topics/*) + rows on Mission,
    Service and Home. Webflow gives each ab_ks-* class a stub rule; the look lives here (approved prototype:
@@ -439,3 +439,12 @@ a.ab_ks-tstat:hover b{color:var(--_color---brand--signal)}
 .ab_ks-notelink::after{content:"\2192";margin-left:auto;color:var(--_color---text--tertiary);transition:transform .2s,color .2s}
 .ab_ks-notelink:hover,.ab_ks-notelink:focus-visible{color:var(--_color---text--primary)}
 .ab_ks-notelink:hover::after,.ab_ks-notelink:focus-visible::after{color:var(--_color---text--primary);transform:translateX(3px)}
+/* v0.33.87 "This project demonstrates" on case studies: the Filed-under chips regrouped into one row per category */
+.ab_ks-filed.is-demo{display:block;padding:clamp(18px,2.2vw,26px) 0}
+.ab_ks-demo_h{margin:0 0 12px;font-family:var(--_typography---font--mono);font-size:12px;font-weight:500;line-height:1.3;letter-spacing:.14em;text-transform:uppercase;color:var(--_color---text--primary)}
+.ab_ks-demo_row{display:grid;grid-template-columns:minmax(150px,190px) 1fr;gap:8px 20px;align-items:center;padding:9px 0}
+.ab_ks-demo_row + .ab_ks-demo_row{border-top:1px dashed var(--_color---neutral--hair)}
+.ab_ks-demo_l{font-family:var(--_typography---font--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--kc,var(--_color---text--tertiary))}
+.ab_ks-demo_chips{display:flex;flex-wrap:wrap;gap:8px}
+.ab_ks-demo_chips .w-dyn-item{display:contents}
+@media (max-width:767px){.ab_ks-demo_row{grid-template-columns:1fr;gap:8px;padding:11px 0}}
