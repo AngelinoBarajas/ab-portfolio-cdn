@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.100 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.101 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -69,7 +69,7 @@ window.Webflow.push(function(){
   if (sat){ sat.tabIndex = 0; sat.setAttribute('aria-label', 'Satellite. Please do not drag it.'); }
   if (hero && canDrag){
     $$('[data-drag]', hero).forEach(function(el){
-      if (el.closest('[data-board-planet]')) return; // the board drags Planet XY (its frames follow it)
+      if (el.closest('[data-board-planet]') && innerWidth >= 768) return; // the canvas drags Planet XY (its frames follow it); on phones it's a hero toy, like Home
       var back;
       function schedule(){ if (back) back.kill(); back = gsap.delayedCall(6, function(){ gsap.to(el, { x: 0, y: 0, rotation: 0, duration: 1.4, ease: 'elastic.out(1,.55)' }); }); }
       AB.lazyDrag(el, { type: 'x,y', bounds: hero, inertia: true, edgeResistance: .7,
@@ -469,9 +469,11 @@ window.Webflow.push(function(){
       // usually did this already, before the first paint) and the board falls through to the swipe deck below,
       // with the missions + Next mission only (the field notes and Planet XY stay on the desktop canvas).
       var hcopy = $('[data-board-copy]', board); if (hcopy) board.parentNode.insertBefore(hcopy, $('[data-phone-only]', board.parentNode) || board);
+      var hplanet = $('[data-board-planet]', board), hc = $('[data-board-copy]'); if (hplanet && hc) board.parentNode.insertBefore(hplanet, hc); // Planet XY above the headline, like Home
       if (!document.getElementById('ab-phone-hero')){ var phs = document.createElement('style'); phs.id = 'ab-phone-hero';
         phs.textContent = '@media (max-width:767px){' +
-          '.section_hero.is-board{height:auto!important;min-height:0!important;padding:112px 16px 8px!important}' +
+          '.section_hero.is-board{position:relative;height:auto!important;min-height:0!important;padding:clamp(215px,56vw,250px) 16px 8px!important}' +
+          '.section_hero.is-board>[data-board-planet]{position:absolute!important;width:190px!important;left:auto!important;right:22px!important;top:44px!important;transform:none;z-index:0}' +
           '[data-board-copy].ab_board_copy{position:relative!important;left:auto!important;top:auto!important;width:auto!important;max-width:none!important;transform:none!important;z-index:auto!important}' +
           '.ab_board_copy>.sel{display:none!important}' +
           '[data-phone-only].ab_section-head{margin-top:72px}' +
