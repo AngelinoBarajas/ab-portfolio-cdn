@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.91 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.92 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -67,7 +67,7 @@ window.Webflow.push(function(){
   if (sat){ sat.tabIndex = 0; sat.setAttribute('aria-label', 'Satellite. Please do not drag it.'); }
   if (hero && canDrag){
     $$('[data-drag]', hero).forEach(function(el){
-      if (el.closest('[data-board-planet]')) return; // the board drags Gargantua (its frames follow it)
+      if (el.closest('[data-board-planet]')) return; // the board drags Planet XY (its frames follow it)
       var back;
       function schedule(){ if (back) back.kill(); back = gsap.delayedCall(6, function(){ gsap.to(el, { x: 0, y: 0, rotation: 0, duration: 1.4, ease: 'elastic.out(1,.55)' }); }); }
       AB.lazyDrag(el, { type: 'x,y', bounds: hero, inertia: true, edgeResistance: .7,
@@ -452,7 +452,7 @@ window.Webflow.push(function(){
 
     /* =========================================================
        HERO BOARD (v0.33.89+, docs/home-canvas-hero-plan.md): the board fills the first screen ([data-board-hero]).
-       The hero copy is a locked text layer, Gargantua sits in the middle with every frame on an orbit and trails it
+       The hero copy is a locked text layer, Planet XY sits in the middle with every frame on an orbit and trails it
        when dragged, the 3 newest field notes ride a third orbit, and the chrome adds Tour, Comments, Reset, pins and
        hover peeks. Frames stay native <a href> links: the first click selects, a second click on a selected frame
        opens it (Enter opens a focused one). A plain wheel scrolls the page; Ctrl/⌘ + wheel or a pinch zooms.
@@ -477,13 +477,21 @@ window.Webflow.push(function(){
         // board units via custom properties: ab-core pins the hero satellite on phones with left/top !important
         '[data-board-hero] #sat{position:absolute;left:var(--bh-sat-x,250px)!important;top:var(--bh-sat-y,-330px)!important;right:auto!important;bottom:auto!important}',
         '[data-board-hero] .ab_board_world .ab_board_frame,[data-board-hero] [data-board-copy],[data-board-hero] [data-board-planet],[data-board-hero] #sat{max-width:none!important}',
-        '[data-board-hero] .ab_board_frame{cursor:grab;touch-action:pan-y;transform-origin:0 0;--fs:1}',
+        // frames sit above the planet (z 3): a scaled card overlapping Planet XY's box must still take its own clicks
+        '[data-board-hero] .ab_board_frame{cursor:grab;touch-action:pan-y;transform-origin:0 0;--fs:1;z-index:4}',
+        '[data-board-hero] .ab_board_frame.is-selected{z-index:5}',
         // card scaling: the selected frame's handles take the pointer; handles + tags stay screen-sized as the card grows
         '[data-board-hero] .ab_board_frame.is-selected > .sel i{pointer-events:auto;transform:scale(calc(1 / var(--fs)))}',
         '[data-board-hero] .ab_board_frame > .sel .sel-tag{transform:scale(calc(1 / var(--fs)));transform-origin:0 100%}',
         '[data-board-hero] .ab_board_frame > .sel .sel-size{transform:translateX(-50%) scale(calc(1 / var(--fs)));transform-origin:50% 0}',
         '[data-board-hero] .sel .tl,[data-board-hero] .sel .br{cursor:nwse-resize}[data-board-hero] .sel .tr,[data-board-hero] .sel .bl{cursor:nesw-resize}',
         '[data-board-hero] .sel .tc,[data-board-hero] .sel .bc{cursor:ns-resize}[data-board-hero] .sel .ml,[data-board-hero] .sel .mr{cursor:ew-resize}',
+        // one-time scale cue: the corner handle pulses in signal orange beside a small tag
+        '@keyframes ab-bh-cue{0%,100%{box-shadow:0 0 0 0 rgba(255,106,61,.75)}50%{box-shadow:0 0 0 9px rgba(255,106,61,0)}}',
+        '[data-board-hero] .ab_board_frame.is-scalecue > .sel .br{background:#FF6A3D;border-color:#FF6A3D;animation:ab-bh-cue .9s ease-out 2}',
+        '.ab_bh_scalecue{position:absolute;left:calc(100% + 12px);top:calc(100% - 9px);transform:scale(calc(1 / var(--fs,1)));transform-origin:0 0;background:#FF6A3D;color:#07080D;font:500 11px/1 var(--mono);padding:4px 7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .25s}',
+        '.ab_board_frame.is-scalecue .ab_bh_scalecue{opacity:1}',
+        '@media (prefers-reduced-motion:reduce){[data-board-hero] .ab_board_frame.is-scalecue > .sel .br{animation:none}}',
         '[data-board-hero] .ab_board_frame:active{cursor:grabbing}',
         '[data-board-hero] .ab_board_frame:not(.is-selected):not(.is-slot) .ab_board_frame-inner{outline:1px dashed rgba(255,255,255,.22);outline-offset:4px}',
         '[data-board-hero] .ab_board_frame:focus-visible{outline:none}',
@@ -675,6 +683,16 @@ window.Webflow.push(function(){
       function fv(el){ try { return el.matches(':focus-visible'); } catch (x){ return false; } }
       function SW(f){ return f.w * f.s; } function SH(f){ return f.h * f.s; } // a card's size on the board after scaling
       function boxOf(f){ return { x: f.x, y: f.y, w: SW(f), h: SH(f) }; }
+      var cueDone = false, cueF = null, cueT = 0;
+      try { cueDone = !!sessionStorage.getItem('ab:scalecue'); } catch (x){}
+      function hideCue(){ clearTimeout(cueT); if (cueF){ cueF.el.classList.remove('is-scalecue'); cueF = null; } }
+      function scaleCue(f){
+        if (cueDone || touring || !f.el.__sel) return;
+        cueDone = true; try { sessionStorage.setItem('ab:scalecue', '1'); } catch (x){}
+        var tag = $('.ab_bh_scalecue', f.el.__sel); if (!tag){ tag = document.createElement('span'); tag.className = 'ab_bh_scalecue'; tag.textContent = 'Drag to scale'; f.el.__sel.appendChild(tag); }
+        // next frame, so the selection box is already drawn when the pulse starts
+        setTimeout(function(){ cueF = f; f.el.classList.add('is-scalecue'); cueT = setTimeout(hideCue, 3200); }, 40); // a timer, not rAF: rAF pauses in background tabs
+      }
       function setScale(f, s){ f.s = s; f.el.style.setProperty('--fs', s); var z = f.el.__sel && $('.sel-size', f.el.__sel); if (z) z.textContent = Math.round(SW(f)) + ' × ' + Math.round(SH(f)); }
 
       /* ---------- selection, layers, file bar ---------- */
@@ -696,7 +714,7 @@ window.Webflow.push(function(){
         var addT = function(t){ var d = document.createElement('div'); d.className = 'ab_board_layers-title'; d.textContent = t; d.style.marginTop = '10px'; layersEl.appendChild(d); };
         var addB = function(label, key){ var b = document.createElement('button'); b.type = 'button'; b.tabIndex = -1; b.textContent = label; b.setAttribute('data-target', key); layersEl.appendChild(b); };
         if (copyEl) addB('T hero-title', 'copy');
-        if (planetEl) addB('◯ gargantua', 'planet');
+        if (planetEl) addB('◯ planet-xy', 'planet');
         addT('Frames · ' + items.filter(function(f){ return !f.note && !f.slot; }).length);
         items.forEach(function(f){ if (!f.note) addB('▢ ' + f.slug, f.slug); });
         if (items.some(function(f){ return f.note; })){ addT('Field notes · ' + items.filter(function(f){ return f.note; }).length); items.forEach(function(f){ if (f.note) addB('✎ ' + (f.label || f.slug), f.slug); }); }
@@ -758,7 +776,7 @@ window.Webflow.push(function(){
       var zFit = $('#zFit');
       if (zFit){ var rs = zFit.cloneNode(false); rs.id = 'zReset'; rs.setAttribute('aria-label', 'Reset the board to where it loaded'); rs.textContent = 'RESET'; rs.style.borderLeft = '1px solid rgba(255,255,255,.1)'; zFit.parentNode.insertBefore(rs, zFit.nextSibling); }
       var help = document.createElement('div'); help.className = 'ab_bh_help';
-      help.textContent = 'Drag the board, the planet or any frame · click a frame to select it, click again to open · pinch or Ctrl + scroll to zoom';
+      help.textContent = 'Drag the board, the planet or any frame · click a frame to select it, click again to open · drag a corner to scale · pinch or Ctrl + scroll to zoom';
       board.appendChild(help);
       function hideHelp(){ if (!helpGone){ helpGone = true; help.classList.add('gone'); } }
       var mm = $('#minimap'), mcv = null, mx = null;
@@ -780,6 +798,7 @@ window.Webflow.push(function(){
       vp.addEventListener('pointerdown', function(e){
         if (e.button !== 0) return;
         if (touring) stopTour();
+        hideCue();
         // real controls and the thrown toys (headline words, satellite) keep their own handlers
         if (e.target.closest('.ab_hero_cta a, .ab_bh_pin, #sat, .w')) return;
         var hEl = e.pointerType === 'mouse' && e.target.closest('.ab_board_frame.is-selected > .sel i');
@@ -797,7 +816,7 @@ window.Webflow.push(function(){
         lastDown = drag;
         try { (it || vp).setPointerCapture(e.pointerId); } catch (x){}
         if (!it) select(e.target.closest('[data-board-copy]') ? copyEl : null);
-        else if (f){ select(f.el); if (e.pointerType !== 'mouse') peekOnly(f); }
+        else if (f){ select(f.el); if (e.pointerType !== 'mouse') peekOnly(f); else scaleCue(f); }
         if (it) it.style.zIndex = 9;
         wake();
       });
