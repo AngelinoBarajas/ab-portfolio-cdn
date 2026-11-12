@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.99 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.100 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -202,7 +202,7 @@ window.Webflow.push(function(){
   (function(){
     var board = $('#board'), world = $('#world'); if (!board || !world) return;
     var frames = $$('.ab_board_frame', world);
-    var cms = frames.filter(function(f){ return !f.classList.contains('is-slot'); });
+    var cms = frames.filter(function(f){ return !f.classList.contains('is-slot') && !f.classList.contains('is-note'); }); // missions only
     var pc = $('#projCount'); if (pc) pc.textContent = cms.length;
     // hand-placed spots for the first missions (board coordinates); later items auto-place in rows of three
     var LAYOUT = [[90, 110, 480, 330], [660, 230, 470, 320], [1220, 90, 440, 300]];
@@ -468,14 +468,15 @@ window.Webflow.push(function(){
       // phones (his call 2026-11-12): no canvas. The headline + intro sit above the board (ABPhoneHero in the page head
       // usually did this already, before the first paint) and the board falls through to the swipe deck below,
       // with the missions + Next mission only (the field notes and Planet XY stay on the desktop canvas).
-      var hcopy = $('[data-board-copy]', board); if (hcopy) board.parentNode.insertBefore(hcopy, board);
+      var hcopy = $('[data-board-copy]', board); if (hcopy) board.parentNode.insertBefore(hcopy, $('[data-phone-only]', board.parentNode) || board);
       if (!document.getElementById('ab-phone-hero')){ var phs = document.createElement('style'); phs.id = 'ab-phone-hero';
         phs.textContent = '@media (max-width:767px){' +
           '.section_hero.is-board{height:auto!important;min-height:0!important;padding:112px 16px 8px!important}' +
           '[data-board-copy].ab_board_copy{position:relative!important;left:auto!important;top:auto!important;width:auto!important;max-width:none!important;transform:none!important;z-index:auto!important}' +
           '.ab_board_copy>.sel{display:none!important}' +
-          '[data-board-hero].ab_board_component{height:auto!important;margin-top:44px}' +
-          '[data-board-hero] [data-board-planet],[data-board-hero] #sat,[data-board-hero] [data-board-notes]{display:none!important}}';
+          '[data-phone-only].ab_section-head{margin-top:72px}' +
+          '[data-board-hero].ab_board_component{height:auto!important;margin-top:8px}' +
+          '[data-board-hero] [data-board-planet],[data-board-hero] #sat,[data-board-hero] [data-board-notes],[data-board-hero] .ab_cms-source,[data-board-hero] [data-board-peek]{display:none!important}}';
         document.head.appendChild(phs); }
       frames = frames.filter(function(f){ return !f.classList.contains('is-note'); });
     }
@@ -492,6 +493,7 @@ window.Webflow.push(function(){
       var css = document.createElement('style');
       css.textContent = [
         '.ab_nav_component.is-flat .ab_nav_bar{background:transparent!important;border-color:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}',
+        '[data-phone-only]{display:none!important}', // the phone deck's Selected work header (the page head hides it too)
         '[data-board-hero] .ab_board_viewport{overflow:hidden;z-index:1}',
         '[data-board-hero] .ab_board_world{width:0;height:0;will-change:transform}',
         '[data-board-hero] .ab_board_frame,[data-board-hero] [data-board-copy],[data-board-hero] [data-board-planet]{left:0!important;top:0!important;right:auto!important;bottom:auto!important;position:absolute}',
