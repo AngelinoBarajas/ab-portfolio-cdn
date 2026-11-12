@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.97 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.98 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -54,7 +54,9 @@ window.Webflow.push(function(){
   })();
 
   /* ---------- hero entrance ---------- */
-  if (hasGsap && !reduce){
+  // phones on the board hero: the headline is already painted in its pinned spot (ABEarlyPin), so it doesn't fade in again
+  var earlyPin = boardHero && !!$('.ab_bh_pinned [data-board-copy]');
+  if (hasGsap && !reduce && !earlyPin){
     gsap.from('#heroTitle .w', { yPercent: 60, opacity: 0, duration: 1.1, ease: 'expo.out', stagger: .09, delay: .15 });
     gsap.from(boardHero ? '.ab_hero_bottom > *, .ab_hero_meta' : '.ab_hero_bottom > *, .ab_hero_meta, #hero .ab_planet, .ab_hero_badge, .ab_hero_sat', { opacity: 0, y: 20, duration: .9, stagger: .06, delay: .5, ease: 'power3.out' });
   }
@@ -463,7 +465,7 @@ window.Webflow.push(function(){
        ========================================================= */
     if (board.hasAttribute('data-board-hero')){ heroBoard(); return; }
     function heroBoard(){
-      var vp = $('#viewport'), layersEl = $('#layers'), copyEl = $('[data-board-copy]', world), planetEl = $('[data-board-planet]', world), satEl = $('#sat', world);
+      var vp = $('#viewport'), layersEl = $('#layers'), copyEl = $('[data-board-copy]', board), planetEl = $('[data-board-planet]', world), satEl = $('#sat', world);
       var navC = $('.ab_nav_component'), heroSec = board.closest('section') || board;
       var W = 0, H = 0, phone = false, cam = { x: 0, y: 0, s: 1 }, camT = null, running = false, drag = null, lastDown = null, touring = false, helpGone = false, miniDirty = true;
       var PS = 440, planet = { x: 0, y: 0 }, orb = { x: 0, y: 0 }, COPY0 = { x: -1180, y: -330 }, copyP = { x: COPY0.x, y: COPY0.y };
@@ -1003,14 +1005,18 @@ window.Webflow.push(function(){
       }
 
       /* ---------- phones: the headline + buttons pin to the bottom, the board fills the middle ---------- */
-      var pinBox = document.createElement('div'); pinBox.className = 'ab_bh_pinned'; pinBox.hidden = true; board.appendChild(pinBox);
-      var copyHome = copyEl ? copyEl.parentNode : null, copyNext = copyEl ? copyEl.nextSibling : null;
+      // a phone page may already have pinned the headline before this script arrived (inline page script ABEarlyPin):
+      // reuse that box and leave the headline where it is, so it isn't repainted (it's the page's largest paint)
+      var pinBox = $('.ab_bh_pinned', board);
+      if (!pinBox){ pinBox = document.createElement('div'); pinBox.className = 'ab_bh_pinned'; pinBox.hidden = true; board.appendChild(pinBox); }
+      var early = !!(copyEl && copyEl.parentNode === pinBox);
+      var copyHome = early ? world : copyEl ? copyEl.parentNode : null, copyNext = early ? world.firstChild : copyEl ? copyEl.nextSibling : null;
       function setPhone(on){
         if (!copyEl || on === phone) { phone = on; return; }
         phone = on; pinBox.hidden = !on;
         if (strip){ strip.hidden = !on; if (on) vp.appendChild(strip); }
         if (!on && uiEl) uiEl.style.bottom = '';
-        if (on){ pinBox.appendChild(copyEl); copyEl.style.transform = ''; }
+        if (on){ if (copyEl.parentNode !== pinBox) pinBox.appendChild(copyEl); copyEl.style.transform = ''; }
         else copyHome.insertBefore(copyEl, copyNext);
       }
 
