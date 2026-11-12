@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.89 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.90 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -474,7 +474,8 @@ window.Webflow.push(function(){
         '[data-board-hero] .ab_board_viewport{overflow:hidden;z-index:1}',
         '[data-board-hero] .ab_board_world{width:0;height:0;will-change:transform}',
         '[data-board-hero] .ab_board_frame,[data-board-hero] [data-board-copy],[data-board-hero] [data-board-planet]{left:0!important;top:0!important;right:auto!important;bottom:auto!important;position:absolute}',
-        '[data-board-hero] #sat{position:absolute;right:auto!important;bottom:auto!important}',
+        // board units via custom properties: ab-core pins the hero satellite on phones with left/top !important
+        '[data-board-hero] #sat{position:absolute;left:var(--bh-sat-x,250px)!important;top:var(--bh-sat-y,-330px)!important;right:auto!important;bottom:auto!important}',
         '[data-board-hero] .ab_board_world .ab_board_frame,[data-board-hero] [data-board-copy],[data-board-hero] [data-board-planet],[data-board-hero] #sat{max-width:none!important}',
         '[data-board-hero] .ab_board_frame{cursor:grab;touch-action:pan-y}',
         '[data-board-hero] .ab_board_frame:active{cursor:grabbing}',
@@ -580,7 +581,8 @@ window.Webflow.push(function(){
         el.appendChild(inner);
         if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', 'Read the field note: ' + title);
         f.slug = f.slug || (code || title).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        f.links = $$('[data-note-mission]', el).map(function(n){ return n.getAttribute('data-note-mission'); });
+        // the note's Missions: a nested list beside the link in the same Collection item (Webflow won't put a list inside a link)
+        f.links = $$('[data-note-mission]', el.closest('.w-dyn-item') || el).map(function(n){ return n.getAttribute('data-note-mission'); });
       }
 
       /* ---------- orbits + connectors (one svg in the world) ---------- */
@@ -638,7 +640,7 @@ window.Webflow.push(function(){
         ell.forEach(function(e, i){ setOrbit(e, RINGS[i + 1], orb.x, orb.y); });
         links.forEach(function(l){ l.ln.setAttribute('x1', l.a.x + l.a.w / 2); l.ln.setAttribute('y1', l.a.y + l.a.h / 2); l.ln.setAttribute('x2', l.b.x + l.b.w / 2); l.ln.setAttribute('y2', l.b.y + l.b.h / 2); });
         if (planetEl) place(planetEl, planet.x - PS / 2, planet.y - PS / 2);
-        if (satEl){ satEl.style.left = (orb.x + 250) + 'px'; satEl.style.top = (orb.y - 330) + 'px'; }
+        if (satEl){ satEl.style.setProperty('--bh-sat-x', (orb.x + 250) + 'px'); satEl.style.setProperty('--bh-sat-y', (orb.y - 330) + 'px'); }
         if (copyEl && !phone) place(copyEl, copyP.x, copyP.y);
         placePins(); miniDirty = true;
         if (moving || drag) requestAnimationFrame(loop); else running = false;
@@ -716,8 +718,10 @@ window.Webflow.push(function(){
 
       /* ---------- hover peek (CMS Board peek: a nested list of images inside the frame, [data-board-peek]) ---------- */
       items.forEach(function(f){
-        var src = $$('[data-board-peek] img', f.el).map(function(i){ return i.getAttribute('data-src') || i.getAttribute('src'); }).filter(Boolean);
-        var holder = $('[data-board-peek]', f.el); if (holder) holder.style.display = 'none';
+        // Board peek: a nested list beside the frame link in its Collection item (Webflow won't put a list inside a link)
+        var scope = f.el.closest('.w-dyn-item') || f.el;
+        var src = $$('[data-board-peek] img', scope).map(function(i){ return i.getAttribute('data-src') || i.getAttribute('src'); }).filter(Boolean);
+        var holder = $('[data-board-peek]', scope); if (holder) holder.style.display = 'none';
         if (!src.length) return;
         var inner = $('.ab_board_frame-inner', f.el); if (!inner) return;
         var pk = document.createElement('div'); pk.className = 'ab_bh_peek'; pk.setAttribute('aria-hidden', 'true');
