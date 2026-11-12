@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.95 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.96 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -556,14 +556,14 @@ window.Webflow.push(function(){
         '[data-board-hero] .ab_bh_pinned [data-board-copy] .ab_hero_lede{font-size:15px}',
         '.ab_bh_pinned .ab_hero_cta{display:flex;gap:10px;margin-top:16px}',
         '.ab_bh_pinned .ab_hero_cta > *{flex:1;justify-content:center}',
-        // phones: a swipeable row of the work above the headline (Layers is hidden there), so nobody has to drag to find it
-        '.ab_bh_strip{display:flex;gap:8px;overflow-x:auto;margin:0 -16px 12px;padding:2px 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scroll-padding-inline:16px}',
+        // phones: a swipeable row of the work across the top of the board, under the file bar (Layers is hidden there), so nobody has to drag to find it
+        '.ab_bh_strip{position:absolute;left:0;right:0;top:0;z-index:9;display:flex;gap:6px;overflow-x:auto;padding:8px 12px 14px;background:linear-gradient(to bottom,#07080D 60%,rgba(7,8,13,0));scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scroll-padding-inline:12px;touch-action:pan-x}',
         '.ab_bh_strip::-webkit-scrollbar{display:none}',
-        '.ab_bh_strip button{flex:none;display:flex;align-items:center;gap:7px;height:34px;padding:0 11px;background:rgba(18,19,26,.92);border:1px dashed rgba(255,255,255,.3);color:#F2F0EA;font:400 12px/1 var(--mono);cursor:pointer;scroll-snap-align:start;-webkit-tap-highlight-color:transparent}',
-        '.ab_bh_strip button i{width:10px;height:10px;flex:none;background:var(--sw,#F2F0EA);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}',
+        '.ab_bh_strip button{flex:none;display:flex;align-items:center;gap:6px;height:28px;padding:0 9px;background:rgba(18,19,26,.92);border:1px dashed rgba(255,255,255,.3);color:#F2F0EA;font:400 11px/1 var(--mono);cursor:pointer;scroll-snap-align:start;-webkit-tap-highlight-color:transparent}',
+        '.ab_bh_strip button i{width:8px;height:8px;flex:none;background:var(--sw,#F2F0EA);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}',
         '.ab_bh_strip button.is-on{border:1px solid #4C8DFF;background:#16233f}',
         '.ab_bh_strip button.is-on::after{content:"Open \\2192";color:#9DBDFF;margin-left:2px}',
-        '.ab_bh_strip b{flex:none;align-self:center;scroll-snap-align:start;padding:0 2px 0 4px;color:#8F8D87;font:400 11px/1 var(--mono)}',
+        '.ab_bh_strip b{flex:none;align-self:center;scroll-snap-align:start;padding:0 2px;color:#8F8D87;font:400 10px/1 var(--mono)}',
         '.ab_bh_minicv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer}',
         '@media (max-width:1024px){[data-board-hero] .ab_board_layers{display:none}[data-board-hero] .ab_board_viewport{left:0}.ab_bh_help{left:14px}}',
         '@media (max-width:767px){[data-board-hero] .ab_board_minimap,.ab_bh_help,[data-board-hero] #fakeCursor,.ab_bh_top .is-pins,#boardCoords{display:none!important}}',
@@ -697,16 +697,16 @@ window.Webflow.push(function(){
       }
       var planetBox = function(){ return { x: planet.x - 320, y: planet.y - 260, w: 640, h: 520 }; };
       function home(snap){
-        if (phone){ fitTo({ x: planet.x - 420, y: planet.y - 330, w: 840, h: 660 }, { l: 0, r: W, t: 10, b: H - 320 }, .6, snap); return; }
+        if (phone){ fitTo({ x: planet.x - 420, y: planet.y - 330, w: 840, h: 660 }, { l: 0, r: W, t: 50, b: H - 270 }, .6, snap); return; }
         fitTo(union([planetBox(), copyBox()]), { l: 40, r: W - 40, t: 50, b: H - 70 }, 1, snap);
       }
       function fitAll(){
         var bs = items.map(function(f){ return { x: planet.x + f.ox, y: planet.y + f.oy - 30, w: SW(f), h: SH(f) + 60 }; });
         bs.push({ x: planet.x - 320, y: planet.y - 320, w: 640, h: 640 }); if (!phone) bs.push(copyBox());
-        fitTo(union(bs), { l: 30, r: W - 30, t: 40, b: H - (phone ? 310 : 70) }, 1, false);
+        fitTo(union(bs), { l: 30, r: W - 30, t: phone ? 56 : 40, b: H - (phone ? 260 : 70) }, 1, false);
       }
       function zoomAt(k, sx, sy){ var b = camT || cam, ns = Math.max(.2, Math.min(2.2, b.s * k)), wx = (sx - b.x) / b.s, wy = (sy - b.y) / b.s; camT = { s: ns, x: sx - wx * ns, y: sy - wy * ns }; wake(); }
-      function flyTo(box){ fitTo({ x: box.x - 60, y: box.y - 80, w: box.w + 120, h: box.h + 160 }, { l: 30, r: W - 30, t: 30, b: H - (phone ? 310 : 60) }, phone ? .8 : 1.2, false); }
+      function flyTo(box){ fitTo({ x: box.x - 60, y: box.y - 80, w: box.w + 120, h: box.h + 160 }, { l: 30, r: W - 30, t: phone ? 56 : 30, b: H - (phone ? 260 : 60) }, phone ? .8 : 1.2, false); }
       function fv(el){ try { return el.matches(':focus-visible'); } catch (x){ return false; } }
       function SW(f){ return f.w * f.s; } function SH(f){ return f.h * f.s; } // a card's size on the board after scaling
       function boxOf(f){ return { x: f.x, y: f.y, w: SW(f), h: SH(f) }; }
@@ -756,7 +756,7 @@ window.Webflow.push(function(){
 
       var strip = null;
       if (copyEl){
-        strip = document.createElement('div'); strip.className = 'ab_bh_strip'; strip.setAttribute('aria-label', 'All work on the board');
+        strip = document.createElement('div'); strip.className = 'ab_bh_strip'; strip.hidden = true; strip.setAttribute('aria-label', 'All work on the board');
         var addS = function(f, label, sw){ var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-target', f.slug); b.innerHTML = '<i></i><span></span>'; b.style.setProperty('--sw', sw); $('span', b).textContent = label; strip.appendChild(b); };
         var addL = function(t){ var h = document.createElement('b'); h.textContent = t; strip.appendChild(h); };
         addL('Work');
@@ -847,7 +847,7 @@ window.Webflow.push(function(){
         if (touring) stopTour();
         hideCue();
         // real controls and the thrown toys (headline words, satellite) keep their own handlers
-        if (e.target.closest('.ab_hero_cta a, .ab_bh_pin, #sat, .w')) return;
+        if (e.target.closest('.ab_hero_cta a, .ab_bh_pin, #sat, .w, .ab_bh_strip')) return;
         var hEl = e.pointerType === 'mouse' && e.target.closest('.ab_board_frame.is-selected > .sel i');
         if (hEl){
           var hf = items.filter(function(q){ return q.el === hEl.parentNode.parentNode; })[0];
@@ -997,7 +997,8 @@ window.Webflow.push(function(){
       function setPhone(on){
         if (!copyEl || on === phone) { phone = on; return; }
         phone = on; pinBox.hidden = !on;
-        if (on){ if (strip) pinBox.appendChild(strip); pinBox.appendChild(copyEl); copyEl.style.transform = ''; }
+        if (strip){ strip.hidden = !on; if (on) vp.appendChild(strip); }
+        if (on){ pinBox.appendChild(copyEl); copyEl.style.transform = ''; }
         else copyHome.insertBefore(copyEl, copyNext);
       }
 
