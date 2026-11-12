@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.96 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.97 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -217,9 +217,13 @@ window.Webflow.push(function(){
       return rgbToHex(getComputedStyle(node)[prop === 'bg' ? 'backgroundColor' : 'color']);
     }
     // run an animation only while its frame is on screen and the tab is visible
+    // ambient motion (card previews, the satellite drift) waits for load + 1.5 s, so it stays out of the first paint and blocking time
+    var lateQ = [], lateOk = false;
+    (function(){ function go(){ setTimeout(function(){ lateOk = true; lateQ.splice(0).forEach(function(f){ f(); }); }, 1500); }
+      if (document.readyState === 'complete') go(); else addEventListener('load', go); })();
     function whileSeen(el, on, off){
       var seen = false;
-      function sync(){ (seen && !document.hidden) ? on() : off(); }
+      function sync(){ if (!(seen && !document.hidden)) return off(); if (lateOk) on(); else lateQ.push(function(){ if (seen && !document.hidden) on(); }); }
       if ('IntersectionObserver' in window) new IntersectionObserver(function(es){ seen = es[0].isIntersecting; sync(); }).observe(el); else { seen = true; sync(); }
       document.addEventListener('visibilitychange', sync);
     }
@@ -696,17 +700,24 @@ window.Webflow.push(function(){
         if (snap){ cam.x = t.x; cam.y = t.y; cam.s = t.s; camT = null; renderCam(); } else { camT = t; wake(); }
       }
       var planetBox = function(){ return { x: planet.x - 320, y: planet.y - 260, w: 640, h: 520 }; };
+      // phones: the pinned headline covers the bottom of the board (its top 90px is a fade); the zoom bar sits just above it
+      var uiEl = $('.ab_board_ui', board);
+      function phoneRes(){
+        if (!phone || !pinBox || pinBox.hidden){ if (uiEl) uiEl.style.bottom = ''; return 260; }
+        var solid = Math.max(0, pinBox.offsetHeight - 90); if (uiEl) uiEl.style.bottom = (solid + 6) + 'px';
+        return solid + 56;
+      }
       function home(snap){
-        if (phone){ fitTo({ x: planet.x - 420, y: planet.y - 330, w: 840, h: 660 }, { l: 0, r: W, t: 50, b: H - 270 }, .6, snap); return; }
+        if (phone){ fitTo({ x: planet.x - 420, y: planet.y - 330, w: 840, h: 660 }, { l: 0, r: W, t: 50, b: H - phoneRes() }, .6, snap); return; }
         fitTo(union([planetBox(), copyBox()]), { l: 40, r: W - 40, t: 50, b: H - 70 }, 1, snap);
       }
       function fitAll(){
         var bs = items.map(function(f){ return { x: planet.x + f.ox, y: planet.y + f.oy - 30, w: SW(f), h: SH(f) + 60 }; });
         bs.push({ x: planet.x - 320, y: planet.y - 320, w: 640, h: 640 }); if (!phone) bs.push(copyBox());
-        fitTo(union(bs), { l: 30, r: W - 30, t: phone ? 56 : 40, b: H - (phone ? 260 : 70) }, 1, false);
+        fitTo(union(bs), { l: 30, r: W - 30, t: phone ? 56 : 40, b: H - (phone ? phoneRes() : 70) }, 1, false);
       }
       function zoomAt(k, sx, sy){ var b = camT || cam, ns = Math.max(.2, Math.min(2.2, b.s * k)), wx = (sx - b.x) / b.s, wy = (sy - b.y) / b.s; camT = { s: ns, x: sx - wx * ns, y: sy - wy * ns }; wake(); }
-      function flyTo(box){ fitTo({ x: box.x - 60, y: box.y - 80, w: box.w + 120, h: box.h + 160 }, { l: 30, r: W - 30, t: phone ? 56 : 30, b: H - (phone ? 260 : 60) }, phone ? .8 : 1.2, false); }
+      function flyTo(box){ fitTo({ x: box.x - 60, y: box.y - 80, w: box.w + 120, h: box.h + 160 }, { l: 30, r: W - 30, t: phone ? 56 : 30, b: H - (phone ? phoneRes() : 60) }, phone ? .8 : 1.2, false); }
       function fv(el){ try { return el.matches(':focus-visible'); } catch (x){ return false; } }
       function SW(f){ return f.w * f.s; } function SH(f){ return f.h * f.s; } // a card's size on the board after scaling
       function boxOf(f){ return { x: f.x, y: f.y, w: SW(f), h: SH(f) }; }
@@ -998,6 +1009,7 @@ window.Webflow.push(function(){
         if (!copyEl || on === phone) { phone = on; return; }
         phone = on; pinBox.hidden = !on;
         if (strip){ strip.hidden = !on; if (on) vp.appendChild(strip); }
+        if (!on && uiEl) uiEl.style.bottom = '';
         if (on){ pinBox.appendChild(copyEl); copyEl.style.transform = ''; }
         else copyHome.insertBefore(copyEl, copyNext);
       }
