@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.98 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.99 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -39,7 +39,7 @@ window.Webflow.push(function(){
 
   /* ---------- hero headline: on phones + tablets, size it so the longest word spans the column ---------- */
   (function(){
-    if (!ht || boardHero) return; // on the board the headline has a fixed size in board units
+    if (!ht || (boardHero && innerWidth >= 768)) return; // on the canvas the headline has a fixed size in board units; phones fit it like Home
     var fitW = 0;
     function fitHero(e){
       // the size depends on width only: a phone's address bar showing/hiding (height-only resize) must not refresh ScrollTrigger
@@ -463,7 +463,22 @@ window.Webflow.push(function(){
        hover peeks. Frames stay native <a href> links: the first click selects, a second click on a selected frame
        opens it (Enter opens a focused one). A plain wheel scrolls the page; Ctrl/⌘ + wheel or a pinch zooms.
        ========================================================= */
-    if (board.hasAttribute('data-board-hero')){ heroBoard(); return; }
+    if (board.hasAttribute('data-board-hero')){
+      if (innerWidth >= 768){ heroBoard(); return; }
+      // phones (his call 2026-11-12): no canvas. The headline + intro sit above the board (ABPhoneHero in the page head
+      // usually did this already, before the first paint) and the board falls through to the swipe deck below,
+      // with the missions + Next mission only (the field notes and Planet XY stay on the desktop canvas).
+      var hcopy = $('[data-board-copy]', board); if (hcopy) board.parentNode.insertBefore(hcopy, board);
+      if (!document.getElementById('ab-phone-hero')){ var phs = document.createElement('style'); phs.id = 'ab-phone-hero';
+        phs.textContent = '@media (max-width:767px){' +
+          '.section_hero.is-board{height:auto!important;min-height:0!important;padding:112px 16px 8px!important}' +
+          '[data-board-copy].ab_board_copy{position:relative!important;left:auto!important;top:auto!important;width:auto!important;max-width:none!important;transform:none!important;z-index:auto!important}' +
+          '.ab_board_copy>.sel{display:none!important}' +
+          '[data-board-hero].ab_board_component{height:auto!important;margin-top:44px}' +
+          '[data-board-hero] [data-board-planet],[data-board-hero] #sat,[data-board-hero] [data-board-notes]{display:none!important}}';
+        document.head.appendChild(phs); }
+      frames = frames.filter(function(f){ return !f.classList.contains('is-note'); });
+    }
     function heroBoard(){
       var vp = $('#viewport'), layersEl = $('#layers'), copyEl = $('[data-board-copy]', board), planetEl = $('[data-board-planet]', world), satEl = $('#sat', world);
       var navC = $('.ab_nav_component'), heroSec = board.closest('section') || board;
