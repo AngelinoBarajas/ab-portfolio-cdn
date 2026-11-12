@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.87 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.89 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -22,7 +22,10 @@ window.Webflow.push(function(){
 
   /* ---------- hero headline (Site Settings · Headline): words become draggable; *word* = accent, ~word~ = outline ---------- */
   var ht = $('#heroTitle');
+  // hero board (docs/home-canvas-hero-plan.md): the hero is the work board; 10-work.js owns the planet, camera and frames
+  var boardHero = !!$('[data-board-hero]');
   if (ht){
+    if (boardHero) ht.setAttribute('data-drag-ready', ''); // core 39-herodrag leaves it alone
     var head = S0.headline || ht.textContent.trim();
     ht.setAttribute('aria-label', head.replace(/[*~]/g, ''));
     ht.innerHTML = '';
@@ -36,7 +39,7 @@ window.Webflow.push(function(){
 
   /* ---------- hero headline: on phones + tablets, size it so the longest word spans the column ---------- */
   (function(){
-    if (!ht) return;
+    if (!ht || boardHero) return; // on the board the headline has a fixed size in board units
     var fitW = 0;
     function fitHero(e){
       // the size depends on width only: a phone's address bar showing/hiding (height-only resize) must not refresh ScrollTrigger
@@ -53,7 +56,7 @@ window.Webflow.push(function(){
   /* ---------- hero entrance ---------- */
   if (hasGsap && !reduce){
     gsap.from('#heroTitle .w', { yPercent: 60, opacity: 0, duration: 1.1, ease: 'expo.out', stagger: .09, delay: .15 });
-    gsap.from('.ab_hero_bottom > *, .ab_hero_meta, #hero .ab_planet, .ab_hero_badge, .ab_hero_sat', { opacity: 0, y: 20, duration: .9, stagger: .06, delay: .5, ease: 'power3.out' });
+    gsap.from(boardHero ? '.ab_hero_bottom > *, .ab_hero_meta' : '.ab_hero_bottom > *, .ab_hero_meta, #hero .ab_planet, .ab_hero_badge, .ab_hero_sat', { opacity: 0, y: 20, duration: .9, stagger: .06, delay: .5, ease: 'power3.out' });
   }
 
   /* ---------- hero toys (anything with data-drag in the hero) ---------- */
@@ -64,6 +67,7 @@ window.Webflow.push(function(){
   if (sat){ sat.tabIndex = 0; sat.setAttribute('aria-label', 'Satellite. Please do not drag it.'); }
   if (hero && canDrag){
     $$('[data-drag]', hero).forEach(function(el){
+      if (el.closest('[data-board-planet]')) return; // the board drags Gargantua (its frames follow it)
       var back;
       function schedule(){ if (back) back.kill(); back = gsap.delayedCall(6, function(){ gsap.to(el, { x: 0, y: 0, rotation: 0, duration: 1.4, ease: 'elastic.out(1,.55)' }); }); }
       AB.lazyDrag(el, { type: 'x,y', bounds: hero, inertia: true, edgeResistance: .7,
@@ -89,7 +93,7 @@ window.Webflow.push(function(){
     var satDrags = 0, satGone = false;
     // keep the satellite in open space: default spot, else the first gap that doesn't overlap anything
     var placeSat = function(){
-      if (innerWidth <= 767) return;
+      if (innerWidth <= 767 || boardHero) return; // on the board 10-work.js places it beside the planet
       sat.style.top = ''; sat.style.right = '';
       var blockers = $$('#heroTitle .w, #hero .ab_planet, .ab_hero_bottom > *, .ab_hero_meta > *, .ab_hero_badge');
       var hits = function(){ var s = sat.getBoundingClientRect(); return blockers.some(function(e){ var r = e.getBoundingClientRect(); return !(r.right < s.left - 8 || r.left > s.right + 8 || r.bottom < s.top - 8 || r.top > s.bottom + 8); }); };
@@ -316,7 +320,7 @@ window.Webflow.push(function(){
       f.__pos = { x: x, y: y, w: W, h: H };
       f.style.left = x + 'px'; f.style.top = y + 'px'; f.style.width = W + 'px'; f.style.height = H + 'px';
       var slug = f.getAttribute('data-slug') || 'frame';
-      if (!slot){
+      if (!slot && !f.classList.contains('is-note')){ // field-note stickies (hero board) build their own inner
         var name = f.getAttribute('data-name') || slug, cover = (f.getAttribute('data-cover') || '').toLowerCase();
         f.setAttribute('href', '/work/' + slug);
         f.setAttribute('aria-label', 'Open the ' + name + ' case study');
@@ -445,6 +449,491 @@ window.Webflow.push(function(){
     }
 
     if (!hasGsap){ frames.forEach(function(f){ f.addEventListener('click', function(e){ if (f.classList.contains('is-slot')) openFrame(f, e); }); }); return; }
+
+    /* =========================================================
+       HERO BOARD (v0.33.89+, docs/home-canvas-hero-plan.md): the board fills the first screen ([data-board-hero]).
+       The hero copy is a locked text layer, Gargantua sits in the middle with every frame on an orbit and trails it
+       when dragged, the 3 newest field notes ride a third orbit, and the chrome adds Tour, Comments, Reset, pins and
+       hover peeks. Frames stay native <a href> links: the first click selects, a second click on a selected frame
+       opens it (Enter opens a focused one). A plain wheel scrolls the page; Ctrl/⌘ + wheel or a pinch zooms.
+       ========================================================= */
+    if (board.hasAttribute('data-board-hero')){ heroBoard(); return; }
+    function heroBoard(){
+      var vp = $('#viewport'), layersEl = $('#layers'), copyEl = $('[data-board-copy]', world), planetEl = $('[data-board-planet]', world), satEl = $('#sat', world);
+      var navC = $('.ab_nav_component'), heroSec = board.closest('section') || board;
+      var W = 0, H = 0, phone = false, cam = { x: 0, y: 0, s: 1 }, camT = null, running = false, drag = null, lastDown = null, touring = false, helpGone = false, miniDirty = true;
+      var PS = 440, planet = { x: 0, y: 0 }, orb = { x: 0, y: 0 }, COPY0 = { x: -1180, y: -330 }, copyP = { x: COPY0.x, y: COPY0.y };
+      var RINGS = { 1: [700, 450], 2: [1180, 760], 3: [1640, 1060] }, PULL = { 1: .11, 2: .06, 3: .04 }, TILT = -8 * Math.PI / 180;
+      var SPOTS = { 1: [-62, 14, 96], 2: [-8, 150, -114, 54, 196, -150], 3: [-26, 86, 198, 140, -90] };
+      var ORBIT = { '510-visuals': [1, -62], 'topicweave': [1, 14], 'kip': [1, 96], 'mission-control': [2, -8], 'knowledge-system': [2, 150], 'ab-identity': [2, -114], 'next-mission': [2, 54] };
+
+      /* ---------- styles that only this mode needs (scoped to [data-board-hero]) ---------- */
+      var css = document.createElement('style');
+      css.textContent = [
+        '.ab_nav_component.is-flat .ab_nav_bar{background:transparent!important;border-color:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}',
+        '[data-board-hero] .ab_board_viewport{overflow:hidden;z-index:1}',
+        '[data-board-hero] .ab_board_world{width:0;height:0;will-change:transform}',
+        '[data-board-hero] .ab_board_frame,[data-board-hero] [data-board-copy],[data-board-hero] [data-board-planet]{left:0!important;top:0!important;right:auto!important;bottom:auto!important;position:absolute}',
+        '[data-board-hero] #sat{position:absolute;right:auto!important;bottom:auto!important}',
+        '[data-board-hero] .ab_board_world .ab_board_frame,[data-board-hero] [data-board-copy],[data-board-hero] [data-board-planet],[data-board-hero] #sat{max-width:none!important}',
+        '[data-board-hero] .ab_board_frame{cursor:grab;touch-action:pan-y}',
+        '[data-board-hero] .ab_board_frame:active{cursor:grabbing}',
+        '[data-board-hero] .ab_board_frame:not(.is-selected):not(.is-slot) .ab_board_frame-inner{outline:1px dashed rgba(255,255,255,.22);outline-offset:4px}',
+        '[data-board-hero] .ab_board_frame:focus-visible{outline:none}',
+        '[data-board-hero] [data-selectable]:not(.is-selected) > .sel i,[data-board-hero] [data-selectable]:not(.is-selected) > .sel .sel-tag,[data-board-hero] [data-selectable]:not(.is-selected) > .sel .sel-size{display:none}',
+        '[data-board-hero] .is-selected > .sel{border-width:1.5px}',
+        '[data-board-hero] [data-board-copy]{z-index:6}',
+        '[data-board-hero] [data-board-copy] > .sel{inset:-28px -36px -32px}',
+        '[data-board-hero] [data-board-copy] .ab_hero_meta{display:flex;gap:18px;margin-bottom:22px}',
+        '[data-board-hero] [data-board-copy] .ab_hero_title{font-size:124px!important;line-height:.86;margin:0;max-width:none;width:min-content}', // one word per line, like the live hero
+        '[data-board-hero] [data-board-copy] .ab_hero_bottom{display:block;margin-top:30px;max-width:620px}',
+        '[data-board-hero] [data-board-copy] .ab_hero_lede{max-width:40ch;margin:0}',
+        '[data-board-hero] [data-board-copy] .ab_hero_cta{display:flex;gap:12px;margin-top:26px}',
+        '[data-board-hero] [data-board-planet]{z-index:3;cursor:grab;touch-action:pan-y}',
+        '[data-board-hero] #sat{z-index:4}',
+        '.ab_bh_orbits{position:absolute;left:0;top:0;overflow:visible;pointer-events:none;transition:opacity .5s}',
+        '.ab_bh_orbits ellipse{fill:none;stroke:rgba(194,138,192,.13);stroke-width:1;vector-effect:non-scaling-stroke}',
+        '.ab_bh_orbits line{stroke:rgba(255,106,61,.55);stroke-width:1.4;stroke-dasharray:5 6;vector-effect:non-scaling-stroke}',
+        '.ab_board_frame.is-note .ab_board_frame-inner{background:#F2F0EA;color:#0B0C14;justify-content:flex-start;gap:12px;padding:20px 20px 60px;box-shadow:0 18px 40px -18px rgba(0,0,0,.7)}',
+        '.ab_bh_nmeta{font-family:var(--mono);font-size:10.5px;line-height:1.3;letter-spacing:.08em;text-transform:uppercase;color:#6B6F80}',
+        '.ab_bh_nmeta b{font-weight:400;color:#D9502A}',
+        '.ab_bh_ntitle{font-size:19px;line-height:1.25;font-weight:600;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}',
+        '.ab_board_frame.is-note .ab_board_fopen{top:auto;bottom:18px;left:20px;opacity:.75}',
+        '.ab_bh_pins{position:absolute;inset:0;pointer-events:none;z-index:7}',
+        '.ab_bh_pin{position:absolute;left:0;top:0;pointer-events:auto}',
+        '.ab_bh_pin button{display:grid;place-items:center;width:32px;height:32px;padding:0;border-radius:16px 16px 16px 3px;background:#FF6A3D;color:#07080D;border:2px solid #fff;font:500 11px/1 var(--mono);cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.45);transition:transform .2s}',
+        '.ab_bh_pin button:hover,.ab_bh_pin.open button{transform:scale(1.08)}',
+        '.ab_bh_pin .card{position:absolute;left:40px;top:-2px;width:250px;background:#0E1020;border:1px solid rgba(255,255,255,.22);padding:12px 14px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;transform:translateX(-6px);pointer-events:none;transition:opacity .2s,transform .2s}',
+        '.ab_bh_pin:hover .card,.ab_bh_pin.open .card{opacity:1;transform:none;pointer-events:auto}',
+        '.ab_bh_pin .who{display:flex;gap:8px;align-items:baseline;font:400 11px/1 var(--mono);color:#8A8FA3;margin-bottom:6px}',
+        '.ab_bh_pin .who b{font-weight:500;color:#F2F0EA}',
+        '.ab_bh_pin p{margin:0;font-size:13.5px;line-height:1.45;color:#C9C7C0}',
+        '.ab_board_component.no-pins .ab_bh_pins{display:none}',
+        '.ab_bh_peek{position:absolute;inset:0;z-index:2;opacity:0;transition:opacity .35s;pointer-events:none;background:#000}',
+        '.ab_bh_peek img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0;transition:opacity .45s}',
+        '.ab_bh_peek img.on{opacity:1}',
+        '.ab_bh_peek .pl{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;align-items:center;background:rgba(7,8,13,.85);padding:6px 8px}',
+        '.ab_bh_peek .pl s{display:block;width:14px;height:3px;background:rgba(255,255,255,.25)}',
+        '.ab_bh_peek .pl s.on{background:#FF6A3D}',
+        '.ab_board_frame.is-peek .ab_bh_peek{opacity:1}',
+        '[data-board-hero] .ab_board_fopen{z-index:3;pointer-events:none}',
+        '[data-board-hero] .ab_board_frame.is-selected .ab_board_fopen{opacity:1}',
+        '.ab_bh_tbtn{background:none;border:1px solid rgba(255,255,255,.22);color:#C9C7C0;font:400 11px/1 var(--mono);padding:6px 9px;cursor:pointer}',
+        '.ab_bh_tbtn:hover{color:#F2F0EA;border-color:#F2F0EA}',
+        '.ab_bh_tbtn[aria-pressed="true"]{background:rgba(76,141,255,.22);border-color:#4C8DFF;color:#F2F0EA}',
+        '.ab_bh_tbtn.is-tour{border-color:#FF6A3D;color:#FF6A3D}',
+        '.ab_bh_tbtn.is-tour[aria-pressed="true"]{background:#FF6A3D;color:#07080D}',
+        '.ab_bh_top{display:flex;gap:10px;align-items:center}',
+        '.ab_bh_help{position:absolute;left:224px;bottom:14px;z-index:8;color:#8A8FA3;font:400 11px/1.4 var(--mono);pointer-events:none;transition:opacity .6s}',
+        '.ab_bh_help.gone{opacity:0}',
+        '.ab_bh_pinned{position:absolute;left:0;right:0;bottom:0;z-index:9;padding:90px 16px 16px;background:linear-gradient(to bottom,rgba(7,8,13,0),rgba(7,8,13,.88) 90px,#07080D);pointer-events:none}',
+        '.ab_bh_pinned > *{pointer-events:auto}',
+        '.ab_bh_pinned [data-board-copy]{position:static!important;transform:none!important;width:auto}',
+        '.ab_bh_pinned [data-board-copy] > .sel,.ab_bh_pinned .ab_hero_meta{display:none!important}',
+        // same specificity chain as the board rules above, so the phone sizes win
+        '[data-board-hero] .ab_bh_pinned [data-board-copy] .ab_hero_title{font-size:clamp(40px,11vw,60px)!important;line-height:.88;width:auto}',
+        '[data-board-hero] .ab_bh_pinned [data-board-copy] .ab_hero_bottom{margin-top:14px;max-width:none}',
+        '[data-board-hero] .ab_bh_pinned [data-board-copy] .ab_hero_lede{font-size:15px}',
+        '.ab_bh_pinned .ab_hero_cta{display:flex;gap:10px;margin-top:16px}',
+        '.ab_bh_pinned .ab_hero_cta > *{flex:1;justify-content:center}',
+        '.ab_bh_minicv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer}',
+        '@media (max-width:1024px){[data-board-hero] .ab_board_layers{display:none}[data-board-hero] .ab_board_viewport{left:0}.ab_bh_help{left:14px}}',
+        '@media (max-width:767px){[data-board-hero] .ab_board_minimap,.ab_bh_help,[data-board-hero] #fakeCursor,.ab_bh_top .is-pins,#boardCoords{display:none!important}}',
+        '@media (prefers-reduced-motion:reduce){.ab_bh_peek img,.ab_bh_peek{transition:none}}'
+      ].join('\n');
+      document.head.appendChild(css);
+      board.style.overflow = 'hidden';
+
+      /* ---------- the items on the board ---------- */
+      var items = frames.map(function(el){
+        var note = el.classList.contains('is-note'), slot = el.classList.contains('is-slot');
+        return { el: el, slug: el.getAttribute('data-slug') || '', note: note, slot: slot, w: 0, h: 0, x: 0, y: 0, ox: 0, oy: 0, k: .08, settled: true };
+      });
+      function bySlug(s){ return items.filter(function(q){ return q.slug === s; })[0]; }
+      var SIZE = { '510-visuals': [480, 330], 'topicweave': [470, 320] };
+      items.forEach(function(f){
+        var s = SIZE[f.slug] || (f.slot ? [420, 230] : f.note ? [300, 210] : [440, 300]);
+        f.w = s[0]; f.h = s[1]; f.el.style.width = f.w + 'px'; f.el.style.height = f.h + 'px';
+        f.el.setAttribute('data-size', f.w + ' × ' + f.h);
+        var sz = f.el.__sel && $('.sel-size', f.el.__sel); if (sz) sz.textContent = f.w + ' × ' + f.h;
+        if (f.note){ buildNote(f); if (f.el.__sel) $('.sel-tag', f.el.__sel).textContent = 'Sticky / ' + f.slug; }
+      });
+      // orbit spots: the known missions keep theirs; new CMS items (and notes) take the next free spot outward
+      var used = { 1: [], 2: [], 3: [] };
+      items.forEach(function(f){ var o = ORBIT[f.slug]; if (o && !f.note){ f.orbit = o; used[o[0]].push(o[1]); } });
+      items.forEach(function(f){
+        if (f.orbit) return;
+        var rings = f.note ? [3] : [2, 3], i, r, a;
+        for (i = 0; i < rings.length && !f.orbit; i++){ r = rings[i]; for (a = 0; a < SPOTS[r].length; a++) if (used[r].indexOf(SPOTS[r][a]) < 0){ f.orbit = [r, SPOTS[r][a]]; used[r].push(SPOTS[r][a]); break; } }
+        if (!f.orbit) f.orbit = [3, Math.random() * 360];
+      });
+
+      // a field note: its sticky from its own data (data-code / data-theme / data-read / data-name), if the Designer item is bare
+      function buildNote(f){
+        var el = f.el; if ($('.ab_board_frame-inner', el)) return;
+        var title = el.getAttribute('data-name') || el.textContent.trim(), code = el.getAttribute('data-code') || '', theme = el.getAttribute('data-theme') || '', read = el.getAttribute('data-read') || '';
+        var inner = document.createElement('div'); inner.className = 'ab_board_frame-inner';
+        inner.innerHTML = '<div class="ab_bh_nmeta"><b></b><span></span></div><div class="ab_bh_ntitle"></div><span class="ab_board_fopen">Read the note →</span>';
+        $('b', inner).textContent = code; $('span', inner).textContent = [theme, read ? read + ' min' : ''].filter(Boolean).map(function(s){ return ' · ' + s; }).join('');
+        $('.ab_bh_ntitle', inner).textContent = title;
+        $$('[data-note-hide]', el).forEach(function(n){ n.hidden = true; });
+        el.appendChild(inner);
+        if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', 'Read the field note: ' + title);
+        f.slug = f.slug || (code || title).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        f.links = $$('[data-note-mission]', el).map(function(n){ return n.getAttribute('data-note-mission'); });
+      }
+
+      /* ---------- orbits + connectors (one svg in the world) ---------- */
+      var NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('class', 'ab_bh_orbits'); svg.setAttribute('width', '1'); svg.setAttribute('height', '1'); svg.setAttribute('aria-hidden', 'true');
+      var ell = [1, 2, 3].map(function(){ var e = document.createElementNS(NS, 'ellipse'); svg.appendChild(e); return e; });
+      world.insertBefore(svg, world.firstChild);
+      var links = [];
+      items.forEach(function(f){
+        if (!f.note || !f.links) return;
+        var t = f.links.map(bySlug).filter(function(q){ return q && !q.note; })[0]; if (!t) return;
+        var ln = document.createElementNS(NS, 'line'); svg.appendChild(ln); links.push({ a: f, b: t, ln: ln });
+      });
+
+      function layout(snap){
+        items.forEach(function(f){
+          var o = f.orbit, R = RINGS[o[0]], a = o[1] * Math.PI / 180, ex = R[0] * Math.cos(a), ey = R[1] * Math.sin(a);
+          f.ox = ex * Math.cos(TILT) - ey * Math.sin(TILT) - f.w / 2; f.oy = ex * Math.sin(TILT) + ey * Math.cos(TILT) - f.h / 2; f.k = PULL[o[0]];
+          if (snap){ f.x = planet.x + f.ox; f.y = planet.y + f.oy; }
+          f.settled = false;
+        });
+        wake();
+      }
+
+      /* ---------- render loop ---------- */
+      function place(el, x, y){ el.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)'; }
+      function toWorld(sx, sy){ return { x: (sx - cam.x) / cam.s, y: (sy - cam.y) / cam.s }; }
+      function setOrbit(e, R, x, y){ e.setAttribute('cx', x); e.setAttribute('cy', y); e.setAttribute('rx', R[0]); e.setAttribute('ry', R[1]); e.setAttribute('transform', 'rotate(-8 ' + x + ' ' + y + ')'); }
+      var zPct = $('#zPct'), coords = $('#boardCoords');
+      function renderCam(){
+        world.style.transform = 'translate3d(' + cam.x + 'px,' + cam.y + 'px,0) scale(' + cam.s + ')';
+        var g = 24 * cam.s; while (g < 14) g *= 2; while (g > 48) g /= 2;
+        board.style.backgroundSize = g + 'px ' + g + 'px'; board.style.backgroundPosition = (vp.offsetLeft + cam.x % g) + 'px ' + (vp.offsetTop + cam.y % g) + 'px';
+        if (zPct) zPct.textContent = Math.round(cam.s * 100) + '%';
+        if (coords){ var c = toWorld(W / 2, H / 2); coords.textContent = 'X ' + Math.round(c.x) + ' · Y ' + Math.round(c.y); }
+        placePins(); miniDirty = true;
+      }
+      function wake(){ if (!running){ running = true; requestAnimationFrame(loop); } }
+      function loop(){
+        var moving = false;
+        if (camT){
+          var e = reduce ? 1 : .14; cam.x += (camT.x - cam.x) * e; cam.y += (camT.y - cam.y) * e; cam.s += (camT.s - cam.s) * e;
+          if (Math.abs(camT.x - cam.x) < .3 && Math.abs(camT.y - cam.y) < .3 && Math.abs(camT.s - cam.s) < .0005){ cam.x = camT.x; cam.y = camT.y; cam.s = camT.s; camT = null; } else moving = true;
+          renderCam();
+        }
+        items.forEach(function(f){
+          if (!(drag && drag.f === f) && !f.settled){
+            var tx = planet.x + f.ox, ty = planet.y + f.oy, dx = tx - f.x, dy = ty - f.y, k = reduce ? 1 : f.k;
+            if (Math.abs(dx) > .15 || Math.abs(dy) > .15){ f.x += dx * k; f.y += dy * k; moving = true; } else { f.x = tx; f.y = ty; f.settled = true; }
+          }
+          place(f.el, f.x, f.y);
+        });
+        orb.x += (planet.x - orb.x) * .2; orb.y += (planet.y - orb.y) * .2;
+        if (Math.abs(planet.x - orb.x) > .2 || Math.abs(planet.y - orb.y) > .2) moving = true;
+        ell.forEach(function(e, i){ setOrbit(e, RINGS[i + 1], orb.x, orb.y); });
+        links.forEach(function(l){ l.ln.setAttribute('x1', l.a.x + l.a.w / 2); l.ln.setAttribute('y1', l.a.y + l.a.h / 2); l.ln.setAttribute('x2', l.b.x + l.b.w / 2); l.ln.setAttribute('y2', l.b.y + l.b.h / 2); });
+        if (planetEl) place(planetEl, planet.x - PS / 2, planet.y - PS / 2);
+        if (satEl){ satEl.style.left = (orb.x + 250) + 'px'; satEl.style.top = (orb.y - 330) + 'px'; }
+        if (copyEl && !phone) place(copyEl, copyP.x, copyP.y);
+        placePins(); miniDirty = true;
+        if (moving || drag) requestAnimationFrame(loop); else running = false;
+      }
+
+      /* ---------- camera ---------- */
+      function copyBox(){ return { x: copyP.x, y: copyP.y, w: copyEl ? copyEl.offsetWidth : 10, h: copyEl ? copyEl.offsetHeight : 10 }; }
+      function union(bs){ var l = 1e9, t = 1e9, r = -1e9, b = -1e9; bs.forEach(function(q){ l = Math.min(l, q.x); t = Math.min(t, q.y); r = Math.max(r, q.x + q.w); b = Math.max(b, q.y + q.h); }); return { x: l, y: t, w: r - l, h: b - t }; }
+      function fitTo(box, area, maxS, snap){
+        var s = Math.max(.2, Math.min(maxS, (area.r - area.l) / box.w, (area.b - area.t) / box.h));
+        var t = { s: s, x: (area.l + area.r) / 2 - (box.x + box.w / 2) * s, y: (area.t + area.b) / 2 - (box.y + box.h / 2) * s };
+        if (snap){ cam.x = t.x; cam.y = t.y; cam.s = t.s; camT = null; renderCam(); } else { camT = t; wake(); }
+      }
+      var planetBox = function(){ return { x: planet.x - 320, y: planet.y - 260, w: 640, h: 520 }; };
+      function home(snap){
+        if (phone){ fitTo({ x: planet.x - 420, y: planet.y - 330, w: 840, h: 660 }, { l: 0, r: W, t: 10, b: H - 270 }, .6, snap); return; }
+        fitTo(union([planetBox(), copyBox()]), { l: 40, r: W - 40, t: 50, b: H - 70 }, 1, snap);
+      }
+      function fitAll(){
+        var bs = items.map(function(f){ return { x: planet.x + f.ox, y: planet.y + f.oy - 30, w: f.w, h: f.h + 60 }; });
+        bs.push({ x: planet.x - 320, y: planet.y - 320, w: 640, h: 640 }); if (!phone) bs.push(copyBox());
+        fitTo(union(bs), { l: 30, r: W - 30, t: 40, b: H - (phone ? 260 : 70) }, 1, false);
+      }
+      function zoomAt(k, sx, sy){ var b = camT || cam, ns = Math.max(.2, Math.min(2.2, b.s * k)), wx = (sx - b.x) / b.s, wy = (sy - b.y) / b.s; camT = { s: ns, x: sx - wx * ns, y: sy - wy * ns }; wake(); }
+      function flyTo(box){ fitTo({ x: box.x - 60, y: box.y - 80, w: box.w + 120, h: box.h + 160 }, { l: 30, r: W - 30, t: 30, b: H - (phone ? 260 : 60) }, phone ? .8 : 1.2, false); }
+      function fv(el){ try { return el.matches(':focus-visible'); } catch (x){ return false; } }
+      function boxOf(f){ return { x: f.x, y: f.y, w: f.w, h: f.h }; }
+
+      /* ---------- selection, layers, file bar ---------- */
+      if (copyEl){
+        var cs = document.createElement('div'); cs.className = 'sel'; cs.setAttribute('aria-hidden', 'true');
+        cs.innerHTML = '<i class="tl"></i><i class="tc"></i><i class="tr"></i><i class="ml"></i><i class="mr"></i><i class="bl"></i><i class="bc"></i><i class="br"></i><span class="sel-tag">Text / hero-title</span><span class="sel-size"></span>';
+        copyEl.appendChild(cs); copyEl.setAttribute('data-selectable', '');
+      }
+      function select(el){
+        $$('.is-selected', world).forEach(function(q){ if (q !== el) q.classList.remove('is-selected'); });
+        if (el && el !== planetEl) el.classList.add('is-selected');
+        if (el === copyEl && copyEl){ var z = $('.sel-size', copyEl); if (z) z.textContent = Math.round(copyEl.offsetWidth) + ' × ' + Math.round(copyEl.offsetHeight); }
+        var key = !el ? '' : el === copyEl ? 'copy' : el === planetEl ? 'planet' : el.getAttribute('data-slug');
+        if (layersEl) $$('button', layersEl).forEach(function(b){ b.classList.toggle('is-on', b.getAttribute('data-target') === key); });
+        if (!touring) items.forEach(function(q){ if (q.peek && q.el !== el && !q.el.matches(':hover')) q.peek(false); });
+      }
+      var fileTxt = $('.ab_board_file'); if (fileTxt && fileTxt.nextSibling && fileTxt.nextSibling.nodeType === 3) fileTxt.nextSibling.textContent = ' / Home';
+      if (layersEl){
+        var addT = function(t){ var d = document.createElement('div'); d.className = 'ab_board_layers-title'; d.textContent = t; d.style.marginTop = '10px'; layersEl.appendChild(d); };
+        var addB = function(label, key){ var b = document.createElement('button'); b.type = 'button'; b.tabIndex = -1; b.textContent = label; b.setAttribute('data-target', key); layersEl.appendChild(b); };
+        if (copyEl) addB('T hero-title', 'copy');
+        if (planetEl) addB('◯ gargantua', 'planet');
+        addT('Frames · ' + items.filter(function(f){ return !f.note && !f.slot; }).length);
+        items.forEach(function(f){ if (!f.note) addB('▢ ' + f.slug, f.slug); });
+        if (items.some(function(f){ return f.note; })){ addT('Field notes · ' + items.filter(function(f){ return f.note; }).length); items.forEach(function(f){ if (f.note) addB('✎ ' + f.slug, f.slug); }); }
+        layersEl.addEventListener('click', function(e){
+          var b = e.target.closest('button'); if (!b) return; var k = b.getAttribute('data-target');
+          if (k === 'copy'){ select(copyEl); flyTo(copyBox()); }
+          else if (k === 'planet'){ select(null); b.classList.add('is-on'); flyTo(planetBox()); }
+          else { var f = bySlug(k); if (f){ select(f.el); openPin(f); flyTo(boxOf(f)); } }
+        });
+      }
+
+      /* ---------- comment pins (CMS Board comment via data-board-comment) ---------- */
+      var pinsBox = document.createElement('div'); pinsBox.className = 'ab_bh_pins'; vp.appendChild(pinsBox);
+      var pins = [];
+      items.forEach(function(f){
+        var t = (f.el.getAttribute('data-board-comment') || '').trim(); if (!t) return;
+        var p = document.createElement('div'); p.className = 'ab_bh_pin';
+        p.innerHTML = '<button type="button" tabindex="-1" aria-expanded="false">AB</button><div class="card" role="note" data-no-gloss><div class="who"><b>Angelino</b></div><p></p></div>';
+        var id = 'bh-pin-' + f.slug; $('.card', p).id = id; $('p', p).textContent = t;
+        $('button', p).setAttribute('aria-label', 'Comment from Angelino on ' + f.slug);
+        f.el.setAttribute('aria-describedby', id);
+        $('button', p).addEventListener('click', function(){ var o = !p.classList.contains('open'); pins.forEach(function(q){ q.el.classList.remove('open'); }); p.classList.toggle('open', o); this.setAttribute('aria-expanded', String(o)); });
+        pinsBox.appendChild(p); pins.push({ el: p, f: f });
+      });
+      function openPin(f){ pins.forEach(function(q){ q.el.classList.toggle('open', q.f === f); }); }
+      function placePins(){ pins.forEach(function(q){ place(q.el, cam.x + (q.f.x + q.f.w) * cam.s - 6, cam.y + q.f.y * cam.s - 30); }); }
+
+      /* ---------- hover peek (CMS Board peek: a nested list of images inside the frame, [data-board-peek]) ---------- */
+      items.forEach(function(f){
+        var src = $$('[data-board-peek] img', f.el).map(function(i){ return i.getAttribute('data-src') || i.getAttribute('src'); }).filter(Boolean);
+        var holder = $('[data-board-peek]', f.el); if (holder) holder.style.display = 'none';
+        if (!src.length) return;
+        var inner = $('.ab_board_frame-inner', f.el); if (!inner) return;
+        var pk = document.createElement('div'); pk.className = 'ab_bh_peek'; pk.setAttribute('aria-hidden', 'true');
+        var bars = '<span class="pl">' + src.map(function(_, i){ return '<s' + (i ? '' : ' class="on"') + '></s>'; }).join('') + '</span>';
+        pk.innerHTML = bars; inner.appendChild(pk);
+        var imgs = [], i = 0, timer = 0, dwell = 0, made = false;
+        function make(){ if (made) return; made = true; src.forEach(function(u, n){ var im = document.createElement('img'); im.alt = ''; im.decoding = 'async'; im.src = u; if (!n) im.className = 'on'; pk.insertBefore(im, pk.lastChild); imgs.push(im); }); }
+        var sBars = $$('s', pk);
+        f.peek = function(on){
+          clearTimeout(dwell); clearInterval(timer);
+          if (!on){ f.el.classList.remove('is-peek'); return; }
+          make(); f.el.classList.add('is-peek');
+          if (!reduce && imgs.length > 1) timer = setInterval(function(){ imgs[i].classList.remove('on'); sBars[i].classList.remove('on'); i = (i + 1) % imgs.length; imgs[i].classList.add('on'); sBars[i].classList.add('on'); }, 1300);
+        };
+        f.el.addEventListener('pointerenter', function(e){ if (e.pointerType !== 'mouse' || drag) return; clearTimeout(dwell); dwell = setTimeout(function(){ f.peek(true); }, 450); });
+        f.el.addEventListener('pointerleave', function(){ clearTimeout(dwell); if (!touring) f.peek(false); });
+      });
+      function peekOnly(f){ items.forEach(function(q){ if (q.peek && q !== f) q.peek(false); }); if (f && f.peek) f.peek(true); }
+
+      /* ---------- chrome: file bar buttons, Reset, help line, minimap canvas ---------- */
+      var top = $('.ab_board_top'), topR = document.createElement('div'); topR.className = 'ab_bh_top';
+      topR.innerHTML = '<button type="button" class="ab_bh_tbtn is-tour" aria-pressed="false">▶ Tour</button>' + (pins.length ? '<button type="button" class="ab_bh_tbtn is-pins" aria-pressed="true">Comments · ' + pins.length + '</button>' : '');
+      if (top && coords){ top.insertBefore(topR, coords); topR.appendChild(coords); }
+      var tourBtn = $('.is-tour', topR), pinsBtn = $('.is-pins', topR);
+      if (pinsBtn) pinsBtn.addEventListener('click', function(){ var on = pinsBtn.getAttribute('aria-pressed') !== 'true'; pinsBtn.setAttribute('aria-pressed', String(on)); board.classList.toggle('no-pins', !on); });
+      var zFit = $('#zFit');
+      if (zFit){ var rs = zFit.cloneNode(false); rs.id = 'zReset'; rs.setAttribute('aria-label', 'Reset the board to where it loaded'); rs.textContent = 'RESET'; rs.style.borderLeft = '1px solid rgba(255,255,255,.1)'; zFit.parentNode.insertBefore(rs, zFit.nextSibling); }
+      var help = document.createElement('div'); help.className = 'ab_bh_help';
+      help.textContent = 'Drag the board, the planet or any frame · click a frame to select it, click again to open · pinch or Ctrl + scroll to zoom';
+      board.appendChild(help);
+      function hideHelp(){ if (!helpGone){ helpGone = true; help.classList.add('gone'); } }
+      var mm = $('#minimap'), mcv = null, mx = null;
+      if (mm){ $$('*', mm).forEach(function(n){ n.style.display = 'none'; }); mcv = document.createElement('canvas'); mcv.className = 'ab_bh_minicv'; mm.appendChild(mcv); mx = mcv.getContext('2d'); }
+
+      /* ---------- pointer: pan, drag the planet + frames, select then open ---------- */
+      var you = $('#youTag'), fake = $('#fakeCursor');
+      [you, fake].forEach(function(c){ if (c){ c.style.zIndex = '9'; c.style.transition = 'opacity .2s'; board.appendChild(c); } });
+      if (fake) fake.style.opacity = 0;
+      var ownCss = document.createElement('style'); ownCss.textContent = '[data-board-hero].is-own-cursor,[data-board-hero].is-own-cursor *{cursor:none!important}'; document.head.appendChild(ownCss);
+      board.addEventListener('pointermove', function(e){
+        if (!you) return;
+        if (e.pointerType !== 'mouse'){ board.classList.remove('is-own-cursor'); you.style.opacity = 0; return; }
+        var r = board.getBoundingClientRect(); place(you, e.clientX - r.left - board.clientLeft - 1, e.clientY - r.top - board.clientTop - 1);
+        board.classList.add('is-own-cursor'); you.style.opacity = 1;
+      });
+      board.addEventListener('pointerleave', function(){ if (you){ board.classList.remove('is-own-cursor'); you.style.opacity = 0; } });
+
+      vp.addEventListener('pointerdown', function(e){
+        if (e.button !== 0) return;
+        if (touring) stopTour();
+        // real controls and the thrown toys (headline words, satellite) keep their own handlers
+        if (e.target.closest('.ab_hero_cta a, .ab_bh_pin, #sat, .w')) return;
+        var fEl = e.target.closest('.ab_board_frame'), it = fEl || (planetEl && e.target.closest('[data-board-planet]')) || null;
+        var f = fEl ? items.filter(function(q){ return q.el === fEl; })[0] : null;
+        drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY, moved: 0, f: f, el: it, kind: f ? 'frame' : it ? 'planet' : 'pan', wasSel: !!(fEl && fEl.classList.contains('is-selected')) };
+        lastDown = drag;
+        try { (it || vp).setPointerCapture(e.pointerId); } catch (x){}
+        if (!it) select(e.target.closest('[data-board-copy]') ? copyEl : null);
+        else if (f){ select(f.el); if (e.pointerType !== 'mouse') peekOnly(f); }
+        if (it) it.style.zIndex = 9;
+        wake();
+      });
+      addEventListener('pointermove', function(e){
+        if (!drag || e.pointerId !== drag.id) return;
+        var dx = e.clientX - drag.lx, dy = e.clientY - drag.ly; drag.lx = e.clientX; drag.ly = e.clientY;
+        drag.moved += Math.abs(dx) + Math.abs(dy); if (drag.moved > 4) hideHelp();
+        var wdx = dx / cam.s, wdy = dy / cam.s;
+        if (drag.kind === 'pan'){ camT = null; cam.x += dx; cam.y += dy; renderCam(); }
+        else if (drag.kind === 'planet'){ planet.x += wdx; planet.y += wdy; items.forEach(function(q){ q.settled = false; }); }
+        else if (drag.f){ drag.f.x += wdx; drag.f.y += wdy; drag.f.ox = drag.f.x - planet.x; drag.f.oy = drag.f.y - planet.y; }
+        wake();
+      });
+      function endDrag(e){
+        if (!drag || e.pointerId !== drag.id) return;
+        if (drag.el){ var el = drag.el; setTimeout(function(){ el.style.zIndex = ''; }, 300); }
+        if (drag.kind === 'planet' && drag.moved > 6 && AB.quest) AB.quest('toys');
+        lastDown = drag; drag = null; wake();
+      }
+      addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
+      items.forEach(function(f){
+        f.el.addEventListener('click', function(e){
+          if (e.detail === 0){ openFrame(f.el, e); return; } // Enter on a focused frame
+          var d = lastDown; lastDown = null; e.preventDefault();
+          if (d && d.el === f.el && d.wasSel && d.moved <= 6) openFrame(f.el, e);
+        });
+        f.el.addEventListener('dragstart', function(e){ e.preventDefault(); });
+        // the open slot is a div: make it a tab stop that Enter opens like the link frames (it scrolls to the contact form)
+        if (f.slot && !f.el.hasAttribute('href')){ f.el.tabIndex = 0; f.el.setAttribute('role', 'link'); f.el.setAttribute('aria-label', 'Start a project: the next slot on the board');
+          f.el.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); openFrame(f.el, e); } }); }
+        f.el.addEventListener('focus', function(){ if (!drag) select(f.el); if (fv(f.el)) openPin(f); });
+        f.el.addEventListener('blur', function(){ if (!touring) pins.forEach(function(q){ if (q.f === f) q.el.classList.remove('open'); }); });
+      });
+      vp.addEventListener('wheel', function(e){
+        if (!e.ctrlKey && !e.metaKey) return; // a plain wheel scrolls the page
+        e.preventDefault(); e.stopPropagation(); if (touring) stopTour(); hideHelp();
+        var r = vp.getBoundingClientRect(); zoomAt(Math.exp(-e.deltaY * .01), e.clientX - r.left, e.clientY - r.top);
+      }, { passive: false });
+      var zIn = $('#zIn'), zOut = $('#zOut'), zReset = $('#zReset');
+      if (zIn) zIn.addEventListener('click', function(){ zoomAt(1.25, W / 2, H / 2); });
+      if (zOut) zOut.addEventListener('click', function(){ zoomAt(.8, W / 2, H / 2); });
+      if (zFit) zFit.addEventListener('click', fitAll);
+      if (zReset) zReset.addEventListener('click', function(){
+        if (touring) stopTour();
+        if (pinsBtn){ pinsBtn.setAttribute('aria-pressed', 'true'); board.classList.remove('no-pins'); }
+        planet.x = 0; planet.y = 0; copyP.x = COPY0.x; copyP.y = COPY0.y; layout(false); select(copyEl); home(false);
+      });
+      if (planetEl) planetEl.addEventListener('keydown', function(e){ var m = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[e.key]; if (m){ e.preventDefault(); planet.x += m[0]; planet.y += m[1]; items.forEach(function(q){ q.settled = false; }); wake(); } });
+
+      /* ---------- keyboard: the camera follows focus; the clipped layers never scroll out of line ---------- */
+      [vp, board].forEach(function(el){ el.addEventListener('scroll', function(){ el.scrollLeft = 0; el.scrollTop = 0; }); });
+      vp.addEventListener('focusin', function(e){
+        if (!fv(e.target)) return;
+        if (touring) stopTour(); hideHelp();
+        var it = e.target.closest('.ab_board_frame, [data-board-copy], [data-board-planet]'); if (!it) return;
+        var f = items.filter(function(q){ return q.el === it; })[0];
+        var box = it === copyEl ? copyBox() : it === planetEl ? { x: planet.x - PS / 2, y: planet.y - PS / 2, w: PS, h: PS } : f ? boxOf(f) : null; if (!box) return;
+        var a = toWorld(30, 30), b = toWorld(W - 30, H - 70);
+        if (box.x < a.x || box.y - 30 < a.y || box.x + box.w > b.x || box.y + box.h > b.y) flyTo(box);
+        if (it === copyEl) select(copyEl);
+      });
+
+      /* ---------- minimap ---------- */
+      function miniBounds(){ var bs = items.map(boxOf); bs.push({ x: planet.x - PS / 2, y: planet.y - PS / 2, w: PS, h: PS }); if (copyEl && !phone) bs.push(copyBox()); var u = union(bs); return { x: u.x - 200, y: u.y - 200, w: u.w + 400, h: u.h + 400 }; }
+      var MB = null;
+      function miniMap(){ var w = mm.clientWidth, h = mm.clientHeight, s = Math.min(w / MB.w, h / MB.h); return { w: w, h: h, s: s, ox: (w - MB.w * s) / 2 - MB.x * s, oy: (h - MB.h * s) / 2 - MB.y * s }; }
+      function drawMini(){
+        if (!mx || !miniDirty || !W) return; miniDirty = false; if (!drag) MB = miniBounds();
+        var m = miniMap(), dpr = Math.min(2, devicePixelRatio || 1);
+        if (mcv.width !== Math.round(m.w * dpr)){ mcv.width = Math.round(m.w * dpr); mcv.height = Math.round(m.h * dpr); }
+        mx.setTransform(dpr, 0, 0, dpr, 0, 0); mx.clearRect(0, 0, m.w, m.h);
+        mx.fillStyle = 'rgba(194,138,192,.75)'; mx.beginPath(); mx.arc(m.ox + planet.x * m.s, m.oy + planet.y * m.s, PS / 2 * m.s, 0, 7); mx.fill();
+        if (copyEl && !phone){ var cb = copyBox(); mx.fillStyle = copyEl.classList.contains('is-selected') ? '#4C8DFF' : 'rgba(242,240,234,.45)'; mx.fillRect(m.ox + cb.x * m.s, m.oy + cb.y * m.s, cb.w * m.s, cb.h * m.s); }
+        items.forEach(function(f){ mx.fillStyle = f.el.classList.contains('is-selected') ? '#4C8DFF' : f.note ? '#F2F0EA' : (f.el.__bg || '#1c1e24'); mx.fillRect(m.ox + f.x * m.s, m.oy + f.y * m.s, f.w * m.s, f.h * m.s); });
+        var a = toWorld(0, 0), b = toWorld(W, H); mx.strokeStyle = '#FF6A3D'; mx.lineWidth = 1; mx.strokeRect(m.ox + a.x * m.s, m.oy + a.y * m.s, (b.x - a.x) * m.s, (b.y - a.y) * m.s);
+      }
+      if (mcv){
+        (function mloop(){ drawMini(); requestAnimationFrame(mloop); })();
+        mcv.addEventListener('click', function(e){ var r = mcv.getBoundingClientRect(), m = miniMap(), wx = (e.clientX - r.left - m.ox) / m.s, wy = (e.clientY - r.top - m.oy) / m.s; camT = { s: cam.s, x: W / 2 - wx * cam.s, y: H / 2 - wy * cam.s }; wake(); });
+      }
+
+      /* ---------- Tour: the camera visits each build while my cursor points at it; any input takes over ---------- */
+      var tourI = -1, tourT = 0, tourRaf = 0, fakeP = { x: 0, y: 0 };
+      var TOUR = items.filter(function(f){ return !f.slot; });
+      function tourStep(){
+        tourI++;
+        if (tourI >= TOUR.length){ stopTour(); select(copyEl); home(false); return; }
+        var f = TOUR[tourI]; select(f.el); openPin(f); peekOnly(f); flyTo({ x: planet.x + f.ox, y: planet.y + f.oy, w: f.w, h: f.h });
+        tourT = setTimeout(tourStep, f.peek ? 4200 : 3000);
+      }
+      function tourCursor(){
+        if (!touring || !fake) return;
+        var f = TOUR[Math.max(0, tourI)], tx = vp.offsetLeft + cam.x + (f.x + f.w * .55) * cam.s, ty = vp.offsetTop + cam.y + (f.y + f.h * .62) * cam.s;
+        fakeP.x += (tx - fakeP.x) * .08; fakeP.y += (ty - fakeP.y) * .08; place(fake, fakeP.x, fakeP.y);
+        tourRaf = requestAnimationFrame(tourCursor);
+      }
+      function startTour(){
+        touring = true; tourI = -1; hideHelp(); tourBtn.setAttribute('aria-pressed', 'true'); tourBtn.textContent = '■ Stop tour';
+        if (fake){ fakeP.x = vp.offsetLeft + W * .6; fakeP.y = vp.offsetTop + H * .2; fake.style.opacity = 1; }
+        tourStep(); tourCursor();
+      }
+      function stopTour(){
+        touring = false; clearTimeout(tourT); cancelAnimationFrame(tourRaf);
+        tourBtn.setAttribute('aria-pressed', 'false'); tourBtn.textContent = '▶ Tour';
+        pins.forEach(function(q){ q.el.classList.remove('open'); }); items.forEach(function(q){ if (q.peek) q.peek(false); });
+        if (fake) fake.style.opacity = 0;
+      }
+      tourBtn.addEventListener('click', function(){ touring ? stopTour() : startTour(); });
+      addEventListener('keydown', function(e){ if (touring && (e.key === 'Escape' || e.key === 'Tab')) stopTour(); });
+
+      /* ---------- nav: flat while the board fills the screen, the glass bar once it's scrolled past ---------- */
+      if (navC){
+        var navSync = function(){ navC.classList.toggle('is-flat', heroSec.getBoundingClientRect().bottom > 90); };
+        addEventListener('scroll', navSync, { passive: true }); navSync();
+      }
+
+      /* ---------- phones: the headline + buttons pin to the bottom, the board fills the middle ---------- */
+      var pinBox = document.createElement('div'); pinBox.className = 'ab_bh_pinned'; pinBox.hidden = true; board.appendChild(pinBox);
+      var copyHome = copyEl ? copyEl.parentNode : null, copyNext = copyEl ? copyEl.nextSibling : null;
+      function setPhone(on){
+        if (!copyEl || on === phone) { phone = on; return; }
+        phone = on; pinBox.hidden = !on;
+        if (on){ pinBox.appendChild(copyEl); copyEl.style.transform = ''; }
+        else copyHome.insertBefore(copyEl, copyNext);
+      }
+
+      /* ---------- intro: the Angelino cursor tugs the planet once ---------- */
+      function intro(){
+        if (reduce || phone || !fake) return;
+        var p0 = { x: vp.offsetLeft + W + 30, y: vp.offsetTop + H * .2 }, pc = { x: vp.offsetLeft + cam.x + (planet.x + 80) * cam.s, y: vp.offsetTop + cam.y + (planet.y - 60) * cam.s }, tug = 90, t0 = performance.now();
+        function ease(t){ return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+        function setP(k){ planet.x = -tug * k; planet.y = -tug * .35 * k; items.forEach(function(q){ q.settled = false; }); wake(); place(fake, pc.x + planet.x * cam.s, pc.y + planet.y * cam.s); }
+        fake.style.opacity = 1;
+        (function step(now){
+          var t = (now - t0) / 1000;
+          if (helpGone || touring || drag){ if (!touring) fake.style.opacity = 0; if (planet.x || planet.y){ planet.x = 0; planet.y = 0; items.forEach(function(q){ q.settled = false; }); wake(); } return; }
+          if (t < 1.3){ var k = ease(t / 1.3); place(fake, p0.x + (pc.x - p0.x) * k, p0.y + (pc.y - p0.y) * k); }
+          else if (t < 2.3) setP(ease((t - 1.3) / 1));
+          else if (t < 3.6) setP(1 - ease((t - 2.3) / 1.3));
+          else if (t < 4.6){ var k4 = ease((t - 3.6) / 1); place(fake, pc.x + (vp.offsetLeft + W * .66 - pc.x) * k4, pc.y + (vp.offsetTop + H * .12 - pc.y) * k4); }
+          else { fake.style.opacity = 0; return; }
+          requestAnimationFrame(step);
+        })(t0);
+      }
+
+      /* ---------- size + start ---------- */
+      function measure(){ W = vp.clientWidth; H = vp.clientHeight; }
+      function size(){ setPhone(innerWidth < 768); measure(); }
+      var lastW = innerWidth;
+      addEventListener('resize', function(){
+        var was = phone; size();
+        if (planetEl) planetEl.style.setProperty('--sz', planetEl.offsetWidth + 'px'); // core sets --sz from the scaled box on resize
+        if (was !== phone || Math.abs(innerWidth - lastW) > 120){ lastW = innerWidth; home(true); } else renderCam();
+      });
+      size(); layout(true); select(copyEl); home(true); wake();
+      (document.fonts && document.fonts.ready ? document.fonts.ready : { then: function(f){ f(); } }).then(function(){ measure(); home(true); wake(); setTimeout(intro, 600); });
+    }
 
     /* ---------- phones: swipe deck ---------- */
     if (innerWidth < 768){
