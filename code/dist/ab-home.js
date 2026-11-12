@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.93 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.94 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -505,7 +505,7 @@ window.Webflow.push(function(){
         '[data-board-hero] [data-board-copy] .ab_hero_lede{max-width:40ch;margin:0}',
         '[data-board-hero] [data-board-copy] .ab_hero_cta{display:flex;gap:12px;margin-top:26px}',
         '[data-board-hero] [data-board-planet]{z-index:3;cursor:grab;touch-action:pan-y}',
-        '[data-board-hero] #sat{z-index:4}',
+        '[data-board-hero] #sat{z-index:6}', // drifts over the cards, so it sits above them
         '.ab_bh_orbits{position:absolute;left:0;top:0;overflow:visible;pointer-events:none;transition:opacity .5s}',
         '.ab_bh_orbits ellipse{fill:none;stroke:rgba(194,138,192,.13);stroke-width:1;vector-effect:non-scaling-stroke}',
         '.ab_bh_orbits line{stroke:rgba(255,106,61,.55);stroke-width:1.4;stroke-dasharray:5 6;vector-effect:non-scaling-stroke}',
@@ -640,6 +640,20 @@ window.Webflow.push(function(){
         placePins(); miniDirty = true;
       }
       function wake(){ if (!running){ running = true; requestAnimationFrame(loop); } }
+      // the do-not-drag satellite drifts a slow lap of the board (between the 1st and 2nd orbits, ~2.5 min) so it never
+      // stays parked behind a card; it eases out from its old spot beside Planet XY. Reduced motion: it stays put.
+      var satT = 0, satRun = false, satLast = 0, SAT0 = Math.atan2(-330, 250) - TILT, SATR = Math.sqrt(250 * 250 + 330 * 330);
+      function placeSat(){
+        if (!satEl) return;
+        var u = Math.min(1, satT / 10), e = u * u * (3 - 2 * u), a = SAT0 + satT * 2 * Math.PI / 150;
+        var wob = 1 + .14 * Math.sin(satT * 2 * Math.PI / 41) * e;
+        var px = Math.cos(a) * (SATR + (940 - SATR) * e) * wob, py = Math.sin(a) * (SATR + (600 - SATR) * e) * wob;
+        var c = Math.cos(TILT), sn = Math.sin(TILT);
+        satEl.style.setProperty('--bh-sat-x', (orb.x + px * c - py * sn) + 'px');
+        satEl.style.setProperty('--bh-sat-y', (orb.y + px * sn + py * c) + 'px');
+      }
+      function satLoop(now){ if (!satRun) return; satT += Math.min(64, now - satLast) / 1000; satLast = now; placeSat(); requestAnimationFrame(satLoop); }
+      if (satEl && !reduce) whileSeen(board, function(){ if (satRun) return; satRun = true; satLast = performance.now(); requestAnimationFrame(satLoop); }, function(){ satRun = false; });
       function loop(){
         var moving = false;
         if (camT){
@@ -659,7 +673,7 @@ window.Webflow.push(function(){
         ell.forEach(function(e, i){ setOrbit(e, RINGS[i + 1], orb.x, orb.y); });
         links.forEach(function(l){ l.ln.setAttribute('x1', l.a.x + SW(l.a) / 2); l.ln.setAttribute('y1', l.a.y + SH(l.a) / 2); l.ln.setAttribute('x2', l.b.x + SW(l.b) / 2); l.ln.setAttribute('y2', l.b.y + SH(l.b) / 2); });
         if (planetEl) place(planetEl, planet.x - PS / 2, planet.y - PS / 2);
-        if (satEl){ satEl.style.setProperty('--bh-sat-x', (orb.x + 250) + 'px'); satEl.style.setProperty('--bh-sat-y', (orb.y - 330) + 'px'); }
+        placeSat();
         if (copyEl && !phone) place(copyEl, copyP.x, copyP.y);
         placePins(); miniDirty = true;
         if (moving || drag) requestAnimationFrame(loop); else running = false;
