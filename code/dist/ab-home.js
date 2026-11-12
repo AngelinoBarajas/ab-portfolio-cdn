@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.90 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.91 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -477,7 +477,13 @@ window.Webflow.push(function(){
         // board units via custom properties: ab-core pins the hero satellite on phones with left/top !important
         '[data-board-hero] #sat{position:absolute;left:var(--bh-sat-x,250px)!important;top:var(--bh-sat-y,-330px)!important;right:auto!important;bottom:auto!important}',
         '[data-board-hero] .ab_board_world .ab_board_frame,[data-board-hero] [data-board-copy],[data-board-hero] [data-board-planet],[data-board-hero] #sat{max-width:none!important}',
-        '[data-board-hero] .ab_board_frame{cursor:grab;touch-action:pan-y}',
+        '[data-board-hero] .ab_board_frame{cursor:grab;touch-action:pan-y;transform-origin:0 0;--fs:1}',
+        // card scaling: the selected frame's handles take the pointer; handles + tags stay screen-sized as the card grows
+        '[data-board-hero] .ab_board_frame.is-selected > .sel i{pointer-events:auto;transform:scale(calc(1 / var(--fs)))}',
+        '[data-board-hero] .ab_board_frame > .sel .sel-tag{transform:scale(calc(1 / var(--fs)));transform-origin:0 100%}',
+        '[data-board-hero] .ab_board_frame > .sel .sel-size{transform:translateX(-50%) scale(calc(1 / var(--fs)));transform-origin:50% 0}',
+        '[data-board-hero] .sel .tl,[data-board-hero] .sel .br{cursor:nwse-resize}[data-board-hero] .sel .tr,[data-board-hero] .sel .bl{cursor:nesw-resize}',
+        '[data-board-hero] .sel .tc,[data-board-hero] .sel .bc{cursor:ns-resize}[data-board-hero] .sel .ml,[data-board-hero] .sel .mr{cursor:ew-resize}',
         '[data-board-hero] .ab_board_frame:active{cursor:grabbing}',
         '[data-board-hero] .ab_board_frame:not(.is-selected):not(.is-slot) .ab_board_frame-inner{outline:1px dashed rgba(255,255,255,.22);outline-offset:4px}',
         '[data-board-hero] .ab_board_frame:focus-visible{outline:none}',
@@ -510,8 +516,8 @@ window.Webflow.push(function(){
         '.ab_bh_pin .who b{font-weight:500;color:#F2F0EA}',
         '.ab_bh_pin p{margin:0;font-size:13.5px;line-height:1.45;color:#C9C7C0}',
         '.ab_board_component.no-pins .ab_bh_pins{display:none}',
-        '.ab_bh_peek{position:absolute;inset:0;z-index:2;opacity:0;transition:opacity .35s;pointer-events:none;background:#000}',
-        '.ab_bh_peek img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0;transition:opacity .45s}',
+        '.ab_bh_peek{position:absolute;inset:0;z-index:2;opacity:0;transition:opacity .35s;pointer-events:none;background:#07080D}',
+        '.ab_bh_peek img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;opacity:0;transition:opacity .45s}', // whole screenshot, no side crop
         '.ab_bh_peek img.on{opacity:1}',
         '.ab_bh_peek .pl{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;align-items:center;background:rgba(7,8,13,.85);padding:6px 8px}',
         '.ab_bh_peek .pl s{display:block;width:14px;height:3px;background:rgba(255,255,255,.25)}',
@@ -548,7 +554,7 @@ window.Webflow.push(function(){
       /* ---------- the items on the board ---------- */
       var items = frames.map(function(el){
         var note = el.classList.contains('is-note'), slot = el.classList.contains('is-slot');
-        return { el: el, slug: el.getAttribute('data-slug') || '', note: note, slot: slot, w: 0, h: 0, x: 0, y: 0, ox: 0, oy: 0, k: .08, settled: true };
+        return { el: el, slug: el.getAttribute('data-slug') || '', note: note, slot: slot, w: 0, h: 0, s: 1, x: 0, y: 0, ox: 0, oy: 0, k: .08, settled: true };
       });
       function bySlug(s){ return items.filter(function(q){ return q.slug === s; })[0]; }
       var SIZE = { '510-visuals': [480, 330], 'topicweave': [470, 320] };
@@ -557,7 +563,7 @@ window.Webflow.push(function(){
         f.w = s[0]; f.h = s[1]; f.el.style.width = f.w + 'px'; f.el.style.height = f.h + 'px';
         f.el.setAttribute('data-size', f.w + ' × ' + f.h);
         var sz = f.el.__sel && $('.sel-size', f.el.__sel); if (sz) sz.textContent = f.w + ' × ' + f.h;
-        if (f.note){ buildNote(f); if (f.el.__sel) $('.sel-tag', f.el.__sel).textContent = 'Sticky / ' + f.slug; }
+        if (f.note){ buildNote(f); f.label = (f.el.getAttribute('data-code') || f.slug).toLowerCase(); if (f.el.__sel) $('.sel-tag', f.el.__sel).textContent = 'Sticky / ' + f.label; }
       });
       // orbit spots: the known missions keep theirs; new CMS items (and notes) take the next free spot outward
       var used = { 1: [], 2: [], 3: [] };
@@ -633,12 +639,12 @@ window.Webflow.push(function(){
             var tx = planet.x + f.ox, ty = planet.y + f.oy, dx = tx - f.x, dy = ty - f.y, k = reduce ? 1 : f.k;
             if (Math.abs(dx) > .15 || Math.abs(dy) > .15){ f.x += dx * k; f.y += dy * k; moving = true; } else { f.x = tx; f.y = ty; f.settled = true; }
           }
-          place(f.el, f.x, f.y);
+          f.el.style.transform = 'translate3d(' + f.x + 'px,' + f.y + 'px,0)' + (f.s !== 1 ? ' scale(' + f.s + ')' : '');
         });
         orb.x += (planet.x - orb.x) * .2; orb.y += (planet.y - orb.y) * .2;
         if (Math.abs(planet.x - orb.x) > .2 || Math.abs(planet.y - orb.y) > .2) moving = true;
         ell.forEach(function(e, i){ setOrbit(e, RINGS[i + 1], orb.x, orb.y); });
-        links.forEach(function(l){ l.ln.setAttribute('x1', l.a.x + l.a.w / 2); l.ln.setAttribute('y1', l.a.y + l.a.h / 2); l.ln.setAttribute('x2', l.b.x + l.b.w / 2); l.ln.setAttribute('y2', l.b.y + l.b.h / 2); });
+        links.forEach(function(l){ l.ln.setAttribute('x1', l.a.x + SW(l.a) / 2); l.ln.setAttribute('y1', l.a.y + SH(l.a) / 2); l.ln.setAttribute('x2', l.b.x + SW(l.b) / 2); l.ln.setAttribute('y2', l.b.y + SH(l.b) / 2); });
         if (planetEl) place(planetEl, planet.x - PS / 2, planet.y - PS / 2);
         if (satEl){ satEl.style.setProperty('--bh-sat-x', (orb.x + 250) + 'px'); satEl.style.setProperty('--bh-sat-y', (orb.y - 330) + 'px'); }
         if (copyEl && !phone) place(copyEl, copyP.x, copyP.y);
@@ -660,14 +666,16 @@ window.Webflow.push(function(){
         fitTo(union([planetBox(), copyBox()]), { l: 40, r: W - 40, t: 50, b: H - 70 }, 1, snap);
       }
       function fitAll(){
-        var bs = items.map(function(f){ return { x: planet.x + f.ox, y: planet.y + f.oy - 30, w: f.w, h: f.h + 60 }; });
+        var bs = items.map(function(f){ return { x: planet.x + f.ox, y: planet.y + f.oy - 30, w: SW(f), h: SH(f) + 60 }; });
         bs.push({ x: planet.x - 320, y: planet.y - 320, w: 640, h: 640 }); if (!phone) bs.push(copyBox());
         fitTo(union(bs), { l: 30, r: W - 30, t: 40, b: H - (phone ? 260 : 70) }, 1, false);
       }
       function zoomAt(k, sx, sy){ var b = camT || cam, ns = Math.max(.2, Math.min(2.2, b.s * k)), wx = (sx - b.x) / b.s, wy = (sy - b.y) / b.s; camT = { s: ns, x: sx - wx * ns, y: sy - wy * ns }; wake(); }
       function flyTo(box){ fitTo({ x: box.x - 60, y: box.y - 80, w: box.w + 120, h: box.h + 160 }, { l: 30, r: W - 30, t: 30, b: H - (phone ? 260 : 60) }, phone ? .8 : 1.2, false); }
       function fv(el){ try { return el.matches(':focus-visible'); } catch (x){ return false; } }
-      function boxOf(f){ return { x: f.x, y: f.y, w: f.w, h: f.h }; }
+      function SW(f){ return f.w * f.s; } function SH(f){ return f.h * f.s; } // a card's size on the board after scaling
+      function boxOf(f){ return { x: f.x, y: f.y, w: SW(f), h: SH(f) }; }
+      function setScale(f, s){ f.s = s; f.el.style.setProperty('--fs', s); var z = f.el.__sel && $('.sel-size', f.el.__sel); if (z) z.textContent = Math.round(SW(f)) + ' × ' + Math.round(SH(f)); }
 
       /* ---------- selection, layers, file bar ---------- */
       if (copyEl){
@@ -691,7 +699,7 @@ window.Webflow.push(function(){
         if (planetEl) addB('◯ gargantua', 'planet');
         addT('Frames · ' + items.filter(function(f){ return !f.note && !f.slot; }).length);
         items.forEach(function(f){ if (!f.note) addB('▢ ' + f.slug, f.slug); });
-        if (items.some(function(f){ return f.note; })){ addT('Field notes · ' + items.filter(function(f){ return f.note; }).length); items.forEach(function(f){ if (f.note) addB('✎ ' + f.slug, f.slug); }); }
+        if (items.some(function(f){ return f.note; })){ addT('Field notes · ' + items.filter(function(f){ return f.note; }).length); items.forEach(function(f){ if (f.note) addB('✎ ' + (f.label || f.slug), f.slug); }); }
         layersEl.addEventListener('click', function(e){
           var b = e.target.closest('button'); if (!b) return; var k = b.getAttribute('data-target');
           if (k === 'copy'){ select(copyEl); flyTo(copyBox()); }
@@ -714,7 +722,7 @@ window.Webflow.push(function(){
         pinsBox.appendChild(p); pins.push({ el: p, f: f });
       });
       function openPin(f){ pins.forEach(function(q){ q.el.classList.toggle('open', q.f === f); }); }
-      function placePins(){ pins.forEach(function(q){ place(q.el, cam.x + (q.f.x + q.f.w) * cam.s - 6, cam.y + q.f.y * cam.s - 30); }); }
+      function placePins(){ pins.forEach(function(q){ place(q.el, cam.x + (q.f.x + SW(q.f)) * cam.s - 6, cam.y + q.f.y * cam.s - 30); }); }
 
       /* ---------- hover peek (CMS Board peek: a nested list of images inside the frame, [data-board-peek]) ---------- */
       items.forEach(function(f){
@@ -774,6 +782,15 @@ window.Webflow.push(function(){
         if (touring) stopTour();
         // real controls and the thrown toys (headline words, satellite) keep their own handlers
         if (e.target.closest('.ab_hero_cta a, .ab_bh_pin, #sat, .w')) return;
+        var hEl = e.pointerType === 'mouse' && e.target.closest('.ab_board_frame.is-selected > .sel i');
+        if (hEl){
+          var hf = items.filter(function(q){ return q.el === hEl.parentNode.parentNode; })[0];
+          if (hf){
+            var hc = hEl.className, sx = /r$/.test(hc) ? 1 : /l$/.test(hc) ? -1 : 0, sy = /^b/.test(hc) ? 1 : /^t/.test(hc) ? -1 : 0;
+            drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY, moved: 0, f: hf, el: hf.el, kind: 'resize', sx: sx, sy: sy, s0: hf.s, x0: hf.x, y0: hf.y, tx: 0, ty: 0, wasSel: true };
+            lastDown = drag; try { hEl.setPointerCapture(e.pointerId); } catch (x){} hf.el.style.zIndex = 9; hideHelp(); wake(); return;
+          }
+        }
         var fEl = e.target.closest('.ab_board_frame'), it = fEl || (planetEl && e.target.closest('[data-board-planet]')) || null;
         var f = fEl ? items.filter(function(q){ return q.el === fEl; })[0] : null;
         drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY, moved: 0, f: f, el: it, kind: f ? 'frame' : it ? 'planet' : 'pan', wasSel: !!(fEl && fEl.classList.contains('is-selected')) };
@@ -791,6 +808,16 @@ window.Webflow.push(function(){
         var wdx = dx / cam.s, wdy = dy / cam.s;
         if (drag.kind === 'pan'){ camT = null; cam.x += dx; cam.y += dy; renderCam(); }
         else if (drag.kind === 'planet'){ planet.x += wdx; planet.y += wdy; items.forEach(function(q){ q.settled = false; }); }
+        else if (drag.kind === 'resize'){
+          // proportional: corners average both axes, edges use one; from the loaded size up to 1.6x
+          var r = drag, f = r.f; r.tx += wdx; r.ty += wdy;
+          var ds = ((r.sx ? r.sx * r.tx / f.w : 0) + (r.sy ? r.sy * r.ty / f.h : 0)) / ((r.sx ? 1 : 0) + (r.sy ? 1 : 0));
+          var ns = Math.max(1, Math.min(1.6, r.s0 + ds)), grow = ns - r.s0;
+          setScale(f, ns);
+          f.x = r.x0 - (r.sx < 0 ? f.w * grow : r.sx === 0 ? f.w * grow / 2 : 0);
+          f.y = r.y0 - (r.sy < 0 ? f.h * grow : r.sy === 0 ? f.h * grow / 2 : 0);
+          f.ox = f.x - planet.x; f.oy = f.y - planet.y;
+        }
         else if (drag.f){ drag.f.x += wdx; drag.f.y += wdy; drag.f.ox = drag.f.x - planet.x; drag.f.oy = drag.f.y - planet.y; }
         wake();
       });
@@ -805,7 +832,7 @@ window.Webflow.push(function(){
         f.el.addEventListener('click', function(e){
           if (e.detail === 0){ openFrame(f.el, e); return; } // Enter on a focused frame
           var d = lastDown; lastDown = null; e.preventDefault();
-          if (d && d.el === f.el && d.wasSel && d.moved <= 6) openFrame(f.el, e);
+          if (d && d.el === f.el && d.wasSel && d.moved <= 6 && d.kind !== 'resize') openFrame(f.el, e); // a handle press never opens
         });
         f.el.addEventListener('dragstart', function(e){ e.preventDefault(); });
         // the open slot is a div: make it a tab stop that Enter opens like the link frames (it scrolls to the contact form)
@@ -826,7 +853,7 @@ window.Webflow.push(function(){
       if (zReset) zReset.addEventListener('click', function(){
         if (touring) stopTour();
         if (pinsBtn){ pinsBtn.setAttribute('aria-pressed', 'true'); board.classList.remove('no-pins'); }
-        planet.x = 0; planet.y = 0; copyP.x = COPY0.x; copyP.y = COPY0.y; layout(false); select(copyEl); home(false);
+        planet.x = 0; planet.y = 0; copyP.x = COPY0.x; copyP.y = COPY0.y; items.forEach(function(q){ setScale(q, 1); }); layout(false); select(copyEl); home(false);
       });
       if (planetEl) planetEl.addEventListener('keydown', function(e){ var m = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[e.key]; if (m){ e.preventDefault(); planet.x += m[0]; planet.y += m[1]; items.forEach(function(q){ q.settled = false; }); wake(); } });
 
@@ -854,7 +881,7 @@ window.Webflow.push(function(){
         mx.setTransform(dpr, 0, 0, dpr, 0, 0); mx.clearRect(0, 0, m.w, m.h);
         mx.fillStyle = 'rgba(194,138,192,.75)'; mx.beginPath(); mx.arc(m.ox + planet.x * m.s, m.oy + planet.y * m.s, PS / 2 * m.s, 0, 7); mx.fill();
         if (copyEl && !phone){ var cb = copyBox(); mx.fillStyle = copyEl.classList.contains('is-selected') ? '#4C8DFF' : 'rgba(242,240,234,.45)'; mx.fillRect(m.ox + cb.x * m.s, m.oy + cb.y * m.s, cb.w * m.s, cb.h * m.s); }
-        items.forEach(function(f){ mx.fillStyle = f.el.classList.contains('is-selected') ? '#4C8DFF' : f.note ? '#F2F0EA' : (f.el.__bg || '#1c1e24'); mx.fillRect(m.ox + f.x * m.s, m.oy + f.y * m.s, f.w * m.s, f.h * m.s); });
+        items.forEach(function(f){ mx.fillStyle = f.el.classList.contains('is-selected') ? '#4C8DFF' : f.note ? '#F2F0EA' : (f.el.__bg || '#1c1e24'); mx.fillRect(m.ox + f.x * m.s, m.oy + f.y * m.s, SW(f) * m.s, SH(f) * m.s); });
         var a = toWorld(0, 0), b = toWorld(W, H); mx.strokeStyle = '#FF6A3D'; mx.lineWidth = 1; mx.strokeRect(m.ox + a.x * m.s, m.oy + a.y * m.s, (b.x - a.x) * m.s, (b.y - a.y) * m.s);
       }
       if (mcv){
@@ -868,12 +895,12 @@ window.Webflow.push(function(){
       function tourStep(){
         tourI++;
         if (tourI >= TOUR.length){ stopTour(); select(copyEl); home(false); return; }
-        var f = TOUR[tourI]; select(f.el); openPin(f); peekOnly(f); flyTo({ x: planet.x + f.ox, y: planet.y + f.oy, w: f.w, h: f.h });
+        var f = TOUR[tourI]; select(f.el); openPin(f); peekOnly(f); flyTo({ x: planet.x + f.ox, y: planet.y + f.oy, w: SW(f), h: SH(f) });
         tourT = setTimeout(tourStep, f.peek ? 4200 : 3000);
       }
       function tourCursor(){
         if (!touring || !fake) return;
-        var f = TOUR[Math.max(0, tourI)], tx = vp.offsetLeft + cam.x + (f.x + f.w * .55) * cam.s, ty = vp.offsetTop + cam.y + (f.y + f.h * .62) * cam.s;
+        var f = TOUR[Math.max(0, tourI)], tx = vp.offsetLeft + cam.x + (f.x + SW(f) * .55) * cam.s, ty = vp.offsetTop + cam.y + (f.y + SH(f) * .62) * cam.s;
         fakeP.x += (tx - fakeP.x) * .08; fakeP.y += (ty - fakeP.y) * .08; place(fake, fakeP.x, fakeP.y);
         tourRaf = requestAnimationFrame(tourCursor);
       }
