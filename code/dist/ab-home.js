@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.92 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.93 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -533,6 +533,11 @@ window.Webflow.push(function(){
         '.ab_board_frame.is-peek .ab_bh_peek{opacity:1}',
         '[data-board-hero] .ab_board_fopen{z-index:3;pointer-events:none}',
         '[data-board-hero] .ab_board_frame.is-selected .ab_board_fopen{opacity:1}',
+        // the mockup's Open chip: live whenever it shows, select blue on hover, a click on it opens the case at once
+        '[data-board-hero] .ab_board_fopen{background:rgba(0,0,0,.35);transition:opacity .25s,background-color .2s,border-color .2s,color .2s}',
+        '[data-board-hero] .ab_board_frame.is-note .ab_board_fopen{background:transparent}',
+        '[data-board-hero] .ab_board_frame:hover .ab_board_fopen,[data-board-hero] .ab_board_frame.is-selected .ab_board_fopen{pointer-events:auto;cursor:pointer}',
+        '[data-board-hero] .ab_board_frame .ab_board_fopen:hover{background:#4C8DFF;border-color:#4C8DFF;color:#fff;opacity:1}',
         '.ab_bh_tbtn{background:none;border:1px solid rgba(255,255,255,.22);color:#C9C7C0;font:400 11px/1 var(--mono);padding:6px 9px;cursor:pointer}',
         '.ab_bh_tbtn:hover{color:#F2F0EA;border-color:#F2F0EA}',
         '.ab_bh_tbtn[aria-pressed="true"]{background:rgba(76,141,255,.22);border-color:#4C8DFF;color:#F2F0EA}',
@@ -812,7 +817,7 @@ window.Webflow.push(function(){
         }
         var fEl = e.target.closest('.ab_board_frame'), it = fEl || (planetEl && e.target.closest('[data-board-planet]')) || null;
         var f = fEl ? items.filter(function(q){ return q.el === fEl; })[0] : null;
-        drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY, moved: 0, f: f, el: it, kind: f ? 'frame' : it ? 'planet' : 'pan', wasSel: !!(fEl && fEl.classList.contains('is-selected')) };
+        drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY, moved: 0, f: f, el: it, kind: f ? 'frame' : it ? 'planet' : 'pan', wasSel: !!(fEl && fEl.classList.contains('is-selected')), chip: e.pointerType === 'mouse' && !!e.target.closest('.ab_board_fopen') };
         lastDown = drag;
         try { (it || vp).setPointerCapture(e.pointerId); } catch (x){}
         if (!it) select(e.target.closest('[data-board-copy]') ? copyEl : null);
@@ -851,7 +856,8 @@ window.Webflow.push(function(){
         f.el.addEventListener('click', function(e){
           if (e.detail === 0){ openFrame(f.el, e); return; } // Enter on a focused frame
           var d = lastDown; lastDown = null; e.preventDefault();
-          if (d && d.el === f.el && d.wasSel && d.moved <= 6 && d.kind !== 'resize') openFrame(f.el, e); // a handle press never opens
+          // a mouse press on the Open chip opens on the first click; touch keeps tap-to-select
+          if (d && d.el === f.el && (d.wasSel || d.chip) && d.moved <= 6 && d.kind !== 'resize') openFrame(f.el, e); // a handle press never opens
         });
         f.el.addEventListener('dragstart', function(e){ e.preventDefault(); });
         // the open slot is a div: make it a tab stop that Enter opens like the link frames (it scrolls to the contact form)
