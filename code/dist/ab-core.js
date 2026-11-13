@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-core v0.33.87 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-core v0.33.102 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abCoreInit) return;
@@ -425,7 +425,6 @@ window.Webflow.push(function(){
       x.fillStyle = 'rgba(' + (rnd() < .2 ? '255,214,180' : rnd() < .3 ? '190,215,255' : '255,255,255') + ',' + (.35 + rnd() * .65) + ')'; x.beginPath(); x.arc(rnd() * W, rnd() * W, r, 0, 7); x.fill(); }
     return cv;
   }
-  function farSide(W){ return farCanvas(W).toDataURL('image/jpeg', .88); }
 
   function wormLinks(){
     var here = location.pathname.replace(/\/$/, '') || '/', seen = {}, out = [];
@@ -452,8 +451,13 @@ window.Webflow.push(function(){
     el.appendChild(tip);
     el.removeAttribute('aria-hidden'); el.setAttribute('role', 'link'); el.tabIndex = 0; el.setAttribute('aria-label', 'Wormhole: fall through to a random page of this site');
     var farTx = '';
-    var paint = function(){ farTx = farSide(sz > 240 ? 512 : 320); $$('.wh-far i', body).forEach(function(i){ i.style.backgroundImage = 'url(' + farTx + ')'; }); body.classList.add('on'); };
-    paintNear(el, paint);
+    var show = function(u){ farTx = u; $$('.wh-far i', body).forEach(function(i){ i.style.backgroundImage = 'url(' + u + ')'; }); body.classList.add('on'); };
+    var paint = function(){ var cv = farCanvas(sz > 240 ? 512 : 320);
+      if (cv.toBlob && window.URL && URL.createObjectURL) cv.toBlob(function(bl){ show(bl ? URL.createObjectURL(bl) : cv.toDataURL('image/jpeg', .88)); }, 'image/jpeg', .88); // encodes off the main thread
+      else show(cv.toDataURL('image/jpeg', .88)); };
+    // perf (v0.33.102): the far side is ~300 ms of canvas work on a phone, so it waits until the wormhole itself is a tenth of a
+    // screen away. Watching its section painted it during the load on Home, where the statement section sits right under the hero
+    AB.near(el, function(){ if ('requestIdleCallback' in window) requestIdleCallback(paint, { timeout: 200 }); else setTimeout(paint, 30); }, .1);
     var lens = { el: $('.wh-ball', body), b: 0, to: 0 }; LENSES.push(lens);
     // probes: now and then one drifts past, gets caught, spirals in (faster, stretching) and is gone: "signal lost".
     // Only while the wormhole is on screen, never under reduced motion or during the fall.

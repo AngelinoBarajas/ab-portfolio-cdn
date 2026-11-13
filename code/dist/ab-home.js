@@ -1,4 +1,4 @@
-/*! AB Portfolio · ab-home v0.33.101 · github.com/AngelinoBarajas/ab-portfolio */
+/*! AB Portfolio · ab-home v0.33.102 · github.com/AngelinoBarajas/ab-portfolio */
 window.Webflow = window.Webflow || [];
 window.Webflow.push(function(){
   if (window.__abHomeInit) return;
@@ -30,7 +30,8 @@ window.Webflow.push(function(){
     ht.setAttribute('aria-label', head.replace(/[*~]/g, ''));
     ht.innerHTML = '';
     head.split(/\s+/).forEach(function(w){
-      var s = document.createElement('span'); s.className = 'w'; s.setAttribute('data-drag', ''); s.setAttribute('data-snap', ''); s.tabIndex = 0;
+      // on the board hero the whole hero-title frame drags like a card (10-work.js), so the words are plain text there
+      var s = document.createElement('span'); s.className = 'w'; if (!boardHero){ s.setAttribute('data-drag', ''); s.setAttribute('data-snap', ''); s.tabIndex = 0; }
       if (/^\*.*\*$/.test(w)){ s.classList.add('accent'); w = w.slice(1, -1); }
       if (/^~.*~$/.test(w)){ s.classList.add('t-outline'); w = w.slice(1, -1); }
       s.textContent = w; ht.appendChild(s);
@@ -522,7 +523,9 @@ window.Webflow.push(function(){
         '[data-board-hero] .ab_board_frame:focus-visible{outline:none}',
         '[data-board-hero] [data-selectable]:not(.is-selected) > .sel i,[data-board-hero] [data-selectable]:not(.is-selected) > .sel .sel-tag,[data-board-hero] [data-selectable]:not(.is-selected) > .sel .sel-size{display:none}',
         '[data-board-hero] .is-selected > .sel{border-width:1.5px}',
-        '[data-board-hero] [data-board-copy]{z-index:6}',
+        '[data-board-hero] [data-board-copy]{z-index:6;cursor:grab;touch-action:pan-y;user-select:none}', // the hero-title frame drags like a card
+        '[data-board-hero] [data-board-copy]:active{cursor:grabbing}',
+        '[data-board-hero] .ab_hero_title .w{cursor:inherit;pointer-events:none;touch-action:auto}',
         '[data-board-hero] [data-board-copy] > .sel{inset:-28px -36px -32px}',
         '[data-board-hero] [data-board-copy] .ab_hero_meta{display:flex;gap:18px;margin-bottom:22px}',
         '[data-board-hero] [data-board-copy] .ab_hero_title{font-size:124px!important;line-height:.86;margin:0;max-width:none;width:min-content}', // one word per line, like the live hero
@@ -878,8 +881,8 @@ window.Webflow.push(function(){
         if (e.button !== 0) return;
         if (touring) stopTour();
         hideCue();
-        // real controls and the thrown toys (headline words, satellite) keep their own handlers
-        if (e.target.closest('.ab_hero_cta a, .ab_bh_pin, #sat, .w, .ab_bh_strip')) return;
+        // real controls and the thrown toy (satellite) keep their own handlers
+        if (e.target.closest('.ab_hero_cta a, .ab_bh_pin, #sat, .ab_bh_strip')) return;
         var hEl = e.pointerType === 'mouse' && e.target.closest('.ab_board_frame.is-selected > .sel i');
         if (hEl){
           var hf = items.filter(function(q){ return q.el === hEl.parentNode.parentNode; })[0];
@@ -889,12 +892,13 @@ window.Webflow.push(function(){
             lastDown = drag; try { hEl.setPointerCapture(e.pointerId); } catch (x){} hf.el.style.zIndex = 9; hideHelp(); wake(); return;
           }
         }
-        var fEl = e.target.closest('.ab_board_frame'), it = fEl || (planetEl && e.target.closest('[data-board-planet]')) || null;
+        var cEl = !phone && copyEl && e.target.closest('[data-board-copy]');
+        var fEl = e.target.closest('.ab_board_frame'), it = fEl || (planetEl && e.target.closest('[data-board-planet]')) || cEl || null;
         var f = fEl ? items.filter(function(q){ return q.el === fEl; })[0] : null;
-        drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY, moved: 0, f: f, el: it, kind: f ? 'frame' : it ? 'planet' : 'pan', wasSel: !!(fEl && fEl.classList.contains('is-selected')), chip: e.pointerType === 'mouse' && !!e.target.closest('.ab_board_fopen') };
+        drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY, moved: 0, f: f, el: it, kind: f ? 'frame' : cEl ? 'copy' : it ? 'planet' : 'pan', wasSel: !!(fEl && fEl.classList.contains('is-selected')), chip: e.pointerType === 'mouse' && !!e.target.closest('.ab_board_fopen') };
         lastDown = drag;
         try { (it || vp).setPointerCapture(e.pointerId); } catch (x){}
-        if (!it) select(e.target.closest('[data-board-copy]') ? copyEl : null);
+        if (!it || cEl) select(cEl ? copyEl : e.target.closest('[data-board-copy]') ? copyEl : null);
         else if (f){ select(f.el); if (e.pointerType !== 'mouse') peekOnly(f); else scaleCue(f); }
         if (it) it.style.zIndex = 9;
         wake();
@@ -905,6 +909,7 @@ window.Webflow.push(function(){
         drag.moved += Math.abs(dx) + Math.abs(dy); if (drag.moved > 4) hideHelp();
         var wdx = dx / cam.s, wdy = dy / cam.s;
         if (drag.kind === 'pan'){ camT = null; cam.x += dx; cam.y += dy; renderCam(); }
+        else if (drag.kind === 'copy'){ copyP.x += wdx; copyP.y += wdy; }
         else if (drag.kind === 'planet'){ planet.x += wdx; planet.y += wdy; items.forEach(function(q){ q.settled = false; }); }
         else if (drag.kind === 'resize'){
           // proportional: corners average both axes, edges use one; from the loaded size up to 1.6x
